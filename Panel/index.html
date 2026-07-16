@@ -1,0 +1,5227 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base: #0a0a0f;
+      --bg-elevated: #12121a;
+      --bg-card: #16161f;
+      --bg-hover: #1c1c28;
+      --border: #252532;
+      --border-subtle: #1e1e2a;
+      --text-primary: #e8e8f0;
+      --text-secondary: #9898a8;
+      --text-muted: #686878;
+      --accent: #6366f1;
+      --accent-purple: #8b5cf6;
+      --accent-dim: rgba(99, 102, 241, 0.15);
+      --danger: #ef4444;
+      --danger-dim: rgba(239, 68, 68, 0.12);
+      --type-reklama: #6366f1;
+      --type-post: #22c55e;
+      --type-grafika: #f59e0b;
+      --sidebar-w: 240px;
+      --detail-w: 420px;
+      --header-h: 56px;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      --transition: 0.2s ease;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 16px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-icon svg { width: 18px; height: 18px; color: #fff; }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 8px 20px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 20px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 14px;
+      border-left: 2px solid transparent;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+
+    .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .nav-item.active {
+      background: var(--accent-dim);
+      color: var(--text-primary);
+      border-left-color: var(--accent);
+    }
+
+    .nav-item-left { display: flex; align-items: center; gap: 10px; }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .nav-count {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--bg-card);
+      color: var(--text-muted);
+      padding: 2px 7px;
+      border-radius: 10px;
+      min-width: 22px;
+      text-align: center;
+    }
+
+    .nav-item.active .nav-count {
+      background: rgba(99, 102, 241, 0.25);
+      color: var(--accent);
+    }
+
+    .platform-filters {
+      padding: 0 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .platform-chip {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .platform-chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+    .platform-chip.active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 12px 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-brand-footer {
+      padding: 12px 8px 4px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: center;
+      opacity: 0.6;
+    }
+
+    .btn-restore {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-restore:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .btn-restore:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-restore svg { width: 14px; height: 14px; }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .topbar {
+      height: var(--header-h);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      flex-shrink: 0;
+    }
+
+    .topbar-left h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .breadcrumbs {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .breadcrumbs span { color: var(--text-secondary); }
+
+    .search-wrap {
+      position: relative;
+      width: 280px;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus { border-color: var(--accent); }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .toolbar--publish {
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .queue-filters {
+      display: flex;
+      gap: 6px;
+    }
+
+    .queue-chip {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .queue-chip:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .queue-chip.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .queue-count {
+      display: inline-block;
+      min-width: 18px;
+      padding: 0 5px;
+      margin-left: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.25);
+    }
+
+    .card-copy {
+      position: absolute;
+      top: 10px;
+      right: 44px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.55);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity var(--transition);
+      z-index: 3;
+    }
+
+    .card:hover .card-copy { opacity: 1; }
+    .card-copy svg { width: 14px; height: 14px; }
+
+    .detail-copy-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .detail-copy-btn {
+      padding: 7px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .detail-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .platform-preview { margin: 16px 0; }
+
+    .preview-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .preview-tab {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .preview-tab.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .preview-panel { display: none; }
+    .preview-panel.active { display: block; }
+
+    .mock {
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .mock--li {
+      background: #f3f2ef;
+      color: #1d1d1d;
+      padding: 14px;
+    }
+
+    .mock--ig {
+      background: #000;
+      color: #f5f5f5;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .mock--fb {
+      background: #242526;
+      color: #e4e6eb;
+      padding: 14px;
+    }
+
+    .mock-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .mock-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      flex-shrink: 0;
+    }
+
+    .mock-avatar--li { background: linear-gradient(135deg, #0a66c2, #004182); }
+    .mock-avatar--fb { background: linear-gradient(135deg, #1877f2, #0d5bb5); }
+
+    .mock-body { margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+
+    .mock-caption {
+      padding: 10px 12px 14px;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .mock-img {
+      width: 100%;
+      display: block;
+      max-height: 200px;
+      object-fit: cover;
+    }
+
+    .mock-img--empty {
+      padding: 24px;
+      text-align: center;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.15);
+      color: var(--text-muted);
+    }
+
+    .publish-btn--all {
+      width: 100%;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6) !important;
+      color: #fff !important;
+      border: none !important;
+      font-weight: 600;
+    }
+
+    .btn-new-post {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: opacity var(--transition);
+    }
+
+    .btn-new-post:hover { opacity: 0.9; }
+    .btn-new-post svg { width: 16px; height: 16px; }
+
+    .post-status {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 6px;
+      z-index: 2;
+    }
+
+    .post-status--draft { background: rgba(245, 158, 11, 0.9); color: #1a1a1a; }
+    .post-status--ready { background: rgba(34, 197, 94, 0.9); color: #052e16; }
+    .post-status--published { background: rgba(99, 102, 241, 0.95); color: #fff; }
+    .post-status--partial { background: rgba(56, 189, 248, 0.9); color: #0c4a6e; }
+    .post-status--inline { position: static; display: inline-block; }
+
+    .detail-status-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .pub-platform {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    .pub-platform--done {
+      border-color: rgba(34, 197, 94, 0.4);
+      color: var(--type-post);
+    }
+
+    .pub-checklist { margin: 16px 0; }
+
+    .pub-checklist-list {
+      list-style: none;
+      margin: 8px 0 0;
+      padding: 0;
+    }
+
+    .pub-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      padding: 6px 0;
+      color: var(--text-secondary);
+    }
+
+    .pub-check-icon { width: 16px; flex-shrink: 0; font-weight: 700; }
+    .pub-check--ok .pub-check-icon { color: var(--type-post); }
+    .pub-check--err .pub-check-icon { color: var(--danger); }
+    .pub-check--warn .pub-check-icon { color: var(--type-grafika); }
+
+    .pub-checklist-ok { font-size: 12px; color: var(--type-post); margin-top: 8px; }
+    .pub-checklist-warn { font-size: 12px; color: var(--type-grafika); margin-top: 8px; }
+
+    .detail-edit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .detail-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .post-editor { max-width: 960px; margin: 0 auto; }
+
+    .post-editor-intro {
+      padding: 16px 18px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .editor-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    @media (min-width: 900px) {
+      .editor-grid { grid-template-columns: 1fr 300px; }
+    }
+
+    .editor-field { margin-bottom: 14px; }
+
+    .editor-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .editor-input,
+    .editor-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    .editor-input:focus,
+    .editor-textarea:focus { border-color: var(--accent); }
+
+    .editor-textarea { resize: vertical; min-height: 200px; line-height: 1.55; }
+
+    .editor-row-2 {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .editor-platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .editor-platform {
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .editor-drop {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      min-height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      background: var(--bg-elevated);
+      transition: border-color var(--transition);
+    }
+
+    .editor-drop:hover,
+    .editor-drop--over { border-color: var(--accent); }
+
+    .editor-drop-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .editor-drop-placeholder svg { width: 32px; height: 32px; opacity: 0.5; }
+
+    .editor-preview-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      max-height: 220px;
+    }
+
+    .editor-drop-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin: 8px 0;
+      line-height: 1.45;
+    }
+
+    .editor-input--sm { margin-top: 6px; font-size: 12px; }
+
+    .editor-format-tip { font-size: 11px; }
+
+    .editor-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .editor-msg {
+      font-size: 12px;
+      margin-top: 10px;
+      color: var(--text-muted);
+    }
+
+    .editor-msg--ok { color: var(--type-post); }
+    .editor-msg--err { color: var(--danger); }
+
+    .editor-transform-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .editor-plat-panel { display: none; }
+    .editor-plat-panel.active { display: block; }
+
+    .editor-textarea--sm { min-height: 140px; }
+
+    .editor-brand-hint {
+      padding: 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+
+    .editor-brand-logo {
+      max-width: 100%;
+      max-height: 48px;
+      margin: 8px 0;
+      object-fit: contain;
+    }
+
+    .editor-brand-colors { display: flex; gap: 6px; margin: 8px 0; }
+
+    .editor-brand-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+    }
+
+    .editor-brand-note,
+    .editor-brand-path {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin: 4px 0 0;
+    }
+
+    .detail-text-panel { display: none; margin-bottom: 12px; }
+    .detail-text-panel.active { display: block; }
+
+    .detail-copy-plat { margin-top: 8px; }
+
+    .done-toggles {
+      margin: 16px 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .done-toggle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-topic {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .brand-page { max-width: 880px; margin: 0 auto; }
+
+    .brand-intro {
+      padding: 16px 18px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .brand-grid { display: grid; gap: 16px; margin-bottom: 20px; }
+
+    @media (min-width: 768px) {
+      .brand-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .brand-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .brand-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .brand-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .brand-logo-preview {
+      max-width: 100%;
+      max-height: 80px;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
+
+    .brand-logo-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 16px;
+      background: var(--bg-hover);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+    }
+
+    .brand-field { margin-bottom: 12px; }
+
+    .brand-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .brand-input,
+    .brand-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+    }
+
+    .brand-input:focus,
+    .brand-textarea:focus { border-color: var(--accent); }
+
+    .brand-swatches { display: flex; gap: 8px; margin-bottom: 12px; }
+
+    .brand-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .brand-topics-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .brand-topic-tag {
+      font-size: 12px;
+      padding: 5px 10px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      border-radius: 999px;
+      color: var(--text-secondary);
+    }
+
+    .brand-topic-remove {
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0 0 0 4px;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .brand-topic-add { display: flex; gap: 8px; }
+    .brand-topic-add .brand-input { flex: 1; }
+
+    .brand-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .brand-msg { font-size: 12px; margin-top: 10px; color: var(--text-muted); }
+    .brand-msg.ok { color: var(--type-post); }
+
+    .empty-state .btn-new-post { margin-top: 16px; }
+
+    .view-switch {
+      display: flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .view-btn {
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+    }
+
+    .view-btn svg { width: 15px; height: 15px; }
+    .view-btn:hover { color: var(--text-secondary); }
+    .view-btn.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .view-btn + .view-btn { border-left: 1px solid var(--border); }
+
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px 32px;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+      position: relative;
+    }
+
+    .card:hover {
+      border-color: var(--border);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .card-thumb {
+      aspect-ratio: 16 / 10;
+      background: var(--bg-hover);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-thumb-empty {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .card-thumb-empty svg { width: 28px; height: 28px; opacity: 0.5; }
+
+    .card-type {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+    }
+
+    .card-type.reklama { color: var(--type-reklama); }
+    .card-type.post { color: var(--type-post); }
+    .card-type.grafika { color: var(--type-grafika); }
+
+    .card-delete {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity var(--transition), color var(--transition), background var(--transition);
+    }
+
+    .card-delete svg { width: 16px; height: 16px; }
+    .card:hover .card-delete { opacity: 1; }
+    .card-delete:hover { color: var(--danger); background: var(--danger-dim); }
+
+    .card-body { padding: 14px; }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-excerpt {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .card-platforms { display: flex; gap: 4px; }
+
+    .card-platforms span {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--bg-hover);
+      color: var(--text-muted);
+    }
+
+    /* ── Calendar ── */
+    .calendar { max-width: 960px; }
+
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .cal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cal-nav-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+    }
+
+    .cal-nav-btn svg { width: 16px; height: 16px; }
+    .cal-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .cal-today-btn {
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .cal-today-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .cal-weekday {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 8px 0;
+    }
+
+    .cal-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-day {
+      min-height: 100px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cal-day.other-month { opacity: 0.35; }
+    .cal-day.today { border-color: var(--accent); }
+
+    .cal-day-num {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .cal-day.today .cal-day-num { color: var(--accent); }
+
+    .cal-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .cal-chip {
+      font-size: 10px;
+      padding: 3px 6px;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-left: 2px solid;
+      background: var(--bg-hover);
+      transition: opacity var(--transition);
+    }
+
+    .cal-chip:hover { opacity: 0.8; }
+    .cal-chip.reklama { border-color: var(--type-reklama); color: var(--type-reklama); }
+    .cal-chip.post { border-color: var(--type-post); color: var(--type-post); }
+    .cal-chip.grafika { border-color: var(--type-grafika); color: var(--type-grafika); }
+
+    .cal-more {
+      font-size: 10px;
+      color: var(--text-muted);
+      padding: 2px 6px;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg { width: 48px; height: 48px; opacity: 0.4; margin-bottom: 16px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Detail panel ── */
+    .detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .detail-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .detail-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: var(--detail-w);
+      max-width: 100vw;
+      height: 100vh;
+      background: var(--bg-elevated);
+      border-left: 1px solid var(--border);
+      z-index: 101;
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-panel.open { transform: translateX(0); }
+
+    .detail-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      transition: all var(--transition);
+    }
+
+    .detail-close svg { width: 18px; height: 18px; }
+    .detail-close:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+    .detail-image {
+      aspect-ratio: 16 / 10;
+      background: var(--bg-hover);
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .detail-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .detail-image-empty {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .detail-image-empty svg { width: 40px; height: 40px; opacity: 0.45; }
+
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .detail-type {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
+    .detail-type.reklama { background: rgba(99, 102, 241, 0.15); color: var(--type-reklama); }
+    .detail-type.post { background: rgba(34, 197, 94, 0.15); color: var(--type-post); }
+    .detail-type.grafika { background: rgba(245, 158, 11, 0.15); color: var(--type-grafika); }
+
+    .detail-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .detail-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .detail-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .detail-meta-item svg { width: 14px; height: 14px; color: var(--text-muted); }
+
+    .detail-platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .detail-platform {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .detail-path {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+      background: var(--bg-card);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+
+    .detail-text-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .detail-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      line-height: 1.65;
+      margin-bottom: 24px;
+    }
+
+    .detail-delete {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--danger-dim);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all var(--transition);
+    }
+
+    .detail-delete svg { width: 16px; height: 16px; }
+    .detail-delete:hover { background: rgba(239, 68, 68, 0.22); }
+
+    .sidebar-spacer { flex: 1; min-height: 16px; }
+
+    .main-toolbar-hidden { display: none !important; }
+    .topbar-search-hidden { display: none !important; }
+
+    /* ── Generator postów ── */
+    .generator {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .generator-intro {
+      padding: 16px 18px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .generator-intro strong { color: var(--text-primary); }
+
+    .generator-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    @media (min-width: 960px) {
+      .generator-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+
+    .generator-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .generator-panel-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .gen-field { margin-bottom: 14px; }
+
+    .gen-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .gen-input,
+    .gen-textarea,
+    .gen-select {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .gen-input:focus,
+    .gen-textarea:focus,
+    .gen-select:focus {
+      border-color: var(--accent);
+    }
+
+    .gen-textarea { resize: vertical; min-height: 72px; }
+
+    .gen-row-2 {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 599px) {
+      .gen-row-2 { grid-template-columns: 1fr; }
+    }
+
+    .gen-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .gen-tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .gen-tag.active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .gen-news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .gen-news-item {
+      padding: 12px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      position: relative;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .gen-news-body {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      padding-right: 32px;
+    }
+
+    .gen-news-remove {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--transition), background var(--transition);
+    }
+
+    .gen-news-remove:hover { color: var(--danger); background: var(--danger-dim); }
+    .gen-news-remove svg { width: 14px; height: 14px; }
+
+    .gen-news-item .gen-field:last-child { margin-bottom: 0; }
+
+    .gen-btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .gen-btn {
+      padding: 9px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+      border: 1px solid var(--border);
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .gen-btn svg { width: 14px; height: 14px; }
+    .gen-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+    .gen-btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .gen-btn-primary:hover { opacity: 0.92; color: #fff; }
+
+    .gen-btn-ghost {
+      background: transparent;
+      border-style: dashed;
+    }
+
+    .gen-btn-danger {
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .gen-btn-danger:hover {
+      color: #fff;
+      background: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .gen-platforms {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .gen-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .gen-check input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+    .gen-preview-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      background: var(--bg-hover);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .gen-preview-tab {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .gen-preview-tab.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .gen-lang-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .gen-lang-row .gen-label { margin-bottom: 0; }
+
+    .gen-lang-tabs {
+      display: inline-flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .gen-lang-tab {
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .gen-lang-tab.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .gen-lang-tab:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .gen-preview-box {
+      min-height: 280px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding: 14px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .gen-preview-box.empty {
+      color: var(--text-muted);
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .gen-preview-meta {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .gen-snippet {
+      margin-top: 16px;
+    }
+
+    .gen-snippet pre {
+      margin-top: 8px;
+      padding: 12px;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      overflow-x: auto;
+      max-height: 200px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .gen-cursor-box {
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+    }
+
+    .gen-cursor-prompt {
+      margin-top: 8px;
+      padding: 12px;
+      background: var(--bg-hover);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .gen-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-primary);
+      box-shadow: var(--shadow);
+      z-index: 200;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+
+    .gen-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-badge-draft {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--type-grafika);
+    }
+
+    .card.has-draft-badge .card-delete { top: 42px; }
+
+    .gen-fetch-status {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    .gen-fetch-status.ok { color: var(--type-post); }
+    .gen-fetch-status.err { color: var(--danger); }
+
+    .gen-news-source {
+      font-size: 11px;
+      margin-top: 4px;
+      line-height: 1.45;
+    }
+
+    .gen-news-source a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .gen-news-source a:hover { text-decoration: underline; }
+
+    .gen-news-source-url {
+      display: block;
+      color: var(--text-muted);
+      word-break: break-all;
+      margin-top: 2px;
+      font-size: 10px;
+    }
+
+    .gen-progress {
+      margin: 10px 0 4px;
+    }
+
+    .gen-progress[hidden] { display: none !important; }
+
+    .gen-progress-track {
+      height: 6px;
+      background: var(--bg-hover);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .gen-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-purple));
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    .gen-progress-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .gen-btn.is-loading { opacity: 0.65; pointer-events: none; }
+
+    .gen-btn .gen-spin {
+      width: 14px;
+      height: 14px;
+      animation: gen-spin 0.8s linear infinite;
+    }
+
+    @keyframes gen-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gen-btn .gen-spin { animation: none; }
+    }
+
+    .gen-options-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .gen-count-select {
+      min-width: 72px;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+    }
+
+    .gen-copy-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 4px;
+      padding: 12px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: var(--radius-sm);
+    }
+
+    .gen-copy-actions[hidden] { display: none !important; }
+
+    .gen-copy-actions-label {
+      width: 100%;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .gen-news-thumb-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .gen-news-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gen-news-thumb-wrap.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 10px;
+      text-align: center;
+      padding: 4px;
+    }
+
+    .gen-news-body { min-width: 0; }
+
+    .gen-images-panel {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .gen-hero-preview {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 12px;
+    }
+
+    .gen-hero-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+    .gen-hero-preview.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 16px;
+    }
+
+    .gen-image-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .sidebar-section-hidden { display: none !important; }
+
+    /* ── Integracje social ── */
+    .integrations { max-width: 880px; margin: 0 auto; }
+
+    .integrations-intro {
+      padding: 16px 18px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .integrations-grid { display: grid; gap: 16px; }
+
+    @media (min-width: 768px) {
+      .integrations-grid { grid-template-columns: 1fr 1fr; }
+      .integrations-grid .integrations-card:first-child { grid-column: 1 / -1; }
+    }
+
+    .integrations-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .integrations-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .integrations-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .int-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .int-status-dot.ok { background: var(--type-post); box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); }
+
+    .int-field { margin-bottom: 12px; }
+
+    .int-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .int-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+    }
+
+    .int-input:focus { border-color: var(--accent); }
+
+    .int-btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+    .int-btn {
+      padding: 9px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .int-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+    .int-btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .int-msg { font-size: 12px; margin-top: 10px; color: var(--text-muted); }
+    .int-msg.ok { color: var(--type-post); }
+    .int-msg.err { color: var(--danger); }
+
+    /* ── Publikacja w szczegółach ── */
+    .detail-publish {
+      margin-bottom: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .detail-publish-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .publish-btns { display: flex; flex-direction: column; gap: 8px; }
+
+    .publish-btn {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      transition: all var(--transition);
+    }
+
+    .publish-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-dim); }
+    .publish-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .publish-btn--fb { border-left: 3px solid #1877f2; }
+    .publish-btn--ig { border-left: 3px solid #e4405f; }
+    .publish-btn--li { border-left: 3px solid #0a66c2; }
+
+    .publish-status {
+      font-size: 12px;
+      margin-top: 10px;
+      color: var(--text-muted);
+    }
+
+    .publish-status.ok { color: var(--type-post); }
+    .publish-status.err { color: var(--danger); }
+
+    /* ── Formaty graficzne ── */
+    .formats-page { max-width: 960px; margin: 0 auto; }
+
+    .formats-intro {
+      padding: 16px 18px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .formats-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .formats-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .formats-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .formats-card--wide { margin-bottom: 16px; }
+
+    .formats-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fmt-platform-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--platform-color, var(--accent));
+      flex-shrink: 0;
+    }
+
+    .formats-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .fmt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .fmt-table th,
+    .fmt-table td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+
+    .fmt-table th {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .fmt-note {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    .fmt-presets {
+      display: grid;
+      gap: 10px;
+    }
+
+    @media (min-width: 640px) {
+      .fmt-presets { grid-template-columns: 1fr 1fr; }
+    }
+
+    .fmt-preset {
+      padding: 12px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+    }
+
+    .fmt-preset-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .fmt-preset-meta { font-size: 11px; color: var(--text-muted); }
+
+    .fmt-preset-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .fmt-preset-folder { font-family: var(--font-mono, monospace); }
+
+    .formats-footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .detail-formats {
+      margin: 16px 0;
+      padding: 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+    }
+
+    .fmt-recommend {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .fmt-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .fmt-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: var(--text-secondary);
+    }
+
+    .fmt-detail-group { margin-top: 10px; }
+
+    .fmt-detail-platform {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .fmt-detail-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    .fmt-gen-list {
+      margin: 8px 0 0 16px;
+      padding: 0;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <span class="logo-text">Content System</span>
+      </div>
+
+      <div id="sidebar-filters">
+        <div class="nav-section-label">Tematy</div>
+        <div class="platform-filters" id="topic-filters"></div>
+        <div class="nav-section-label" style="margin-top:12px">Platformy</div>
+        <div class="platform-filters" id="platform-filters"></div>
+      </div>
+
+      <div class="nav-section-label" style="margin-top:12px">Narzędzia</div>
+      <nav>
+        <div class="nav-item" id="nav-generator" role="button" tabindex="0">
+          <div class="nav-item-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="m8 8 2 2"/><path d="m14 14 2 2"/><path d="m8 16 2-2"/><path d="m14 10 2-2"/><circle cx="12" cy="12" r="4"/></svg>
+            <span>Generator newsów</span>
+          </div>
+        </div>
+        <div class="nav-item" id="nav-brand" role="button" tabindex="0">
+          <div class="nav-item-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+            <span>Motyw marki</span>
+          </div>
+        </div>
+        <div class="nav-item" id="nav-formats" role="button" tabindex="0">
+          <div class="nav-item-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            <span>Formaty graficzne</span>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="sidebar-footer">
+        <button class="btn-restore" id="btn-restore" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+          <span id="restore-label">Przywróć usunięte</span>
+        </button>
+        <div class="sidebar-brand-footer">Content System</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 id="view-title">Posty</h1>
+          <div class="breadcrumbs" id="breadcrumbs">PUBLIKACJE / <span>Do wrzucenia</span></div>
+        </div>
+        <div class="search-wrap" id="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input type="search" class="search-input" id="search" placeholder="Szukaj postów…" autocomplete="off">
+        </div>
+      </header>
+
+      <div class="toolbar toolbar--publish" id="main-toolbar">
+        <div class="toolbar-left">
+          <button type="button" class="btn-new-post" id="btn-new-post">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Nowy post
+          </button>
+          <div class="queue-filters" id="queue-filters">
+            <button type="button" class="queue-chip active" data-queue="all">Wszystko</button>
+            <button type="button" class="queue-chip" data-queue="publish">Do publikacji</button>
+          </div>
+        </div>
+        <div class="view-switch">
+          <button class="view-btn active" data-view="grid" id="btn-grid">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+            Siatka
+          </button>
+          <button class="view-btn" data-view="calendar" id="btn-calendar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Kalendarz
+          </button>
+        </div>
+      </div>
+
+      <div class="content-area" id="content-area"></div>
+    </main>
+  </div>
+
+  <div class="detail-overlay" id="detail-overlay"></div>
+  <aside class="detail-panel" id="detail-panel">
+    <button class="detail-close" id="detail-close" aria-label="Zamknij">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+    <div id="detail-content"></div>
+  </aside>
+
+  <div class="gen-toast" id="gen-toast" role="status" aria-live="polite"></div>
+
+  <script src="content-data.js"></script>
+  <script src="image-formats.js"></script>
+  <script src="brand-kit.js"></script>
+  <script src="post-manager.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var STORAGE_KEY = "content-system-deleted-ids";
+      var GENERATED_KEY = "content-system-generated-posts";
+      var GENERATOR_DRAFT_KEY = "content-system-generator-draft";
+
+      var GEN_TOPICS = ["AWS", "Chmura", "DevOps", "Programowanie", "Open Source", "Bezpieczeństwo", "AI / DevTools"];
+
+      var IG_NUMS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
+
+      var PLATFORM_LABELS = {
+        ig: "IG",
+        fb: "FB",
+        tt: "TT",
+        yt: "YT",
+        li: "LI",
+        x: "X"
+      };
+
+      var MONTH_NAMES = [
+        "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+        "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"
+      ];
+
+      var WEEKDAYS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
+
+      var state = {
+        mode: "browse",
+        platformFilter: null,
+        topicFilter: null,
+        queueFilter: "all",
+        search: "",
+        view: "grid",
+        calYear: new Date().getFullYear(),
+        calMonth: new Date().getMonth(),
+        selectedId: null,
+        genPreviewTab: "li",
+        editId: null
+      };
+
+      function getGeneratedPosts() {
+        return window.PostManager ? PostManager.getUserPosts() : [];
+      }
+
+      function saveGeneratedPosts(posts) {
+        if (!window.PostManager) return;
+        posts.forEach(function (p) { PostManager.savePost(p); });
+      }
+
+      function getAllItems() {
+        if (window.PostManager) {
+          return PostManager.getAllItems(window.CONTENT || [], getDeletedIds());
+        }
+        return getGeneratedPosts().concat(window.CONTENT || []);
+      }
+
+      function isGeneratedId(id) {
+        return String(id).indexOf("gen-") === 0;
+      }
+
+      function showToast(msg) {
+        var el = document.getElementById("gen-toast");
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+      }
+
+      function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text).then(function () {
+            showToast("Skopiowano do schowka");
+          }).catch(function () {
+            fallbackCopy(text);
+          });
+        }
+        fallbackCopy(text);
+        return Promise.resolve();
+      }
+
+      function fallbackCopy(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+          showToast("Skopiowano do schowka");
+        } catch (e) {
+          showToast("Nie udało się skopiować");
+        }
+        document.body.removeChild(ta);
+      }
+
+      function slugifyFilename(str) {
+        return (str || "export")
+          .toLowerCase()
+          .replace(/[^a-z0-9ąćęłńóśźż]+/gi, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 52) || "export";
+      }
+
+      function downloadTextFile(filename, content) {
+        var blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 500);
+      }
+
+      function buildGeneratorMarkdown(options) {
+        var o = options || {};
+        var lines = [];
+        lines.push("# " + (o.title || "News tygodnia IT"));
+        lines.push("");
+        if (o.weekLabel) lines.push("**Tydzień:** " + o.weekLabel);
+        if (o.lang) lines.push("**Język:** " + (o.lang === "pl" ? "PL" : "EN"));
+        if (o.dateLi || o.dateIg) {
+          lines.push("**Daty publikacji:** LinkedIn " + (o.dateLi || "—") + " · Instagram " + (o.dateIg || "—"));
+        }
+        if (o.image) lines.push("**Grafika:** `" + o.image + "`");
+        if (o.topics && o.topics.length) lines.push("**Tematy:** " + o.topics.join(", "));
+        lines.push("");
+        lines.push("---");
+        lines.push("");
+        if (o.hook) {
+          lines.push("## Hook");
+          lines.push("");
+          lines.push(o.hook);
+          lines.push("");
+        }
+        if (o.news && o.news.length) {
+          lines.push("## Newsy");
+          lines.push("");
+          o.news.forEach(function (n, i) {
+            lines.push("### " + (i + 1) + ". " + n.title);
+            lines.push("");
+            if (n.desc) lines.push(n.desc);
+            if (n.url) {
+              lines.push("");
+              lines.push("Źródło: [" + formatSourceLabel(n.url) + "](" + n.url + ")");
+            }
+            lines.push("");
+          });
+        }
+        if (o.li) {
+          lines.push("---");
+          lines.push("");
+          lines.push("## LinkedIn");
+          lines.push("");
+          lines.push("```text");
+          lines.push(o.li);
+          lines.push("```");
+          lines.push("");
+        }
+        if (o.ig) {
+          lines.push("## Instagram");
+          lines.push("");
+          lines.push("```text");
+          lines.push(o.ig);
+          lines.push("```");
+          lines.push("");
+        }
+        return lines.join("\n").trim() + "\n";
+      }
+
+      function buildPostMarkdown(item) {
+        var lines = [];
+        lines.push("# " + (item.title || "Post"));
+        lines.push("");
+        if (item.topic) lines.push("**Temat:** " + item.topic);
+        if (item.date) lines.push("**Data:** " + item.date);
+        if (item.status) lines.push("**Status:** " + (item.status === "ready" ? "Gotowy" : item.status === "draft" ? "Szkic" : item.status));
+        if (item.platforms && item.platforms.length) {
+          lines.push("**Platformy:** " + item.platforms.map(function (p) {
+            return PLATFORM_LABELS[p] || p;
+          }).join(", "));
+        }
+        if (item.image) lines.push("**Grafika:** `" + item.image + "`");
+        lines.push("");
+        lines.push("---");
+        lines.push("");
+        if (item.textMaster) {
+          lines.push("## Tekst master");
+          lines.push("");
+          lines.push(item.textMaster);
+          lines.push("");
+        }
+        var platformTexts = [
+          { key: "li", label: "LinkedIn", text: item.textLi },
+          { key: "fb", label: "Facebook", text: item.textFb },
+          { key: "ig", label: "Instagram", text: item.textIg }
+        ];
+        platformTexts.forEach(function (pt) {
+          if (!pt.text) return;
+          lines.push("## " + pt.label);
+          lines.push("");
+          lines.push("```text");
+          lines.push(pt.text);
+          lines.push("```");
+          lines.push("");
+        });
+        return lines.join("\n").trim() + "\n";
+      }
+
+      function saveMarkdownFile(filename, content) {
+        downloadTextFile(filename, content);
+        showToast("Zapisano plik " + filename);
+      }
+
+      function getDeletedIds() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveDeletedIds(ids) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+        } catch (e) { /* best-effort on file:// */ }
+      }
+
+      function isDeleted(id) {
+        return getDeletedIds().indexOf(id) !== -1;
+      }
+
+      function deleteItem(id) {
+        if (window.PostManager) {
+          PostManager.deletePost(id, getDeletedIds(), saveDeletedIds);
+        } else if (isGeneratedId(id)) {
+          saveGeneratedPosts(getGeneratedPosts().filter(function (p) { return p.id !== id; }));
+        } else {
+          var ids = getDeletedIds();
+          if (ids.indexOf(id) === -1) {
+            ids.push(id);
+            saveDeletedIds(ids);
+          }
+        }
+        closeDetail();
+        render();
+      }
+
+      function restoreAll() {
+        saveDeletedIds([]);
+        render();
+      }
+
+      function iconCopy() {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      }
+
+      function getQueueCount() {
+        if (!window.PostManager) return 0;
+        return PostManager.countQueueItems(getAllNonDeletedItems());
+      }
+
+      function getVisibleItems() {
+        var items = getAllItems().filter(function (item) {
+          return !isDeleted(item.id) && item.type === "post";
+        });
+
+        if (state.queueFilter === "publish" && window.PostManager) {
+          items = items.filter(function (item) { return PostManager.needsPublish(item); });
+        }
+
+        if (state.topicFilter) {
+          items = items.filter(function (item) {
+            return item.topic === state.topicFilter;
+          });
+        }
+
+        if (state.platformFilter) {
+          items = items.filter(function (item) {
+            return item.platforms && item.platforms.indexOf(state.platformFilter) !== -1;
+          });
+        }
+
+        if (state.search.trim()) {
+          var q = state.search.trim().toLowerCase();
+          items = items.filter(function (item) {
+            var hay = [
+              item.title,
+              item.topic,
+              item.text,
+              item.textMaster,
+              item.textLi,
+              item.textFb,
+              item.textIg
+            ].filter(Boolean).join(" ").toLowerCase();
+            return hay.indexOf(q) !== -1;
+          });
+        }
+
+        return items.sort(function (a, b) {
+          return b.date.localeCompare(a.date);
+        });
+      }
+
+      function getAllNonDeletedItems() {
+        return getAllItems().filter(function (item) {
+          return !isDeleted(item.id) && item.type === "post";
+        });
+      }
+
+      function getUsedPlatforms() {
+        var set = {};
+        getAllNonDeletedItems().forEach(function (item) {
+          (item.platforms || []).forEach(function (p) { set[p] = true; });
+        });
+        return Object.keys(set).sort();
+      }
+
+      function formatDate(dateStr) {
+        var parts = dateStr.split("-");
+        if (parts.length !== 3) return dateStr;
+        return parts[2] + "." + parts[1] + "." + parts[0];
+      }
+
+      function excerpt(text, max) {
+        if (!text) return "";
+        var flat = text.replace(/\n/g, " ");
+        return flat.length > max ? flat.slice(0, max) + "…" : flat;
+      }
+
+      function iconImage() {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+      }
+
+      function iconTrash() {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+      }
+
+      function renderThumb(item) {
+        if (item.image) {
+          return '<img src="' + escapeAttr(item.image) + '" alt="" loading="lazy">';
+        }
+        return (
+          '<div class="card-thumb-empty">' +
+            iconImage() +
+            '<span>brak grafiki · wgraj własną</span>' +
+          '</div>'
+        );
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function escapeAttr(str) {
+        return escapeHtml(str).replace(/'/g, "&#39;");
+      }
+
+      function renderNav() {
+        var genNav = document.getElementById("nav-generator");
+        if (genNav) {
+          genNav.classList.toggle("active", state.mode === "generator");
+        }
+        var intNav = document.getElementById("nav-brand");
+        if (intNav) {
+          intNav.classList.toggle("active", state.mode === "brand");
+        }
+        var fmtNav = document.getElementById("nav-formats");
+        if (fmtNav) {
+          fmtNav.classList.toggle("active", state.mode === "formats");
+        }
+      }
+
+      function getUsedTopics() {
+        var set = {};
+        getAllNonDeletedItems().forEach(function (item) {
+          if (item.topic) set[item.topic] = true;
+        });
+        return Object.keys(set).sort();
+      }
+
+      function renderTopicFilters() {
+        var container = document.getElementById("topic-filters");
+        if (!container) return;
+        var topics = getUsedTopics();
+
+        if (!topics.length) {
+          container.innerHTML = '<span style="font-size:12px;color:var(--text-muted);padding:4px 8px">Brak tematów</span>';
+          return;
+        }
+
+        container.innerHTML = topics.map(function (t) {
+          var active = state.topicFilter === t ? " active" : "";
+          return '<button class="platform-chip' + active + '" data-topic="' + escapeAttr(t) + '">' + escapeHtml(t) + '</button>';
+        }).join("");
+
+        container.querySelectorAll(".platform-chip").forEach(function (el) {
+          el.addEventListener("click", function () {
+            var t = el.dataset.topic;
+            state.topicFilter = state.topicFilter === t ? null : t;
+            render();
+          });
+        });
+      }
+
+      function renderPlatformFilters() {
+        var container = document.getElementById("platform-filters");
+        var platforms = getUsedPlatforms();
+
+        if (!platforms.length) {
+          container.innerHTML = '<span style="font-size:12px;color:var(--text-muted);padding:4px 8px">Brak platform</span>';
+          return;
+        }
+
+        container.innerHTML = platforms.map(function (p) {
+          var active = state.platformFilter === p ? " active" : "";
+          return '<button class="platform-chip' + active + '" data-platform="' + p + '">' + (PLATFORM_LABELS[p] || p) + '</button>';
+        }).join("");
+
+        container.querySelectorAll(".platform-chip").forEach(function (el) {
+          el.addEventListener("click", function () {
+            var p = el.dataset.platform;
+            state.platformFilter = state.platformFilter === p ? null : p;
+            render();
+          });
+        });
+      }
+
+      function renderQueueFilters() {
+        var container = document.getElementById("queue-filters");
+        if (!container) return;
+        var count = getQueueCount();
+        container.innerHTML =
+          '<button type="button" class="queue-chip' + (state.queueFilter === "all" ? " active" : "") +
+            '" data-queue="all">Wszystko</button>' +
+          '<button type="button" class="queue-chip' + (state.queueFilter === "publish" ? " active" : "") +
+            '" data-queue="publish">Do publikacji' +
+            (count ? '<span class="queue-count">' + count + "</span>" : "") +
+          "</button>";
+
+        container.querySelectorAll(".queue-chip").forEach(function (el) {
+          el.addEventListener("click", function () {
+            state.queueFilter = el.dataset.queue;
+            render();
+          });
+        });
+      }
+
+      function renderHeader() {
+        if (state.mode === "generator") {
+          document.getElementById("view-title").textContent = "Generator newsów";
+          document.getElementById("breadcrumbs").innerHTML =
+            'NARZĘDZIA / <span>News tygodnia</span>';
+          return;
+        }
+        if (state.mode === "brand") {
+          document.getElementById("view-title").textContent = "Motyw marki";
+          document.getElementById("breadcrumbs").innerHTML =
+            'NARZĘDZIA / <span>Logo · kolory · tematy</span>';
+          return;
+        }
+        if (state.mode === "formats") {
+          document.getElementById("view-title").textContent = "Formaty graficzne";
+          document.getElementById("breadcrumbs").innerHTML =
+            'NARZĘDZIA / <span>Wymiary social media</span>';
+          return;
+        }
+        if (state.mode === "editor") {
+          document.getElementById("view-title").textContent = state.editId ? "Edycja posta" : "Nowy post";
+          document.getElementById("breadcrumbs").innerHTML =
+            'PUBLIKACJE / <span>' + (state.editId ? "Edycja" : "Nowy") + "</span>";
+          return;
+        }
+
+        document.getElementById("view-title").textContent =
+          state.queueFilter === "publish" ? "Do publikacji" : "Posty";
+        document.getElementById("breadcrumbs").innerHTML =
+          state.queueFilter === "publish"
+            ? 'PUBLIKACJE / <span>Gotowe do wrzucenia</span>'
+            : 'PUBLIKACJE / <span>Do wrzucenia</span>';
+
+        document.getElementById("btn-grid").classList.toggle("active", state.view === "grid");
+        document.getElementById("btn-calendar").classList.toggle("active", state.view === "calendar");
+
+        var deletedCount = getDeletedIds().length;
+        var btn = document.getElementById("btn-restore");
+        btn.disabled = deletedCount === 0;
+        document.getElementById("restore-label").textContent =
+          deletedCount > 0 ? "Przywróć usunięte (" + deletedCount + ")" : "Przywróć usunięte";
+      }
+
+      function renderGrid(items) {
+        if (!items.length) {
+          var emptyMsg = state.queueFilter === "publish"
+            ? "Brak postów gotowych do wrzucenia. Ustaw status „Gotowy” i oznacz platformy po ręcznej publikacji."
+            : "Brak postów.";
+          return (
+            '<div class="empty-state">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' +
+              '<p>' + emptyMsg + '</p>' +
+              (state.queueFilter !== "publish"
+                ? '<button type="button" class="btn-new-post" id="empty-new-post">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>' +
+                  'Dodaj pierwszy post</button>'
+                : "") +
+            '</div>'
+          );
+        }
+
+        return (
+          '<div class="grid">' +
+          items.map(function (item) {
+            var platforms = (item.platforms || []).map(function (p) {
+              return '<span>' + (PLATFORM_LABELS[p] || p) + '</span>';
+            }).join("");
+
+            var statusBadge = window.PostManager
+              ? PostManager.renderStatusBadge(item)
+              : "";
+            var cardClass = "card";
+
+            return (
+              '<article class="' + cardClass + '" data-id="' + escapeAttr(item.id) + '">' +
+                '<div class="card-thumb">' +
+                  renderThumb(item) +
+                  statusBadge +
+                  '<button class="card-copy" data-copy="' + escapeAttr(item.id) + '" aria-label="Kopiuj treść">' + iconCopy() + '</button>' +
+                  '<button class="card-delete" data-delete="' + escapeAttr(item.id) + '" aria-label="Usuń">' + iconTrash() + '</button>' +
+                '</div>' +
+                '<div class="card-body">' +
+                  '<h3 class="card-title">' + escapeHtml(item.title) + '</h3>' +
+                  '<p class="card-excerpt">' + escapeHtml(excerpt(
+                    window.PostManager ? PostManager.getTextForPlatform(item, (item.platforms || [])[0] || "li") : (item.text || ""),
+                    100
+                  )) + '</p>' +
+                  (item.topic ? '<span class="card-topic">' + escapeHtml(item.topic) + '</span>' : '') +
+                  '<div class="card-meta">' +
+                    '<time>' + formatDate(item.date) + '</time>' +
+                    '<div class="card-platforms">' + platforms + '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</article>'
+            );
+          }).join("") +
+          '</div>'
+        );
+      }
+
+      function renderCalendar(items) {
+        var year = state.calYear;
+        var month = state.calMonth;
+        var firstDay = new Date(year, month, 1);
+        var lastDay = new Date(year, month + 1, 0);
+        var startOffset = (firstDay.getDay() + 6) % 7;
+        var daysInMonth = lastDay.getDate();
+        var prevMonthDays = new Date(year, month, 0).getDate();
+
+        var byDate = {};
+        items.forEach(function (item) {
+          if (!byDate[item.date]) byDate[item.date] = [];
+          byDate[item.date].push(item);
+        });
+
+        var today = new Date();
+        var todayStr = today.getFullYear() + "-" +
+          String(today.getMonth() + 1).padStart(2, "0") + "-" +
+          String(today.getDate()).padStart(2, "0");
+
+        var cells = [];
+        var totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+        for (var i = 0; i < totalCells; i++) {
+          var dayNum, cellYear, cellMonth, otherMonth = false;
+
+          if (i < startOffset) {
+            dayNum = prevMonthDays - startOffset + i + 1;
+            cellMonth = month - 1;
+            cellYear = year;
+            if (cellMonth < 0) { cellMonth = 11; cellYear--; }
+            otherMonth = true;
+          } else if (i >= startOffset + daysInMonth) {
+            dayNum = i - startOffset - daysInMonth + 1;
+            cellMonth = month + 1;
+            cellYear = year;
+            if (cellMonth > 11) { cellMonth = 0; cellYear++; }
+            otherMonth = true;
+          } else {
+            dayNum = i - startOffset + 1;
+            cellMonth = month;
+            cellYear = year;
+          }
+
+          var dateStr = cellYear + "-" +
+            String(cellMonth + 1).padStart(2, "0") + "-" +
+            String(dayNum).padStart(2, "0");
+
+          var dayItems = byDate[dateStr] || [];
+          var maxChips = 3;
+          var chips = dayItems.slice(0, maxChips).map(function (item) {
+            return '<div class="cal-chip ' + item.type + '" data-id="' + escapeAttr(item.id) + '">' + escapeHtml(item.title) + '</div>';
+          }).join("");
+
+          if (dayItems.length > maxChips) {
+            chips += '<div class="cal-more">+' + (dayItems.length - maxChips) + ' więcej</div>';
+          }
+
+          var classes = "cal-day";
+          if (otherMonth) classes += " other-month";
+          if (dateStr === todayStr) classes += " today";
+
+          cells.push(
+            '<div class="' + classes + '">' +
+              '<div class="cal-day-num">' + dayNum + '</div>' +
+              '<div class="cal-chips">' + chips + '</div>' +
+            '</div>'
+          );
+        }
+
+        return (
+          '<div class="calendar">' +
+            '<div class="cal-header">' +
+              '<h2 class="cal-title">' + MONTH_NAMES[month] + ' ' + year + '</h2>' +
+              '<div class="cal-nav">' +
+                '<button class="cal-nav-btn" id="cal-prev" aria-label="Poprzedni miesiąc">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m15 18-6-6 6-6"/></svg>' +
+                '</button>' +
+                '<button class="cal-today-btn" id="cal-today">Dziś</button>' +
+                '<button class="cal-nav-btn" id="cal-next" aria-label="Następny miesiąc">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m9 18 6-6-6-6"/></svg>' +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="cal-weekdays">' +
+              WEEKDAYS.map(function (d) { return '<div class="cal-weekday">' + d + '</div>'; }).join("") +
+            '</div>' +
+            '<div class="cal-days">' + cells.join("") + '</div>' +
+          '</div>'
+        );
+      }
+
+      function bindGridEvents() {
+        var emptyBtn = document.getElementById("empty-new-post");
+        if (emptyBtn) {
+          emptyBtn.addEventListener("click", function () { openEditor(null); });
+        }
+
+        document.querySelectorAll(".card").forEach(function (card) {
+          card.addEventListener("click", function (e) {
+            if (e.target.closest(".card-delete") || e.target.closest(".card-copy")) return;
+            openDetail(card.dataset.id);
+          });
+        });
+
+        document.querySelectorAll(".card-copy").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var item = getAllItems().find(function (i) { return i.id === btn.dataset.copy; });
+            if (item && window.PostManager) {
+              var plat = (item.platforms || [])[0] || "li";
+              copyText(PostManager.getTextForPlatform(item, plat));
+            }
+          });
+        });
+
+        document.querySelectorAll(".card-delete").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var id = btn.dataset.delete;
+            var item = getAllItems().find(function (i) { return i.id === id; });
+            if (item && confirm('Usunąć treść „' + item.title + '" z panelu?')) {
+              deleteItem(id);
+            }
+          });
+        });
+      }
+
+      function bindCalendarEvents() {
+        var prev = document.getElementById("cal-prev");
+        var next = document.getElementById("cal-next");
+        var todayBtn = document.getElementById("cal-today");
+
+        if (prev) prev.addEventListener("click", function () {
+          state.calMonth--;
+          if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+          renderContent();
+        });
+
+        if (next) next.addEventListener("click", function () {
+          state.calMonth++;
+          if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
+          renderContent();
+        });
+
+        if (todayBtn) todayBtn.addEventListener("click", function () {
+          var now = new Date();
+          state.calYear = now.getFullYear();
+          state.calMonth = now.getMonth();
+          renderContent();
+        });
+
+        document.querySelectorAll(".cal-chip").forEach(function (chip) {
+          chip.addEventListener("click", function () {
+            openDetail(chip.dataset.id);
+          });
+        });
+      }
+
+      function renderContent() {
+        var area = document.getElementById("content-area");
+
+        if (state.mode === "generator") {
+          area.innerHTML = renderGeneratorHTML();
+          bindGeneratorEvents();
+          return;
+        }
+
+        if (state.mode === "brand") {
+          if (window.BrandKit) {
+            area.innerHTML = BrandKit.renderBrandHTML();
+            BrandKit.bindBrandEvents(showToast);
+          } else {
+            area.innerHTML = '<p class="empty-state">Brak modułu brand-kit.js</p>';
+          }
+          return;
+        }
+
+        if (state.mode === "formats") {
+          if (window.ImageFormats) {
+            area.innerHTML = ImageFormats.renderFormatsHTML();
+          } else {
+            area.innerHTML = '<p class="empty-state">Brak modułu image-formats.js</p>';
+          }
+          return;
+        }
+
+        if (state.mode === "editor" && window.PostManager) {
+          var editPost = state.editId
+            ? getAllItems().find(function (i) { return i.id === state.editId; })
+            : PostManager.createNewPost();
+          if (state.editId && !editPost) {
+            state.mode = "browse";
+            state.editId = null;
+            render();
+            return;
+          }
+          area.innerHTML = PostManager.renderEditorHTML(editPost);
+          PostManager.bindEditorEvents(editPost.id, {
+            getExisting: function (pid) {
+              return getAllItems().find(function (i) { return i.id === pid; });
+            },
+            onCancel: function () {
+              state.mode = "browse";
+              state.editId = null;
+              render();
+            },
+            onSave: function () {
+              showToast("Post zapisany");
+              state.mode = "browse";
+              state.editId = null;
+              render();
+            },
+            onToast: showToast
+          });
+          return;
+        }
+
+        var items = getVisibleItems();
+
+        if (state.view === "grid") {
+          area.innerHTML = renderGrid(items);
+          bindGridEvents();
+        } else {
+          area.innerHTML = renderCalendar(items);
+          bindCalendarEvents();
+        }
+      }
+
+      function pad2(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      function toISODate(d) {
+        return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+      }
+
+      function getCurrentWeekRange() {
+        var now = new Date();
+        var day = now.getDay();
+        var monday = new Date(now);
+        monday.setHours(0, 0, 0, 0);
+        monday.setDate(now.getDate() - ((day + 6) % 7));
+        var friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4);
+        return { from: monday, to: friday };
+      }
+
+      function formatWeekLabel(fromStr, toStr) {
+        if (!fromStr || !toStr) return "";
+        var a = fromStr.split("-");
+        var b = toStr.split("-");
+        if (a[1] === b[1]) {
+          return parseInt(a[2], 10) + "–" + parseInt(b[2], 10) + " " + MONTH_NAMES[parseInt(a[1], 10) - 1] + " " + a[0];
+        }
+        return parseInt(a[2], 10) + " " + MONTH_NAMES[parseInt(a[1], 10) - 1] + " – " +
+          parseInt(b[2], 10) + " " + MONTH_NAMES[parseInt(b[1], 10) - 1] + " " + b[0];
+      }
+
+      function getDefaultGeneratorDraft() {
+        var week = getCurrentWeekRange();
+        return {
+          hook: "Co wydarzyło się w IT, AWS i świecie programowania w tym tygodniu?",
+          dateFrom: toISODate(week.from),
+          dateTo: toISODate(week.to),
+          dateLi: toISODate(week.to),
+          dateIg: toISODate(new Date(week.to.getTime() + 86400000 * 3)),
+          topics: ["AWS", "Programowanie", "DevOps"],
+          postTitle: "",
+          postImage: "",
+          newsCount: 5,
+          news: [
+            { title: "", desc: "" },
+            { title: "", desc: "" },
+            { title: "", desc: "" }
+          ],
+          li: "",
+          ig: "",
+          lang: "en",
+          newsEn: [],
+          newsPl: [],
+          hookEn: "",
+          hookPl: "",
+          postTitleEn: "",
+          postTitlePl: "",
+          liEn: "",
+          igEn: "",
+          liPl: "",
+          igPl: ""
+        };
+      }
+
+      function getEmptyGeneratorDraft() {
+        return {
+          hook: "",
+          dateFrom: "",
+          dateTo: "",
+          dateLi: "",
+          dateIg: "",
+          topics: [],
+          postTitle: "",
+          postImage: "",
+          newsCount: 5,
+          news: [{ title: "", desc: "" }],
+          li: "",
+          ig: "",
+          lang: "en",
+          newsEn: [],
+          newsPl: [],
+          hookEn: "",
+          hookPl: "",
+          postTitleEn: "",
+          postTitlePl: "",
+          liEn: "",
+          igEn: "",
+          liPl: "",
+          igPl: ""
+        };
+      }
+
+      function cloneNewsList(list) {
+        return (list || []).map(function (n) {
+          return {
+            title: n.title || "",
+            desc: n.desc || "",
+            image: n.image || "",
+            url: n.url || ""
+          };
+        });
+      }
+
+      function ensureDraftLangFields(draft) {
+        draft.lang = draft.lang || "en";
+        if (!Array.isArray(draft.newsEn)) draft.newsEn = [];
+        if (!Array.isArray(draft.newsPl)) draft.newsPl = [];
+        if (!draft.newsEn.length && draft.news && draft.news.some(function (n) { return n.title; })) {
+          draft.newsEn = cloneNewsList(draft.news);
+        }
+        if (!draft.hookEn && draft.hook && draft.lang === "en") draft.hookEn = draft.hook;
+        if (!draft.postTitleEn && draft.postTitle && draft.lang === "en") draft.postTitleEn = draft.postTitle;
+        if (!draft.liEn && draft.li) draft.liEn = draft.li;
+        if (!draft.igEn && draft.ig) draft.igEn = draft.ig;
+        if (!draft.liPl && draft.lang === "pl" && draft.li) draft.liPl = draft.li;
+        if (!draft.igPl && draft.lang === "pl" && draft.ig) draft.igPl = draft.ig;
+        return draft;
+      }
+
+      function loadGeneratorDraft() {
+        try {
+          var raw = localStorage.getItem(GENERATOR_DRAFT_KEY);
+          if (raw) return ensureDraftLangFields(JSON.parse(raw));
+        } catch (e) { /* ignore */ }
+        return getDefaultGeneratorDraft();
+      }
+
+      function clearGeneratorDraft() {
+        try {
+          localStorage.removeItem(GENERATOR_DRAFT_KEY);
+        } catch (e) { /* ignore */ }
+        saveGeneratorDraft(getEmptyGeneratorDraft());
+      }
+
+      function saveGeneratorDraft(draft) {
+        try {
+          localStorage.setItem(GENERATOR_DRAFT_KEY, JSON.stringify(draft));
+        } catch (e) { /* ignore */ }
+      }
+
+      function collectNewsFromDOM() {
+        var items = [];
+        document.querySelectorAll(".gen-news-item").forEach(function (row) {
+          var title = row.querySelector(".gen-news-title");
+          var desc = row.querySelector(".gen-news-desc");
+          var t = title ? title.value.trim() : "";
+          var d = desc ? desc.value.trim() : "";
+          var img = row.getAttribute("data-image") || "";
+          if (t || d) items.push({ title: t, desc: d, image: img, url: row.getAttribute("data-url") || "" });
+        });
+        return items;
+      }
+
+      function collectTopicsFromDOM() {
+        var topics = [];
+        document.querySelectorAll(".gen-tag.active").forEach(function (el) {
+          topics.push(el.textContent);
+        });
+        return topics;
+      }
+
+      function buildLinkedInPost(hook, news, weekLabel) {
+        if (!news.length) return "";
+        var text = hook + "\n\nOto " + news.length + " rzeczy, które warto śledzić w tym tygodniu" +
+          (weekLabel ? " (" + weekLabel + ")" : "") + ":\n\n";
+        news.forEach(function (n, i) {
+          text += (i + 1) + ". " + n.title.toUpperCase() + "\n" + n.desc + "\n\n";
+        });
+        text += "Co Was najbardziej zainteresowało w tym tygodniu? Dajcie znać w komentarzach.\n\n";
+        text += "#AWS #CloudComputing #DevOps #Programming #TechNews #SoftwareDevelopment #IT";
+        return text.trim();
+      }
+
+      function buildLinkedInPostEn(hook, news, weekLabel) {
+        if (!news.length) return "";
+        var text = hook + "\n\nHere are " + news.length + " things worth following this week" +
+          (weekLabel ? " (" + weekLabel + ")" : "") + ":\n\n";
+        news.forEach(function (n, i) {
+          text += (i + 1) + ". " + n.title.toUpperCase() + "\n" + n.desc + "\n\n";
+        });
+        text += "What caught your attention this week? Share in the comments.\n\n";
+        text += "#AWS #CloudComputing #DevOps #Programming #TechNews #SoftwareDevelopment #IT";
+        return text.trim();
+      }
+
+      function buildInstagramPost(hook, news, weekLabel) {
+        if (!news.length) return "";
+        var text = hook + "\n\nTydzień w IT" + (weekLabel ? " · " + weekLabel : "") + " 👇\n\n";
+        news.forEach(function (n, i) {
+          text += (IG_NUMS[i] || (i + 1) + ".") + " " + n.title + "\n" + n.desc + "\n\n";
+        });
+        text += "💾 Zapisz post · 🔁 Udostępnij zespołowi\n\n.\n.\n.\n";
+        text += "#programowanie #aws #cloud #devops #technews #developer #software #coding #it #tech";
+        return text.trim();
+      }
+
+      function buildInstagramPostEn(hook, news, weekLabel) {
+        if (!news.length) return "";
+        var text = hook + "\n\nYour week in IT" + (weekLabel ? " · " + weekLabel : "") + " 👇\n\n";
+        news.forEach(function (n, i) {
+          text += (IG_NUMS[i] || (i + 1) + ".") + " " + n.title + "\n" + n.desc + "\n\n";
+        });
+        text += "💾 Save this post · 🔁 Share with your team\n\n.\n.\n.\n";
+        text += "#programming #aws #cloud #devops #technews #developer #software #coding #it #tech";
+        return text.trim();
+      }
+
+      function buildPostsForLang(lang, hook, news, weekLabel) {
+        if (lang === "pl") {
+          return {
+            li: buildLinkedInPost(hook, news, weekLabel),
+            ig: buildInstagramPost(hook, news, weekLabel)
+          };
+        }
+        return {
+          li: buildLinkedInPostEn(hook, news, weekLabel),
+          ig: buildInstagramPostEn(hook, news, weekLabel)
+        };
+      }
+
+      function buildAutoHookEn(weekLabel) {
+        if (weekLabel) {
+          return "What happened in IT, AWS and software development during the week of " + weekLabel + "?";
+        }
+        return "What happened in IT, AWS and software development this week?";
+      }
+
+      function buildAutoPostTitleEn(weekLabel) {
+        return "Weekly IT news · " + (weekLabel || "current week");
+      }
+
+      var TECH_KEYWORDS = /aws|amazon|cloud|devops|kubernetes|k8s|docker|terraform|linux|python|javascript|typescript|rust|golang|\bgo\b|api|security|cve|open.?source|github|gitlab|llm|gpt|ai|ml|programming|developer|software|lambda|s3|ec2|azure|gcp|database|postgres|react|vue|angular|rust|compiler|linux|kernel|cyber/i;
+
+      function truncateText(str, max) {
+        if (!str) return "";
+        str = str.replace(/\s+/g, " ").trim();
+        return str.length > max ? str.slice(0, max - 1) + "…" : str;
+      }
+
+      function stripHtml(str) {
+        if (!str) return "";
+        return str.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      }
+
+      function fetchJson(url, timeoutMs) {
+        timeoutMs = timeoutMs || 14000;
+        return Promise.race([
+          fetch(url, { headers: { Accept: "application/json" } }).then(function (res) {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+          }),
+          new Promise(function (_, reject) {
+            setTimeout(function () { reject(new Error("timeout")); }, timeoutMs);
+          })
+        ]);
+      }
+
+      function isRecentUnix(ts, days) {
+        return ts * 1000 >= Date.now() - days * 86400000;
+      }
+
+      function newsDedupeKey(title) {
+        return title.toLowerCase().replace(/[^a-z0-9ąćęłńóśźż]+/gi, " ").trim().slice(0, 48);
+      }
+
+      function newsUrlKey(url) {
+        if (!url) return "";
+        try {
+          var u = new URL(url);
+          return (u.hostname + u.pathname).replace(/\/$/, "").slice(0, 72);
+        } catch (e) {
+          return url.slice(0, 72);
+        }
+      }
+
+      function buildNewsExcludeMap(newsList) {
+        var map = {};
+        (newsList || []).forEach(function (n) {
+          if (n.title) map[newsDedupeKey(n.title)] = true;
+          var uk = newsUrlKey(n.url);
+          if (uk) map["url:" + uk] = true;
+        });
+        return map;
+      }
+
+      function isNewsExcluded(item, excludeMap) {
+        if (!excludeMap || !item) return false;
+        if (item.title && excludeMap[newsDedupeKey(item.title)]) return true;
+        var uk = newsUrlKey(item.url);
+        return !!(uk && excludeMap["url:" + uk]);
+      }
+
+      function ensureNewsDesc(title, rawDesc, source, score) {
+        var clean = stripHtml(rawDesc || "");
+        clean = clean.replace(/^Warto śledzić w kontekście chmury i developmentu[^.]*\.\s*/i, "");
+        if (clean.length > 24) return truncateText(clean, 220);
+        return truncateText(
+          "Relevant for developers and cloud teams — a story worth following this week.",
+          220
+        );
+      }
+
+      var NEWS_DESC_SYSTEM_PROMPT =
+        "You write short news blurbs for a weekly IT, AWS and software development roundup on LinkedIn and Instagram.\n" +
+        "Audience: developers, DevOps engineers, cloud architects.\n\n" +
+        "Output ONLY a valid JSON array — no markdown fences, no commentary.\n" +
+        "Format: [{\"i\":1,\"desc\":\"...\"},{\"i\":2,\"desc\":\"...\"}]\n\n" +
+        "Rules for each desc:\n" +
+        "- English, exactly 1–2 sentences, max 200 characters\n" +
+        "- Explain what happened and why it matters in practice\n" +
+        "- Professional, clear, engaging — not clickbait\n" +
+        "- Do NOT repeat the title verbatim; do not include source names, URLs, emojis or hashtags\n" +
+        "- If snippet is empty, infer carefully from the title only\n" +
+        "- When EXISTING STORIES are listed, write descriptions ONLY for the numbered NEW items below them\n" +
+        "- Never describe a story that duplicates an existing title or topic";
+
+      function completeViaBedrock(system, prompt, maxTokens) {
+        return fetch(getLocalServerUrl() + "/ai/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            system: system || "",
+            prompt: prompt,
+            maxTokens: maxTokens || 2048
+          })
+        }).then(function (res) {
+          if (!res.ok) throw new Error("bedrock complete failed");
+          return res.json();
+        }).then(function (data) {
+          return (data && data.text) ? String(data.text).trim() : "";
+        });
+      }
+
+      function parseBedrockNewsDescs(text, news) {
+        if (!text || !news.length) return news;
+        try {
+          var match = text.match(/\[[\s\S]*\]/);
+          if (!match) return news;
+          var arr = JSON.parse(match[0]);
+          return news.map(function (n, i) {
+            var entry = arr.find(function (e) {
+              return e && (e.i === i + 1 || e.index === i + 1);
+            }) || arr[i];
+            var desc = entry && (entry.desc || entry.description);
+            if (desc && String(desc).trim().length > 20) {
+              return Object.assign({}, n, { desc: truncateText(String(desc).trim(), 220) });
+            }
+            return n;
+          });
+        } catch (e) {
+          return news;
+        }
+      }
+
+      function enrichNewsDescriptionsViaBedrock(news, existingNews, onProgress) {
+        if (!news.length) return Promise.resolve(news);
+        return checkBedrockAvailable().then(function (useBedrock) {
+          if (!useBedrock) return news;
+          if (onProgress) onProgress(10, "Generuję opisy newsów (Bedrock)…");
+
+          var existingBlock = "";
+          (existingNews || []).forEach(function (n, idx) {
+            existingBlock += (idx + 1) + ". " + n.title + "\n";
+          });
+
+          var newBlock = news.map(function (n, i) {
+            var snippet = truncateText(stripHtml(n.desc || ""), 140);
+            return (
+              (i + 1) + ". Title: " + n.title + "\n" +
+              "   Snippet: " + (snippet || "(none)") + "\n" +
+              "   Source: " + (formatSourceLabel(n.url) || "unknown")
+            );
+          }).join("\n\n");
+
+          var prompt =
+            (existingBlock
+              ? "EXISTING STORIES (already in the list — do NOT rewrite or duplicate these):\n" + existingBlock + "\n\n"
+              : "") +
+            "Write descriptions for these " + news.length + " NEW items:\n\n" +
+            newBlock;
+
+          return completeViaBedrock(NEWS_DESC_SYSTEM_PROMPT, prompt, 2048).then(function (text) {
+            if (onProgress) onProgress(85, "Opisy newsów gotowe");
+            return parseBedrockNewsDescs(text, news);
+          }).catch(function () {
+            return news;
+          });
+        });
+      }
+
+      function buildAutoHook(weekLabel) {
+        if (weekLabel) {
+          return "Co wydarzyło się w IT, AWS i świecie programowania w tygodniu " + weekLabel + "?";
+        }
+        return "Co wydarzyło się w IT, AWS i świecie programowania w tym tygodniu?";
+      }
+
+      function buildAutoPostTitle(weekLabel) {
+        return "News tygodnia IT · " + (weekLabel || "bieżący tydzień");
+      }
+
+      function isLikelyPolish(text) {
+        if (!text) return false;
+        if (/[ąćęłńóśźż]/i.test(text)) return true;
+        var plWords = /(\b(i|w|na|do|ze|się|oraz|tygodniu|warto|cloud|chmura)\b)/i;
+        var enWords = /(\b(the|and|for|with|this|that|new|how|what|why|announces|released)\b)/i;
+        return plWords.test(text) && !enWords.test(text);
+      }
+
+      function delay(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+      }
+
+      var bedrockAvailableCache = null;
+
+      function getLocalServerUrl() {
+        return window.BrandKit ? BrandKit.getUploadProxy() : "http://localhost:8787";
+      }
+
+      function checkBedrockAvailable() {
+        if (bedrockAvailableCache !== null) return Promise.resolve(bedrockAvailableCache);
+        return fetch(getLocalServerUrl() + "/health", { headers: { Accept: "application/json" } })
+          .then(function (res) {
+            if (!res.ok) throw new Error("health");
+            return res.json();
+          })
+          .then(function (data) {
+            bedrockAvailableCache = !!(data && data.bedrock);
+            return bedrockAvailableCache;
+          })
+          .catch(function () {
+            bedrockAvailableCache = false;
+            return false;
+          });
+      }
+
+      function translateViaMyMemory(text) {
+        var chunk = truncateText(text, 480);
+        var url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(chunk) + "&langpair=en|pl";
+        return fetchJson(url, 12000).then(function (data) {
+          var tr = data && data.responseData && data.responseData.translatedText;
+          if (!tr || tr.toUpperCase() === chunk.toUpperCase()) return text.trim();
+          return tr.trim();
+        }).catch(function () { return text.trim(); });
+      }
+
+      function translateViaBedrock(text) {
+        return fetch(getLocalServerUrl() + "/ai/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            text: text.trim(),
+            sourceLang: "en",
+            targetLang: "pl"
+          })
+        }).then(function (res) {
+          if (!res.ok) throw new Error("bedrock translate failed");
+          return res.json();
+        }).then(function (data) {
+          return (data && data.text) ? String(data.text).trim() : text.trim();
+        });
+      }
+
+      function translateToPolish(text) {
+        if (!text || !text.trim()) return Promise.resolve("");
+        if (isLikelyPolish(text)) return Promise.resolve(text.trim());
+        return checkBedrockAvailable().then(function (useBedrock) {
+          if (useBedrock) {
+            return translateViaBedrock(text).catch(function () {
+              return translateViaMyMemory(text);
+            });
+          }
+          return translateViaMyMemory(text);
+        });
+      }
+
+      function translateLongText(text, onProgress) {
+        if (!text || !text.trim()) return Promise.resolve("");
+        if (isLikelyPolish(text)) return Promise.resolve(text.trim());
+        var blocks = text.split(/\n\n+/).filter(function (b) { return b.trim(); });
+        var chain = Promise.resolve("");
+        blocks.forEach(function (block, i) {
+          chain = chain.then(function (acc) {
+            if (onProgress) onProgress(i + 1, blocks.length, "Tłumaczenie fragmentu " + (i + 1) + " z " + blocks.length + "…");
+            return delay(i ? 450 : 0).then(function () {
+              return translateToPolish(block);
+            }).then(function (tr) {
+              return acc + (acc ? "\n\n" : "") + tr;
+            });
+          });
+        });
+        return chain;
+      }
+
+      function formatSourceLabel(url) {
+        if (!url) return "";
+        try {
+          return new URL(url).hostname.replace(/^www\./, "");
+        } catch (e) {
+          return url.length > 48 ? url.slice(0, 47) + "…" : url;
+        }
+      }
+
+      function setGeneratorProgress(show, pct, label) {
+        var wrap = document.getElementById("gen-progress");
+        var bar = document.getElementById("gen-progress-bar");
+        var labelEl = document.getElementById("gen-progress-label");
+        var status = document.getElementById("gen-fetch-status");
+        if (wrap) wrap.hidden = !show;
+        if (bar) bar.style.width = Math.min(100, Math.max(0, pct || 0)) + "%";
+        if (labelEl) labelEl.textContent = label || "";
+        if (status && show && label) {
+          status.textContent = label;
+          status.className = "gen-fetch-status";
+        }
+      }
+
+      function translateNewsList(news, onProgress) {
+        var chain = Promise.resolve([]);
+        var total = news.length;
+        news.forEach(function (item, idx) {
+          chain = chain.then(function (acc) {
+            if (onProgress) {
+              onProgress(idx, total, "Tłumaczenie newsu " + (idx + 1) + " z " + total + "…");
+            }
+            return translateToPolish(item.title).then(function (titlePl) {
+              return delay(400).then(function () {
+                return translateToPolish(item.desc);
+              }).then(function (descPl) {
+                acc.push({
+                  title: titlePl,
+                  desc: descPl,
+                  url: item.url || "",
+                  image: item.image || ""
+                });
+                if (onProgress) {
+                  onProgress(idx + 1, total, "News " + (idx + 1) + " z " + total + " gotowy");
+                }
+                return acc;
+              });
+            });
+          });
+        });
+        return chain;
+      }
+
+      function extractKeywordsFromNews(news) {
+        var found = [];
+        var rules = [
+          { re: /aws|amazon/i, label: "AWS" },
+          { re: /kubernetes|k8s/i, label: "Kubernetes" },
+          { re: /\bai\b|llm|gpt|openai|claude/i, label: "AI" },
+          { re: /security|cve|zero.?day/i, label: "bezpieczeństwo" },
+          { re: /python|javascript|typescript|rust|golang|\bgo\b/i, label: "programowanie" },
+          { re: /devops|terraform|docker/i, label: "DevOps" },
+          { re: /cloud|azure|gcp/i, label: "chmura" }
+        ];
+        news.forEach(function (n) {
+          var blob = (n.title + " " + n.desc);
+          rules.forEach(function (rule) {
+            if (rule.re.test(blob) && found.indexOf(rule.label) === -1) found.push(rule.label);
+          });
+        });
+        return found.slice(0, 3);
+      }
+
+      function generateSmartTitle(news, weekLabel) {
+        var kw = extractKeywordsFromNews(news);
+        if (kw.length >= 2) {
+          return kw.join(" · ") + " — news tygodnia · " + weekLabel;
+        }
+        if (kw.length === 1) {
+          return kw[0] + " w centrum uwagi — news tygodnia IT · " + weekLabel;
+        }
+        return buildAutoPostTitle(weekLabel);
+      }
+
+      function generateSmartHook(news, weekLabel) {
+        var kw = extractKeywordsFromNews(news);
+        if (kw.indexOf("AWS") !== -1) {
+          return "AWS i ekosystem chmurowy w tym tygodniu — " + weekLabel + ". Oto skrót tego, co warto wiedzieć.";
+        }
+        if (kw.indexOf("AI") !== -1) {
+          return "AI i narzędzia developerskie nie zwalniają tempa — podsumowanie tygodnia " + weekLabel + ".";
+        }
+        if (kw.indexOf("bezpieczeństwo") !== -1) {
+          return "Bezpieczeństwo i infrastruktura IT — najważniejsze newsy tygodnia " + weekLabel + ".";
+        }
+        return buildAutoHook(weekLabel);
+      }
+
+      function suggestPostImagePath(dateTo) {
+        var id = suggestNextId();
+        var slug = (dateTo || toISODate(new Date())).replace(/-/g, "");
+        return "media/posty/" + id + "-news-tygodnia-" + slug + ".jpg";
+      }
+
+      function isValidImageUrl(url) {
+        if (!url || typeof url !== "string") return false;
+        if (url.indexOf("http") !== 0) return false;
+        if (/reddit\.com.*default|self|thumb/i.test(url)) return false;
+        if (url.length < 12) return false;
+        return true;
+      }
+
+      function extractXmlTag(block, tag) {
+        var re = new RegExp("<" + tag + "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" + tag + ">", "i");
+        var m = block.match(re);
+        if (!m) return "";
+        return stripHtml(m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")).trim();
+      }
+
+      function extractXmlLink(block) {
+        var href = block.match(/<link[^>]+href=["']([^"']+)["'][^>]*rel=["']alternate["']/i) ||
+          block.match(/<link[^>]+rel=["']alternate["'][^>]+href=["']([^"']+)["']/i);
+        if (href) return href[1];
+        var plain = extractXmlTag(block, "link");
+        if (plain && plain.indexOf("http") === 0) return plain;
+        var guid = extractXmlTag(block, "guid");
+        if (guid && guid.indexOf("http") === 0) return guid;
+        return "";
+      }
+
+      function parseRssXml(xml, source, maxItems) {
+        var blocks = xml.match(/<item[\s>][\s\S]*?<\/item>/gi) ||
+          xml.match(/<entry[\s>][\s\S]*?<\/entry>/gi) || [];
+        var items = [];
+        for (var i = 0; i < blocks.length && items.length < maxItems; i++) {
+          var b = blocks[i];
+          var title = extractXmlTag(b, "title");
+          if (!title || !TECH_KEYWORDS.test(title)) continue;
+          var desc = extractXmlTag(b, "description") || extractXmlTag(b, "summary") || extractXmlTag(b, "content");
+          var link = extractXmlLink(b);
+          var pub = extractXmlTag(b, "pubDate") || extractXmlTag(b, "published") || extractXmlTag(b, "updated");
+          var time = pub ? Math.floor(new Date(pub).getTime() / 1000) : 0;
+          items.push({
+            title: title,
+            desc: ensureNewsDesc(title, desc, source, 0),
+            url: link,
+            image: "",
+            source: source,
+            score: 50,
+            time: time || 0
+          });
+        }
+        return items;
+      }
+
+      function fetchRssFeed(feedUrl, source, maxItems) {
+        var proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(feedUrl);
+        return fetch(proxy, { headers: { Accept: "application/xml, text/xml, */*" } })
+          .then(function (res) {
+            if (!res.ok) throw new Error("rss");
+            return res.text();
+          })
+          .then(function (xml) {
+            return parseRssXml(xml, source, maxItems || 6);
+          })
+          .catch(function () { return []; });
+      }
+
+      function fetchLobsters() {
+        return fetchJson("https://lobste.rs/hottest.json", 12000).then(function (stories) {
+          return (stories || []).map(function (s) {
+            if (!s || !s.title) return null;
+            if (!TECH_KEYWORDS.test(s.title)) return null;
+            return {
+              title: s.title.trim(),
+              desc: ensureNewsDesc(s.title, "", "Lobste.rs", s.score || 0),
+              url: s.url || s.short_id_url || "",
+              image: "",
+              source: "Lobste.rs",
+              score: (s.score || 0) + (s.comment_count || 0) * 2,
+              time: s.created_at ? Math.floor(new Date(s.created_at).getTime() / 1000) : 0
+            };
+          }).filter(Boolean);
+        }).catch(function () { return []; });
+      }
+
+      function fetchHackerNewsStories(limit) {
+        var scan = Math.min(80, Math.max(30, (limit || 5) * 8));
+        return fetchJson("https://hacker-news.firebaseio.com/v0/topstories.json").then(function (ids) {
+          ids = (ids || []).slice(0, scan);
+          var chunks = [];
+          for (var i = 0; i < ids.length; i += 10) {
+            chunks.push(ids.slice(i, i + 10));
+          }
+          return chunks.reduce(function (chain, batch) {
+            return chain.then(function (acc) {
+              return Promise.all(batch.map(function (id) {
+                return fetchJson("https://hacker-news.firebaseio.com/v0/item/" + id + ".json", 8000);
+              })).then(function (items) {
+                items.forEach(function (item) {
+                  if (!item || !item.title) return;
+                  var recent = isRecentUnix(item.time, 10);
+                  var tech = TECH_KEYWORDS.test(item.title) || (item.text && TECH_KEYWORDS.test(item.text));
+                  if (!recent && item.score < 120) return;
+                  if (!tech && item.score < 200) return;
+                  acc.push({
+                    title: item.title.trim(),
+                    desc: ensureNewsDesc(
+                      item.title,
+                      item.text || "",
+                      "Hacker News",
+                      item.score
+                    ),
+                    url: item.url || "https://news.ycombinator.com/item?id=" + item.id,
+                    image: "",
+                    source: "HN",
+                    score: item.score || 0,
+                    time: item.time || 0
+                  });
+                });
+                return acc;
+              });
+            });
+          }, Promise.resolve([]));
+        });
+      }
+
+      function fetchDevToTag(tag, perPage) {
+        var url = "https://dev.to/api/articles?tag=" + encodeURIComponent(tag) +
+          "&top=7&per_page=" + (perPage || 4);
+        return fetchJson(url).then(function (articles) {
+          return (articles || []).map(function (a) {
+            var img = a.cover_image || a.social_image || "";
+            return {
+              title: (a.title || "").trim(),
+              desc: ensureNewsDesc(
+                a.title,
+                a.description || "",
+                "dev.to / " + tag,
+                a.positive_reactions_count || 0
+              ),
+              url: a.url || "",
+              image: isValidImageUrl(img) ? img : "",
+              source: "dev.to",
+              score: (a.positive_reactions_count || 0) + (a.comments_count || 0) * 2,
+              time: a.published_at ? Math.floor(new Date(a.published_at).getTime() / 1000) : 0
+            };
+          });
+        }).catch(function () { return []; });
+      }
+
+      function fetchRedditSubreddit(sub, limit) {
+        var url = "https://www.reddit.com/r/" + sub + "/top.json?t=week&limit=" + (limit || 6) + "&raw_json=1";
+        return fetchJson(url).then(function (data) {
+          var posts = (data && data.data && data.data.children) || [];
+          return posts.map(function (child) {
+            var p = child.data;
+            if (!p || !p.title) return null;
+            if (!TECH_KEYWORDS.test(p.title)) return null;
+            var thumb = p.preview && p.preview.images && p.preview.images[0];
+            if (thumb && thumb.indexOf("width=") !== -1) {
+              thumb = thumb.replace(/&amp;/g, "&");
+            }
+            return {
+              title: p.title.trim(),
+              desc: ensureNewsDesc(
+                p.title,
+                p.selftext || "",
+                "Reddit r/" + sub,
+                p.score
+              ),
+              url: p.url || "https://reddit.com" + p.permalink,
+              image: isValidImageUrl(thumb) ? thumb : (isValidImageUrl(p.thumbnail) ? p.thumbnail : ""),
+              source: "Reddit",
+              score: p.score || 0,
+              time: p.created_utc || 0
+            };
+          }).filter(Boolean);
+        }).catch(function () { return []; });
+      }
+
+      function mergeWeeklyNews(arrays, limit, excludeMap) {
+        var max = limit || 5;
+        var seen = {};
+        if (excludeMap) {
+          Object.keys(excludeMap).forEach(function (k) { seen[k] = true; });
+        }
+        var merged = [];
+        arrays.forEach(function (list) {
+          (list || []).forEach(function (item) {
+            if (!item.title) return;
+            if (isNewsExcluded(item, excludeMap)) return;
+            var key = newsDedupeKey(item.title);
+            if (seen[key]) return;
+            var uk = newsUrlKey(item.url);
+            if (uk && seen["url:" + uk]) return;
+            seen[key] = true;
+            if (uk) seen["url:" + uk] = true;
+            merged.push(item);
+          });
+        });
+        merged.sort(function (a, b) {
+          return (b.score || 0) - (a.score || 0) || (b.time || 0) - (a.time || 0);
+        });
+        return merged.slice(0, max).map(function (item) {
+          return {
+            title: item.title,
+            desc: item.desc,
+            url: item.url || "",
+            image: item.image || ""
+          };
+        });
+      }
+
+      function fetchWeeklyNewsFromInternet(limit, excludeMap) {
+        var count = limit || 5;
+        var hasExclude = excludeMap && Object.keys(excludeMap).length > 0;
+        var perSource = Math.max(4, Math.ceil(count / 2));
+        if (hasExclude) perSource = Math.max(perSource * 2, count * 3);
+        var hnScan = hasExclude ? Math.min(120, count * 10) : count;
+        return Promise.all([
+          fetchHackerNewsStories(hnScan),
+          fetchLobsters(),
+          fetchDevToTag("aws", perSource),
+          fetchDevToTag("devops", perSource),
+          fetchDevToTag("programming", perSource),
+          fetchDevToTag("cloud", perSource),
+          fetchDevToTag("security", perSource),
+          fetchDevToTag("ai", perSource),
+          fetchRedditSubreddit("aws", perSource),
+          fetchRedditSubreddit("programming", perSource),
+          fetchRedditSubreddit("devops", perSource),
+          fetchRedditSubreddit("kubernetes", perSource),
+          fetchRedditSubreddit("sysadmin", perSource),
+          fetchRedditSubreddit("technology", perSource),
+          fetchRssFeed("https://feeds.arstechnica.com/arstechnica/technology-lab", "Ars Technica", perSource),
+          fetchRssFeed("https://www.theregister.com/headlines.atom", "The Register", perSource),
+          fetchRssFeed("https://www.infoworld.com/index.rss", "InfoWorld", perSource),
+          fetchRssFeed("https://techcrunch.com/feed/", "TechCrunch", perSource),
+          fetchRssFeed("https://www.zdnet.com/news/rss.xml", "ZDNet", perSource)
+        ]).then(function (results) {
+          var news = mergeWeeklyNews(results, count, excludeMap);
+          if (news.length < Math.min(3, count)) {
+            return fetchHackerNewsStories(Math.max(count * 4, 40)).then(function (hn) {
+              return mergeWeeklyNews([news, hn], count, excludeMap);
+            });
+          }
+          return news;
+        });
+      }
+
+      function renderNewsListHTML(newsItems) {
+        var items = newsItems.length ? newsItems : [{ title: "", desc: "", image: "" }];
+        return items.map(function (n, idx) {
+          var hasImg = isValidImageUrl(n.image);
+          var thumb = hasImg
+            ? '<div class="gen-news-thumb-wrap"><img src="' + escapeAttr(n.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer"></div>'
+            : "";
+          return (
+            '<div class="gen-news-item' + (hasImg ? "" : " no-image") + '" data-index="' + idx + '" data-image="' + escapeAttr(n.image || "") + '" data-url="' + escapeAttr(n.url || "") + '">' +
+              thumb +
+              '<div class="gen-news-body">' +
+                '<button type="button" class="gen-news-remove" aria-label="Usuń news">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>' +
+                '</button>' +
+                '<div class="gen-field">' +
+                  '<label class="gen-label">Tytuł newsu ' + (idx + 1) + '</label>' +
+                  '<input type="text" class="gen-input gen-news-title" value="' + escapeAttr(n.title || "") + '" placeholder="np. AWS ogłasza…">' +
+                '</div>' +
+                '<div class="gen-field">' +
+                  '<label class="gen-label">Opis (1–2 zdania)</label>' +
+                  '<textarea class="gen-textarea gen-news-desc" rows="2" placeholder="Co się stało i dlaczego ważne">' + escapeHtml(n.desc || "") + '</textarea>' +
+                '</div>' +
+                (n.url
+                  ? '<div class="gen-news-source">' +
+                      '<a href="' + escapeAttr(n.url) + '" target="_blank" rel="noopener noreferrer">Źródło · ' + escapeHtml(formatSourceLabel(n.url)) + '</a>' +
+                      '<span class="gen-news-source-url">' + escapeHtml(n.url) + '</span>' +
+                    '</div>'
+                  : "") +
+              '</div>' +
+            '</div>'
+          );
+        }).join("");
+      }
+
+      function suggestNextId() {
+        var max = 0;
+        getAllItems().forEach(function (item) {
+          var n = parseInt(String(item.id).replace(/\D/g, ""), 10);
+          if (!isNaN(n) && n > max) max = n;
+        });
+        return String(max + 1).padStart(3, "0");
+      }
+
+      function jsEscapeString(str) {
+        return str
+          .replace(/\\/g, "\\\\")
+          .replace(/"/g, '\\"')
+          .replace(/\n/g, "\\n")
+          .replace(/\r/g, "");
+      }
+
+      function buildContentDataSnippet(titleBase, dateLi, dateIg, liText, igText, nextId, imagePath) {
+        var img = imagePath || "";
+        var blocks = [];
+        var idNum = parseInt(nextId, 10);
+        if (liText) {
+          blocks.push(
+            "{\n  id: \"" + String(idNum).padStart(3, "0") + "\",\n  type: \"post\",\n  title: \"" +
+            jsEscapeString(titleBase + " · LinkedIn") + "\",\n  date: \"" + dateLi + "\",\n  platforms: [\"li\"],\n  image: \"" +
+            jsEscapeString(img) + "\",\n  text: \"" +
+            jsEscapeString(liText) + "\"\n}"
+          );
+          idNum++;
+        }
+        if (igText) {
+          blocks.push(
+            "{\n  id: \"" + String(idNum).padStart(3, "0") + "\",\n  type: \"post\",\n  title: \"" +
+            jsEscapeString(titleBase + " · Instagram") + "\",\n  date: \"" + dateIg + "\",\n  platforms: [\"ig\"],\n  image: \"" +
+            jsEscapeString(img) + "\",\n  text: \"" +
+            jsEscapeString(igText) + "\"\n}"
+          );
+        }
+        return "/* Wklej na początek tablicy window.CONTENT w content-data.js */\n\n" + blocks.join(",\n\n");
+      }
+
+      function renderGeneratorHTML() {
+        var draft = loadGeneratorDraft();
+        var weekLabel = formatWeekLabel(draft.dateFrom, draft.dateTo);
+        var postTitle = draft.postTitle || buildAutoPostTitle(weekLabel);
+        var postImage = draft.postImage || suggestPostImagePath(draft.dateTo);
+        var newsCount = draft.newsCount || 5;
+        var tagsHtml = GEN_TOPICS.map(function (t) {
+          var on = draft.topics.indexOf(t) !== -1 ? " active" : "";
+          return '<button type="button" class="gen-tag' + on + '" data-topic="' + escapeAttr(t) + '">' + escapeHtml(t) + '</button>';
+        }).join("");
+
+        var newsHtml = renderNewsListHTML(draft.news);
+
+        var previewLi = draft.li || "";
+        var previewIg = draft.ig || "";
+        var activeTab = state.genPreviewTab;
+        var previewText = activeTab === "li" ? previewLi : previewIg;
+        var previewEmpty = !previewText;
+        var activeLang = draft.lang || "en";
+        var hasEn = !!(draft.newsEn && draft.newsEn.length) || !!(draft.liEn || draft.igEn) || !!(draft.hookEn);
+        var hasPl = !!(draft.newsPl && draft.newsPl.length) || !!(draft.liPl || draft.igPl) || !!(draft.hookPl);
+
+        return (
+          '<div class="generator">' +
+            '<div class="generator-intro">' +
+              'Wczytaj newsy po angielsku, przełączaj EN/PL, tłumacz przyciskiem „Tłumacz na PL” i generuj wersje na LinkedIn i Instagram.' +
+            '</div>' +
+            '<div class="generator-grid">' +
+              '<div class="generator-panel">' +
+                '<h2 class="generator-panel-title">Dane wejściowe</h2>' +
+                '<div class="gen-lang-row">' +
+                  '<span class="gen-label">Język treści</span>' +
+                  '<div class="gen-lang-tabs" id="gen-lang-tabs">' +
+                    '<button type="button" class="gen-lang-tab' + (activeLang === "en" ? " active" : "") + '" data-gen-lang="en">EN</button>' +
+                    '<button type="button" class="gen-lang-tab' + (activeLang === "pl" ? " active" : "") + '" data-gen-lang="pl"' +
+                      (hasPl ? "" : " disabled") + '>PL</button>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="gen-btn-row" style="margin-bottom:8px">' +
+                  '<button type="button" class="gen-btn" id="gen-gen-title">Generuj tytuł</button>' +
+                  '<button type="button" class="gen-btn" id="gen-translate-pl">Tłumacz na PL</button>' +
+                  '<button type="button" class="gen-btn" id="gen-show-en"' + (hasEn ? "" : " disabled") + '>Show in EN</button>' +
+                '</div>' +
+                '<div class="gen-options-row">' +
+                  '<label class="gen-check">Ile newsów: ' +
+                    '<select class="gen-count-select" id="gen-news-count">' +
+                      [3, 5, 7, 10, 12].map(function (n) {
+                        return '<option value="' + n + '"' + (newsCount === n ? " selected" : "") + ">" + n + "</option>";
+                      }).join("") +
+                    '</select></label>' +
+                '</div>' +
+                '<div class="gen-field">' +
+                  '<label class="gen-label" for="gen-post-title">Tytuł wpisu w panelu</label>' +
+                  '<input type="text" class="gen-input" id="gen-post-title" value="' + escapeAttr(postTitle) + '" placeholder="News tygodnia IT · …">' +
+                '</div>' +
+                '<div class="gen-field">' +
+                  '<label class="gen-label" for="gen-hook">Hook (pierwsze zdanie posta)</label>' +
+                  '<input type="text" class="gen-input" id="gen-hook" value="' + escapeAttr(draft.hook) + '">' +
+                '</div>' +
+                '<div class="gen-row-2">' +
+                  '<div class="gen-field">' +
+                    '<label class="gen-label" for="gen-date-from">Tydzień od</label>' +
+                    '<input type="date" class="gen-input" id="gen-date-from" value="' + escapeAttr(draft.dateFrom) + '">' +
+                  '</div>' +
+                  '<div class="gen-field">' +
+                    '<label class="gen-label" for="gen-date-to">Tydzień do</label>' +
+                    '<input type="date" class="gen-input" id="gen-date-to" value="' + escapeAttr(draft.dateTo) + '">' +
+                  '</div>' +
+                '</div>' +
+                '<div class="gen-field">' +
+                  '<span class="gen-label">Obszary tematyczne</span>' +
+                  '<div class="gen-tags" id="gen-tags">' + tagsHtml + '</div>' +
+                '</div>' +
+                '<div class="gen-field">' +
+                  '<span class="gen-label">Newsy (wybierz ilość powyżej)</span>' +
+                  '<div class="gen-news-list" id="gen-news-list">' + newsHtml + '</div>' +
+                  '<button type="button" class="gen-btn gen-btn-ghost" id="gen-add-news">+ Dodaj news</button>' +
+                '</div>' +
+                '<div class="gen-btn-row">' +
+                  '<button type="button" class="gen-btn gen-btn-primary" id="gen-fetch-and-build">' +
+                    '<svg class="gen-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>' +
+                    '<span class="gen-fetch-and-build-label">Pobierz newsy i wygeneruj post</span>' +
+                  '</button>' +
+                  '<button type="button" class="gen-btn" id="gen-fetch-news">' +
+                    '<svg class="gen-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>' +
+                    ' Tylko wczytaj newsy' +
+                  '</button>' +
+                  '<span class="gen-label" style="margin:0;font-size:11px;color:var(--text-muted)">Ponowne wczytanie pomija duplikaty</span>' +
+                '</div>' +
+                '<div class="gen-fetch-status" id="gen-fetch-status"></div>' +
+                '<div class="gen-progress" id="gen-progress" hidden>' +
+                  '<div class="gen-progress-track"><div class="gen-progress-bar" id="gen-progress-bar"></div></div>' +
+                  '<span class="gen-progress-label" id="gen-progress-label"></span>' +
+                '</div>' +
+                '<div class="gen-btn-row">' +
+                  '<button type="button" class="gen-btn gen-btn-primary" id="gen-build">Wygeneruj post</button>' +
+                  '<button type="button" class="gen-btn" id="gen-week-now">Ten tydzień</button>' +
+                  '<button type="button" class="gen-btn gen-btn-ghost gen-btn-danger" id="gen-clear-all">Wyczyść wszystko</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="generator-panel">' +
+                '<h2 class="generator-panel-title">Podgląd i publikacja</h2>' +
+                '<div class="gen-preview-tabs">' +
+                  '<button type="button" class="gen-preview-tab' + (activeTab === "li" ? " active" : "") + '" data-tab="li">LinkedIn</button>' +
+                  '<button type="button" class="gen-preview-tab' + (activeTab === "ig" ? " active" : "") + '" data-tab="ig">Instagram</button>' +
+                '</div>' +
+                '<div class="gen-preview-box' + (previewEmpty ? " empty" : "") + '" id="gen-preview">' +
+                  (previewEmpty ? "Kliknij „Wygeneruj post”, aby zobaczyć treść." : escapeHtml(previewText)) +
+                '</div>' +
+                '<div class="gen-copy-actions" id="gen-copy-actions"' + (previewEmpty ? " hidden" : "") + '>' +
+                  '<span class="gen-copy-actions-label">Post wygenerowany — kopiuj treść</span>' +
+                  '<button type="button" class="gen-btn gen-btn-primary" id="gen-copy-li">Kopiuj LinkedIn</button>' +
+                  '<button type="button" class="gen-btn gen-btn-primary" id="gen-copy-ig">Kopiuj Instagram</button>' +
+                  '<button type="button" class="gen-btn" id="gen-copy-active">Kopiuj aktywną zakładkę</button>' +
+                '</div>' +
+                '<div class="gen-preview-meta" id="gen-preview-meta">' +
+                  (weekLabel ? "Tydzień: " + escapeHtml(weekLabel) : "") +
+                '</div>' +
+                '<div class="gen-row-2" style="margin-top:14px">' +
+                  '<div class="gen-field">' +
+                    '<label class="gen-label" for="gen-date-li">Data publikacji LI</label>' +
+                    '<input type="date" class="gen-input" id="gen-date-li" value="' + escapeAttr(draft.dateLi) + '">' +
+                  '</div>' +
+                  '<div class="gen-field">' +
+                    '<label class="gen-label" for="gen-date-ig">Data publikacji IG</label>' +
+                    '<input type="date" class="gen-input" id="gen-date-ig" value="' + escapeAttr(draft.dateIg) + '">' +
+                  '</div>' +
+                '</div>' +
+                '<div class="gen-field" style="margin-top:12px">' +
+                  '<span class="gen-label">Platformy do zapisu</span>' +
+                  '<div class="gen-platforms">' +
+                    '<label class="gen-check"><input type="checkbox" id="gen-platform-li" checked> LinkedIn</label>' +
+                    '<label class="gen-check"><input type="checkbox" id="gen-platform-ig" checked> Instagram</label>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="gen-field" style="margin-top:12px">' +
+                  '<label class="gen-label" for="gen-post-image">Grafika (opcjonalnie)</label>' +
+                  '<input type="text" class="gen-input" id="gen-post-image" value="' + escapeAttr(postImage) + '" placeholder="media/posty/16-news-tygodnia.jpg">' +
+                  '<div id="gen-format-hint">' +
+                  (window.ImageFormats
+                    ? ImageFormats.renderGeneratorHintHTML(["li", "ig"])
+                    : '<p class="gen-image-hint">Wgraj własną grafikę do <code>Panel/media/posty/</code> i podaj ścieżkę.</p>') +
+                  '</div>' +
+                '</div>' +
+                '<div class="gen-btn-row">' +
+                  '<button type="button" class="gen-btn gen-btn-primary" id="gen-save-panel">Zapisz szkic w panelu</button>' +
+                  '<button type="button" class="gen-btn" id="gen-save-md">Zapisz do pliku .md</button>' +
+                  '<button type="button" class="gen-btn" id="gen-copy-snippet">Kopiuj do content-data.js</button>' +
+                '</div>' +
+                '<div class="gen-snippet" id="gen-snippet-wrap" style="display:none">' +
+                  '<span class="gen-label">Fragment content-data.js</span>' +
+                  '<pre id="gen-snippet"></pre>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      function bindGeneratorEvents() {
+        var draft = loadGeneratorDraft();
+        ensureDraftLangFields(draft);
+
+        function snapshotCurrentLang() {
+          var lang = draft.lang || "en";
+          var snap = {
+            news: collectNewsFromDOM(),
+            hook: document.getElementById("gen-hook").value,
+            postTitle: (document.getElementById("gen-post-title") || {}).value || "",
+            li: draft.li || "",
+            ig: draft.ig || ""
+          };
+          if (lang === "pl") {
+            draft.newsPl = cloneNewsList(snap.news);
+            draft.hookPl = snap.hook;
+            draft.postTitlePl = snap.postTitle;
+            draft.liPl = snap.li;
+            draft.igPl = snap.ig;
+          } else {
+            draft.newsEn = cloneNewsList(snap.news);
+            draft.hookEn = snap.hook;
+            draft.postTitleEn = snap.postTitle;
+            draft.liEn = snap.li;
+            draft.igEn = snap.ig;
+          }
+        }
+
+        function updateLangTabs() {
+          var hasEn = !!(draft.newsEn && draft.newsEn.length) || !!(draft.liEn || draft.igEn) || !!(draft.hookEn);
+          var hasPl = !!(draft.newsPl && draft.newsPl.length) || !!(draft.liPl || draft.igPl) || !!(draft.hookPl);
+          document.querySelectorAll(".gen-lang-tab").forEach(function (tab) {
+            var code = tab.getAttribute("data-gen-lang");
+            tab.classList.toggle("active", code === (draft.lang || "en"));
+            tab.disabled = code === "pl" && !hasPl;
+          });
+          var showEnBtn = document.getElementById("gen-show-en");
+          if (showEnBtn) showEnBtn.disabled = !hasEn || (draft.lang || "en") === "en";
+        }
+
+        function applyGeneratorLang(lang, opts) {
+          opts = opts || {};
+          if (lang === "pl") {
+            if (!draft.newsPl.length && !draft.liPl && !draft.igPl && !draft.hookPl) {
+              showToast("Najpierw kliknij „Tłumacz na PL”");
+              return false;
+            }
+          } else if (!(draft.newsEn && draft.newsEn.length) && !(draft.liEn || draft.igEn) && !(draft.hookEn)) {
+            if ((draft.lang || "en") === "en") {
+              snapshotCurrentLang();
+            } else {
+              showToast("Brak wersji angielskiej");
+              return false;
+            }
+          }
+
+          if (!opts.skipSnapshot && (draft.lang || "en") !== lang) {
+            snapshotCurrentLang();
+          }
+          draft.lang = lang;
+          var news = lang === "pl" ? cloneNewsList(draft.newsPl) : cloneNewsList(draft.newsEn);
+          var hook = lang === "pl" ? (draft.hookPl || "") : (draft.hookEn || "");
+          var postTitle = lang === "pl" ? (draft.postTitlePl || "") : (draft.postTitleEn || "");
+          draft.li = lang === "pl" ? (draft.liPl || "") : (draft.liEn || "");
+          draft.ig = lang === "pl" ? (draft.igPl || "") : (draft.igEn || "");
+          draft.news = news;
+          draft.hook = hook;
+          draft.postTitle = postTitle;
+
+          refillNewsList(news);
+          document.getElementById("gen-hook").value = hook;
+          var postTitleEl = document.getElementById("gen-post-title");
+          if (postTitleEl) postTitleEl.value = postTitle;
+          saveGeneratorDraft(draft);
+          updateGeneratorPreview();
+          updateLangTabs();
+          return true;
+        }
+
+        function persistDraft(extra) {
+          snapshotCurrentLang();
+          var postTitleEl = document.getElementById("gen-post-title");
+          var postImageEl = document.getElementById("gen-post-image");
+          var newsCountEl = document.getElementById("gen-news-count");
+          var d = Object.assign({
+            lang: draft.lang || "en",
+            hook: document.getElementById("gen-hook").value,
+            postTitle: postTitleEl ? postTitleEl.value : "",
+            postImage: postImageEl ? postImageEl.value : "",
+            newsCount: newsCountEl ? parseInt(newsCountEl.value, 10) || 5 : (draft.newsCount || 5),
+            dateFrom: document.getElementById("gen-date-from").value,
+            dateTo: document.getElementById("gen-date-to").value,
+            dateLi: document.getElementById("gen-date-li").value,
+            dateIg: document.getElementById("gen-date-ig").value,
+            topics: collectTopicsFromDOM(),
+            news: collectNewsFromDOM(),
+            li: draft.li,
+            ig: draft.ig,
+            newsEn: draft.newsEn || [],
+            newsPl: draft.newsPl || [],
+            hookEn: draft.hookEn || "",
+            hookPl: draft.hookPl || "",
+            postTitleEn: draft.postTitleEn || "",
+            postTitlePl: draft.postTitlePl || "",
+            liEn: draft.liEn || "",
+            igEn: draft.igEn || "",
+            liPl: draft.liPl || "",
+            igPl: draft.igPl || ""
+          }, extra || {});
+          draft = ensureDraftLangFields(d);
+          saveGeneratorDraft(draft);
+        }
+
+        function getNewsCount() {
+          var el = document.getElementById("gen-news-count");
+          return el ? parseInt(el.value, 10) || 5 : (draft.newsCount || 5);
+        }
+
+        function applyNewsToForm(news, thenBuild, status) {
+          var wl = formatWeekLabel(
+            document.getElementById("gen-date-from").value,
+            document.getElementById("gen-date-to").value
+          );
+          var smartTitleEn = buildAutoPostTitleEn(wl);
+          var smartHookEn = buildAutoHookEn(wl);
+          var imgPath = suggestPostImagePath(document.getElementById("gen-date-to").value);
+
+          document.getElementById("gen-hook").value = smartHookEn;
+          var postTitleEl = document.getElementById("gen-post-title");
+          if (postTitleEl) postTitleEl.value = smartTitleEn;
+          var postImageEl = document.getElementById("gen-post-image");
+          if (postImageEl && !postImageEl.value.trim()) postImageEl.value = imgPath;
+
+          refillNewsList(news);
+          draft.lang = "en";
+          draft.news = news;
+          draft.newsEn = cloneNewsList(news);
+          draft.hook = smartHookEn;
+          draft.hookEn = smartHookEn;
+          draft.postTitle = smartTitleEn;
+          draft.postTitleEn = smartTitleEn;
+          draft.postImage = postImageEl ? postImageEl.value : imgPath;
+          draft.li = "";
+          draft.ig = "";
+          draft.liEn = "";
+          draft.igEn = "";
+          persistDraft({
+            lang: "en",
+            news: news,
+            newsEn: cloneNewsList(news),
+            hook: smartHookEn,
+            hookEn: smartHookEn,
+            postTitle: smartTitleEn,
+            postTitleEn: smartTitleEn,
+            postImage: draft.postImage,
+            li: "",
+            ig: "",
+            liEn: "",
+            igEn: ""
+          });
+          updateLangTabs();
+
+          if (status) {
+            status.textContent = "Gotowe: " + news.length + " newsów · opisy wygenerowane.";
+            status.className = "gen-fetch-status ok";
+          }
+          showToast("Newsy wczytane");
+
+          if (thenBuild) document.getElementById("gen-build").click();
+        }
+
+        function refillNewsList(newsItems) {
+          var list = document.getElementById("gen-news-list");
+          if (!list) return;
+          list.innerHTML = renderNewsListHTML(newsItems);
+          list.querySelectorAll(".gen-news-remove").forEach(bindNewsRemove);
+        }
+
+        function setFetchLoading(loading) {
+          ["gen-fetch-news", "gen-fetch-and-build"].forEach(function (id) {
+            var btn = document.getElementById(id);
+            if (!btn) return;
+            btn.classList.toggle("is-loading", loading);
+            var spin = btn.querySelector(".gen-spin");
+            if (spin) spin.style.display = loading ? "block" : "none";
+          });
+        }
+
+        function runFetchFromInternet(thenBuild) {
+          var status = document.getElementById("gen-fetch-status");
+          if (!navigator.onLine) {
+            if (status) {
+              status.textContent = "Brak połączenia z internetem. Połącz się z siecią i spróbuj ponownie.";
+              status.className = "gen-fetch-status err";
+            }
+            return;
+          }
+
+          setFetchLoading(true);
+          var count = getNewsCount();
+          var existingNews = collectNewsFromDOM().filter(function (n) { return (n.title || "").trim(); });
+          var excludeMap = existingNews.length ? buildNewsExcludeMap(existingNews) : null;
+          var isReload = !!existingNews.length;
+
+          if (status) {
+            status.textContent = isReload
+              ? "Szukam " + count + " nowych newsów (pomijam " + existingNews.length + " już wczytanych)…"
+              : "Wczytuję " + count + " newsów (HN, dev.to, Reddit, Lobste.rs, Ars Technica…)…";
+            status.className = "gen-fetch-status";
+          }
+          setGeneratorProgress(true, isReload ? 8 : 5, status ? status.textContent : "");
+
+          var w = getCurrentWeekRange();
+          if (!document.getElementById("gen-date-from").value) {
+            document.getElementById("gen-date-from").value = toISODate(w.from);
+            document.getElementById("gen-date-to").value = toISODate(w.to);
+          }
+
+          fetchWeeklyNewsFromInternet(count, excludeMap).then(function (news) {
+            if (!news.length) {
+              throw new Error(isReload
+                ? "Brak nowych newsów — spróbuj za chwilę lub wyczyść listę"
+                : "Nie znaleziono newsów — spróbuj ponownie za chwilę");
+            }
+            setGeneratorProgress(true, 35, "Generuję opisy newsów…");
+            return enrichNewsDescriptionsViaBedrock(news, isReload ? existingNews : [], function (pct, label) {
+              setGeneratorProgress(true, pct, label);
+            });
+          }).then(function (news) {
+            applyNewsToForm(news, thenBuild, status);
+            if (status && isReload) {
+              status.textContent = "Gotowe: " + news.length + " nowych newsów (bez duplikatów) · opisy wygenerowane.";
+            }
+          }).catch(function (err) {
+            var msg = err && err.message ? err.message : "nieznany błąd";
+            if (status) {
+              status.textContent = "Nie udało się wczytać newsów (" + msg + "). Otwórz panel przez http://localhost lub użyj promptu Cursora.";
+              status.className = "gen-fetch-status err";
+            }
+            showToast("Błąd wczytywania newsów");
+          }).finally(function () {
+            setFetchLoading(false);
+            setGeneratorProgress(false);
+          });
+        }
+
+        document.querySelectorAll(".gen-tag").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            btn.classList.toggle("active");
+            persistDraft();
+          });
+        });
+
+        document.getElementById("gen-add-news").addEventListener("click", function () {
+          var list = document.getElementById("gen-news-list");
+          var count = list.querySelectorAll(".gen-news-item").length;
+          var maxNews = Math.max(12, getNewsCount());
+          if (count >= maxNews) {
+            showToast("Maksymalnie " + maxNews + " newsów");
+            return;
+          }
+          var div = document.createElement("div");
+          div.className = "gen-news-item";
+          div.innerHTML =
+            '<div class="gen-news-body">' +
+            '<button type="button" class="gen-news-remove" aria-label="Usuń news">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>' +
+            '</button>' +
+            '<div class="gen-field"><label class="gen-label">Tytuł newsu ' + (count + 1) + '</label>' +
+            '<input type="text" class="gen-input gen-news-title" placeholder="Tytuł newsu"></div>' +
+            '<div class="gen-field"><label class="gen-label">Opis</label>' +
+            '<textarea class="gen-textarea gen-news-desc" rows="2" placeholder="Opis"></textarea></div></div>';
+          list.appendChild(div);
+          bindNewsRemove(div.querySelector(".gen-news-remove"));
+        });
+
+        function bindNewsRemove(btn) {
+          btn.addEventListener("click", function () {
+            var list = document.getElementById("gen-news-list");
+            if (list.querySelectorAll(".gen-news-item").length <= 1) {
+              showToast("Minimum 1 news");
+              return;
+            }
+            btn.closest(".gen-news-item").remove();
+            persistDraft();
+          });
+        }
+
+        document.querySelectorAll(".gen-news-remove").forEach(bindNewsRemove);
+
+        ["gen-hook", "gen-post-title", "gen-post-image", "gen-date-from", "gen-date-to", "gen-date-li", "gen-date-ig"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.addEventListener("change", function () { persistDraft(); });
+          if (el && el.tagName === "INPUT") el.addEventListener("input", function () { persistDraft(); });
+        });
+
+        document.getElementById("gen-week-now").addEventListener("click", function () {
+          var w = getCurrentWeekRange();
+          document.getElementById("gen-date-from").value = toISODate(w.from);
+          document.getElementById("gen-date-to").value = toISODate(w.to);
+          document.getElementById("gen-date-li").value = toISODate(w.to);
+          var igDate = new Date(w.to);
+          igDate.setDate(igDate.getDate() + 3);
+          document.getElementById("gen-date-ig").value = toISODate(igDate);
+          var wl = formatWeekLabel(toISODate(w.from), toISODate(w.to));
+          document.getElementById("gen-hook").value = buildAutoHook(wl);
+          var pt = document.getElementById("gen-post-title");
+          if (pt) pt.value = buildAutoPostTitle(wl);
+          persistDraft();
+          showToast("Ustawiono bieżący tydzień");
+        });
+
+        document.getElementById("gen-clear-all").addEventListener("click", function () {
+          if (!confirm("Wyczyścić cały szkic generatora? Newsy, post, tytuły i daty wrócą do zera.")) return;
+          clearGeneratorDraft();
+          state.genPreviewTab = "li";
+          showToast("Generator wyczyszczony");
+          render();
+        });
+
+        document.getElementById("gen-fetch-news").addEventListener("click", function () {
+          runFetchFromInternet(false);
+        });
+
+        document.getElementById("gen-fetch-and-build").addEventListener("click", function () {
+          runFetchFromInternet(true);
+        });
+
+        document.getElementById("gen-gen-title").addEventListener("click", function () {
+          var news = collectNewsFromDOM().filter(function (n) { return n.title; });
+          if (!news.length) {
+            showToast("Brak newsów — najpierw wczytaj lub wpisz treści");
+            return;
+          }
+          var wl = formatWeekLabel(
+            document.getElementById("gen-date-from").value,
+            document.getElementById("gen-date-to").value
+          );
+          var lang = draft.lang || "en";
+          if (lang === "pl") {
+            document.getElementById("gen-post-title").value = generateSmartTitle(news, wl);
+            document.getElementById("gen-hook").value = generateSmartHook(news, wl);
+          } else {
+            document.getElementById("gen-post-title").value = buildAutoPostTitleEn(wl);
+            document.getElementById("gen-hook").value = buildAutoHookEn(wl);
+          }
+          persistDraft();
+          showToast("Tytuł i hook wygenerowane");
+        });
+
+        document.getElementById("gen-translate-pl").addEventListener("click", function () {
+          var news = collectNewsFromDOM().filter(function (n) { return n.title; });
+          var hasPosts = !!(draft.li || draft.ig);
+          if (!news.length && !hasPosts && !(draft.newsEn && draft.newsEn.length)) {
+            showToast("Brak treści do tłumaczenia");
+            return;
+          }
+          snapshotCurrentLang();
+          if (draft.lang === "en" && news.length) {
+            draft.newsEn = cloneNewsList(news);
+          }
+          var sourceNews = (draft.newsEn && draft.newsEn.length) ? draft.newsEn : news;
+          var translateBtn = document.getElementById("gen-translate-pl");
+          if (translateBtn) translateBtn.classList.add("is-loading");
+          setGeneratorProgress(true, 2, "Start tłumaczenia na polski…");
+
+          var newsPromise = sourceNews.length
+            ? translateNewsList(sourceNews, function (done, total, label) {
+                var pct = total ? Math.round((done / total) * 72) : 5;
+                setGeneratorProgress(true, pct, label);
+              })
+            : Promise.resolve([]);
+
+          newsPromise.then(function (translated) {
+            setGeneratorProgress(true, 76, "Tłumaczenie hooka…");
+            var hookSource = draft.hookEn || (document.getElementById("gen-hook") || {}).value || "";
+            var titleSource = draft.postTitleEn || (document.getElementById("gen-post-title") || {}).value || "";
+            return translateToPolish(hookSource).then(function (hookPl) {
+              setGeneratorProgress(true, 82, "Tłumaczenie tytułu wpisu…");
+              return delay(400).then(function () {
+                return translateToPolish(titleSource);
+              }).then(function (titlePl) {
+                var wl = formatWeekLabel(
+                  document.getElementById("gen-date-from").value,
+                  document.getElementById("gen-date-to").value
+                );
+                draft.newsPl = translated.length ? cloneNewsList(translated) : draft.newsPl;
+                draft.hookPl = hookPl || draft.hookPl || "";
+                draft.postTitlePl = titlePl || draft.postTitlePl || "";
+
+                var posts = { li: draft.liPl || "", ig: draft.igPl || "" };
+                if (translated.length) {
+                  setGeneratorProgress(true, 90, "Generowanie postów LinkedIn i Instagram…");
+                  posts = buildPostsForLang("pl", draft.hookPl, translated, wl);
+                } else if (draft.liEn || draft.igEn) {
+                  setGeneratorProgress(true, 86, "Tłumaczenie posta LinkedIn…");
+                  return translateLongText(draft.liEn || "", function (done, total, label) {
+                    setGeneratorProgress(true, 86 + Math.round((done / total) * 8), label);
+                  }).then(function (liPl) {
+                    setGeneratorProgress(true, 95, "Tłumaczenie posta Instagram…");
+                    return delay(450).then(function () {
+                      return translateLongText(draft.igEn || "", function (done, total, label) {
+                        setGeneratorProgress(true, 95 + Math.round((done / total) * 4), label);
+                      });
+                    }).then(function (igPl) {
+                      posts.li = liPl || draft.liPl || "";
+                      posts.ig = igPl || draft.igPl || "";
+                      return { translated: translated, posts: posts };
+                    });
+                  });
+                }
+                return { translated: translated, posts: posts };
+              });
+            });
+          }).then(function (result) {
+            setGeneratorProgress(true, 100, "Gotowe — przełączam na wersję PL…");
+            draft.liPl = result.posts.li || "";
+            draft.igPl = result.posts.ig || "";
+            draft.lang = "pl";
+            draft.news = draft.newsPl;
+            draft.hook = draft.hookPl;
+            draft.postTitle = draft.postTitlePl;
+            draft.li = draft.liPl;
+            draft.ig = draft.igPl;
+            saveGeneratorDraft(draft);
+            applyGeneratorLang("pl", { skipSnapshot: true });
+            var status = document.getElementById("gen-fetch-status");
+            if (status) {
+              var parts = [];
+              if (draft.newsPl.length) parts.push(draft.newsPl.length + " newsów");
+              if (draft.liPl || draft.igPl) parts.push("post LI/IG");
+              status.textContent = "Przetłumaczono: " + parts.join(", ") + ".";
+              status.className = "gen-fetch-status ok";
+            }
+            showToast("Wersja PL gotowa — EN zostaje pod „Show in EN”");
+          }).catch(function () {
+            var status = document.getElementById("gen-fetch-status");
+            if (status) {
+              status.textContent = "Błąd tłumaczenia — spróbuj ponownie za chwilę.";
+              status.className = "gen-fetch-status err";
+            }
+            showToast("Błąd tłumaczenia");
+          }).finally(function () {
+            if (translateBtn) translateBtn.classList.remove("is-loading");
+            setTimeout(function () { setGeneratorProgress(false, 0, ""); }, 1200);
+          });
+        });
+
+        document.getElementById("gen-show-en").addEventListener("click", function () {
+          if (applyGeneratorLang("en")) {
+            showToast("Wersja angielska");
+          }
+        });
+
+        document.querySelectorAll(".gen-lang-tab").forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            if (tab.disabled) return;
+            var lang = tab.getAttribute("data-gen-lang");
+            if (applyGeneratorLang(lang)) {
+              showToast(lang === "en" ? "Wersja angielska" : "Wersja polska");
+            }
+          });
+        });
+
+        var newsCountSelect = document.getElementById("gen-news-count");
+        if (newsCountSelect) {
+          newsCountSelect.addEventListener("change", function () {
+            persistDraft({ newsCount: getNewsCount() });
+          });
+        }
+
+        document.getElementById("gen-build").addEventListener("click", function () {
+          var news = collectNewsFromDOM().filter(function (n) { return n.title; });
+          if (!news.length) {
+            showToast("Dodaj co najmniej 1 news z tytułem");
+            return;
+          }
+          var lang = draft.lang || "en";
+          var hook = document.getElementById("gen-hook").value.trim() ||
+            (lang === "pl"
+              ? "Co wydarzyło się w IT, AWS i świecie programowania w tym tygodniu?"
+              : "What happened in IT, AWS and software development this week?");
+          var wl = formatWeekLabel(
+            document.getElementById("gen-date-from").value,
+            document.getElementById("gen-date-to").value
+          );
+          var posts = buildPostsForLang(lang, hook, news, wl);
+          draft.li = posts.li;
+          draft.ig = posts.ig;
+          if (lang === "pl") {
+            draft.liPl = posts.li;
+            draft.igPl = posts.ig;
+          } else {
+            draft.liEn = posts.li;
+            draft.igEn = posts.ig;
+          }
+          persistDraft({ li: draft.li, ig: draft.ig, liEn: draft.liEn, igEn: draft.igEn, liPl: draft.liPl, igPl: draft.igPl });
+          updateGeneratorPreview();
+          updateLangTabs();
+          showToast("Post wygenerowany — możesz skopiować treść");
+        });
+
+        function updateGeneratorPreview() {
+          var box = document.getElementById("gen-preview");
+          var copyActions = document.getElementById("gen-copy-actions");
+          var text = state.genPreviewTab === "li" ? draft.li : draft.ig;
+          var hasPosts = !!(draft.li || draft.ig);
+          if (!text) {
+            box.className = "gen-preview-box empty";
+            box.textContent = "Kliknij „Wygeneruj post”, aby zobaczyć treść.";
+          } else {
+            box.className = "gen-preview-box";
+            box.textContent = text;
+          }
+          if (copyActions) copyActions.hidden = !hasPosts;
+          document.querySelectorAll(".gen-preview-tab").forEach(function (tab) {
+            tab.classList.toggle("active", tab.dataset.tab === state.genPreviewTab);
+          });
+        }
+
+        document.querySelectorAll(".gen-preview-tab").forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            state.genPreviewTab = tab.dataset.tab;
+            updateGeneratorPreview();
+          });
+        });
+
+        document.getElementById("gen-copy-li").addEventListener("click", function () {
+          if (!draft.li) { showToast("Najpierw wygeneruj post"); return; }
+          copyText(draft.li);
+        });
+
+        document.getElementById("gen-copy-ig").addEventListener("click", function () {
+          if (!draft.ig) { showToast("Najpierw wygeneruj post"); return; }
+          copyText(draft.ig);
+        });
+
+        document.getElementById("gen-copy-active").addEventListener("click", function () {
+          var text = state.genPreviewTab === "li" ? draft.li : draft.ig;
+          if (!text) { showToast("Najpierw wygeneruj post"); return; }
+          copyText(text);
+        });
+
+        document.getElementById("gen-copy-snippet").addEventListener("click", function () {
+          if (!draft.li && !draft.ig) {
+            showToast("Najpierw wygeneruj post");
+            return;
+          }
+          var wl = formatWeekLabel(
+            document.getElementById("gen-date-from").value,
+            document.getElementById("gen-date-to").value
+          );
+          var titleBase = (document.getElementById("gen-post-title") && document.getElementById("gen-post-title").value.trim()) ||
+            buildAutoPostTitle(wl);
+          var imagePath = (document.getElementById("gen-post-image") && document.getElementById("gen-post-image").value.trim()) || "";
+          var snippet = buildContentDataSnippet(
+            titleBase,
+            document.getElementById("gen-date-li").value,
+            document.getElementById("gen-date-ig").value,
+            document.getElementById("gen-platform-li").checked ? draft.li : "",
+            document.getElementById("gen-platform-ig").checked ? draft.ig : "",
+            suggestNextId(),
+            imagePath
+          );
+          document.getElementById("gen-snippet").textContent = snippet;
+          document.getElementById("gen-snippet-wrap").style.display = "block";
+          copyText(snippet);
+        });
+
+        document.getElementById("gen-save-md").addEventListener("click", function () {
+          var news = collectNewsFromDOM().filter(function (n) { return (n.title || "").trim(); });
+          if (!news.length && !draft.li && !draft.ig) {
+            showToast("Brak treści do zapisu — wczytaj newsy lub wygeneruj post");
+            return;
+          }
+          var wl = formatWeekLabel(
+            document.getElementById("gen-date-from").value,
+            document.getElementById("gen-date-to").value
+          );
+          var titleBase = (document.getElementById("gen-post-title") && document.getElementById("gen-post-title").value.trim()) ||
+            buildAutoPostTitle(wl);
+          var imagePath = (document.getElementById("gen-post-image") && document.getElementById("gen-post-image").value.trim()) || "";
+          var md = buildGeneratorMarkdown({
+            title: titleBase,
+            weekLabel: wl,
+            lang: draft.lang || "en",
+            dateLi: document.getElementById("gen-date-li").value,
+            dateIg: document.getElementById("gen-date-ig").value,
+            image: imagePath,
+            topics: collectTopicsFromDOM(),
+            hook: document.getElementById("gen-hook").value,
+            news: news,
+            li: document.getElementById("gen-platform-li").checked ? draft.li : "",
+            ig: document.getElementById("gen-platform-ig").checked ? draft.ig : ""
+          });
+          var datePart = (document.getElementById("gen-date-to").value || toISODate(new Date())).replace(/-/g, "");
+          var filename = slugifyFilename(titleBase) + "-" + datePart + ".md";
+          saveMarkdownFile(filename, md);
+        });
+
+        document.getElementById("gen-save-panel").addEventListener("click", function () {
+          if (!window.PostManager) return;
+          if (!draft.li && !draft.ig) {
+            showToast("Najpierw wygeneruj post");
+            return;
+          }
+          var wl = formatWeekLabel(
+            document.getElementById("gen-date-from").value,
+            document.getElementById("gen-date-to").value
+          );
+          var titleBase = (document.getElementById("gen-post-title") && document.getElementById("gen-post-title").value.trim()) ||
+            buildAutoPostTitle(wl);
+          var imagePath = (document.getElementById("gen-post-image") && document.getElementById("gen-post-image").value.trim()) || "";
+          var platforms = [];
+          if (document.getElementById("gen-platform-li").checked) platforms.push("li");
+          if (document.getElementById("gen-platform-ig").checked) platforms.push("ig");
+          if (!platforms.length) platforms = ["li", "ig"];
+          var textMaster = draft.li || draft.ig;
+          var textFb = PostManager.formatForFacebook(textMaster);
+          var postDate = (document.getElementById("gen-date-li") && document.getElementById("gen-date-li").value) ||
+            (document.getElementById("gen-date-ig") && document.getElementById("gen-date-ig").value) ||
+            new Date().toISOString().slice(0, 10);
+          PostManager.savePost({
+            id: "gen-" + Date.now(),
+            type: "post",
+            title: titleBase,
+            topic: "News tygodnia",
+            date: postDate,
+            platforms: platforms,
+            image: imagePath,
+            textMaster: textMaster,
+            textLi: draft.li || "",
+            textFb: textFb,
+            textIg: draft.ig || "",
+            status: "draft",
+            donePlatforms: []
+          });
+          state.mode = "browse";
+          showToast("Szkic zapisany w panelu");
+          render();
+        });
+
+        function updateGenFormatHint() {
+          var wrap = document.getElementById("gen-format-hint");
+          if (!wrap || !window.ImageFormats) return;
+          var plats = [];
+          var liEl = document.getElementById("gen-platform-li");
+          var igEl = document.getElementById("gen-platform-ig");
+          if (liEl && liEl.checked) plats.push("li");
+          if (igEl && igEl.checked) plats.push("ig");
+          wrap.innerHTML = ImageFormats.renderGeneratorHintHTML(plats.length ? plats : ["li", "ig"]);
+        }
+
+        ["gen-platform-li", "gen-platform-ig"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.addEventListener("change", updateGenFormatHint);
+        });
+        updateGenFormatHint();
+        updateGeneratorPreview();
+        updateLangTabs();
+      }
+
+      function openDetail(id) {
+        var item = getAllItems().find(function (i) { return i.id === id; });
+        if (!item || isDeleted(id)) return;
+
+        state.selectedId = id;
+
+        var platforms = (item.platforms || []).map(function (p) {
+          return '<span class="detail-platform">' + (PLATFORM_LABELS[p] || p) + '</span>';
+        }).join("");
+
+        var imageBlock = item.image
+          ? '<img src="' + escapeAttr(item.image) + '" alt="">'
+          : '<div class="detail-image-empty">' + iconImage() + '<span>brak grafiki · wgraj własną</span></div>';
+
+        var pathText = item.image || "— brak pliku —";
+
+        var statusRow = window.PostManager
+          ? '<div class="detail-status-row">' + PostManager.renderStatusBadge(item, true) +
+            PostManager.renderPlatformPublishStatus(item, PLATFORM_LABELS) + "</div>"
+          : "";
+
+        document.getElementById("detail-content").innerHTML =
+          '<div class="detail-image">' + imageBlock + '</div>' +
+          '<div class="detail-body">' +
+            statusRow +
+            '<h2 class="detail-title">' + escapeHtml(item.title) + '</h2>' +
+            '<button type="button" class="detail-edit-btn" id="detail-edit-btn">' +
+              '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>' +
+              '<path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+              'Edytuj post</button>' +
+            '<div class="detail-meta-row">' +
+              '<div class="detail-meta-item">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
+                formatDate(item.date) +
+              '</div>' +
+            '</div>' +
+            '<div class="detail-platforms">' + platforms + '</div>' +
+            (window.ImageFormats ? ImageFormats.renderDetailFormatsHTML(item.platforms) : "") +
+            '<div class="detail-path">' + escapeHtml(pathText) + '</div>' +
+            (window.PostManager ? PostManager.renderDetailTextsHTML(item, PLATFORM_LABELS) : "") +
+            '<div class="detail-copy-row">' +
+              '<button type="button" class="detail-copy-btn" id="detail-copy-title">Kopiuj tytuł</button>' +
+              '<button type="button" class="detail-copy-btn" id="detail-save-md">Zapisz .md</button>' +
+            '</div>' +
+            (window.PostManager ? PostManager.renderReadyChecklistHTML(item) : "") +
+            (window.PostManager ? PostManager.renderDoneTogglesHTML(item, PLATFORM_LABELS) : "") +
+            '<button class="detail-delete" id="detail-delete-btn">' + iconTrash() + ' Usuń treść</button>' +
+          '</div>';
+
+        document.getElementById("detail-delete-btn").addEventListener("click", function () {
+          if (confirm('Usunąć treść „' + item.title + '" z panelu?')) {
+            deleteItem(id);
+          }
+        });
+
+        var editBtn = document.getElementById("detail-edit-btn");
+        if (editBtn) {
+          editBtn.addEventListener("click", function () {
+            closeDetail();
+            openEditor(id);
+          });
+        }
+
+        var copyTitleBtn = document.getElementById("detail-copy-title");
+        if (copyTitleBtn) copyTitleBtn.addEventListener("click", function () { copyText(item.title || ""); });
+
+        var saveMdBtn = document.getElementById("detail-save-md");
+        if (saveMdBtn) {
+          saveMdBtn.addEventListener("click", function () {
+            var md = buildPostMarkdown(item);
+            var datePart = (item.date || toISODate(new Date())).replace(/-/g, "");
+            var filename = slugifyFilename(item.title || "post") + "-" + datePart + ".md";
+            saveMarkdownFile(filename, md);
+          });
+        }
+
+        if (window.PostManager) {
+          PostManager.bindDetailTextTabs(function (plat) {
+            copyText(PostManager.getTextForPlatform(item, plat));
+          });
+          PostManager.bindDoneToggles(item, function () { openDetail(id); });
+        }
+
+        document.getElementById("detail-overlay").classList.add("open");
+        document.getElementById("detail-panel").classList.add("open");
+      }
+
+      function closeDetail() {
+        state.selectedId = null;
+        document.getElementById("detail-overlay").classList.remove("open");
+        document.getElementById("detail-panel").classList.remove("open");
+      }
+
+      function openEditor(id) {
+        state.mode = "editor";
+        state.editId = id || null;
+        closeDetail();
+        render();
+      }
+
+      function render() {
+        var isBrowse = state.mode === "browse";
+        var showBrowseChrome = isBrowse;
+
+        document.getElementById("main-toolbar").classList.toggle("main-toolbar-hidden", !showBrowseChrome);
+        document.getElementById("search-wrap").classList.toggle("topbar-search-hidden", !showBrowseChrome);
+        document.getElementById("sidebar-filters").classList.toggle("sidebar-section-hidden", !showBrowseChrome);
+
+        renderNav();
+        if (isBrowse) {
+          renderTopicFilters();
+          renderPlatformFilters();
+          renderQueueFilters();
+        }
+        renderHeader();
+        renderContent();
+      }
+
+      function openGenerator() {
+        state.mode = "generator";
+        closeDetail();
+        render();
+      }
+
+      function openBrand() {
+        state.mode = "brand";
+        closeDetail();
+        render();
+      }
+
+      function openFormats() {
+        state.mode = "formats";
+        closeDetail();
+        render();
+      }
+
+      var btnNewPost = document.getElementById("btn-new-post");
+      if (btnNewPost) {
+        btnNewPost.addEventListener("click", function () { openEditor(null); });
+      }
+
+      var navGen = document.getElementById("nav-generator");
+      if (navGen) {
+        navGen.addEventListener("click", openGenerator);
+        navGen.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openGenerator();
+          }
+        });
+      }
+
+      var navBrand = document.getElementById("nav-brand");
+      if (navBrand) {
+        navBrand.addEventListener("click", openBrand);
+        navBrand.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openBrand();
+          }
+        });
+      }
+
+      var navFmt = document.getElementById("nav-formats");
+      if (navFmt) {
+        navFmt.addEventListener("click", openFormats);
+        navFmt.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openFormats();
+          }
+        });
+      }
+
+      document.getElementById("search").addEventListener("input", function (e) {
+        if (state.mode !== "browse") return;
+        state.search = e.target.value;
+        renderContent();
+        renderHeader();
+      });
+
+      document.getElementById("btn-grid").addEventListener("click", function () {
+        if (state.mode !== "browse") return;
+        state.mode = "browse";
+        state.view = "grid";
+        renderHeader();
+        renderContent();
+      });
+
+      document.getElementById("btn-calendar").addEventListener("click", function () {
+        if (state.mode !== "browse") return;
+        state.mode = "browse";
+        state.view = "calendar";
+        renderHeader();
+        renderContent();
+      });
+
+      document.getElementById("btn-restore").addEventListener("click", function () {
+        var count = getDeletedIds().length;
+        if (count > 0 && confirm("Przywrócić wszystkie usunięte treści (" + count + ")?")) {
+          restoreAll();
+        }
+      });
+
+      document.getElementById("detail-close").addEventListener("click", closeDetail);
+      document.getElementById("detail-overlay").addEventListener("click", closeDetail);
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeDetail();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

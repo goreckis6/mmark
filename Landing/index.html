@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="pl">
+<!--
+  ═══════════════════════════════════════════════════════════════
+  Content System — Landing Page
+  DO PODMIANY PRZED PUBLIKACJĄ:
+  ───────────────────────────────────────────────────────────────
+  [ ] Meta: title, description, og:url, og:image, twitter:image
+  [ ] Favicon (assets/favicon.svg lub .ico)
+  [ ] Hero: nagłówek, podtytuł, zdjęcie mockupu (hero__mockup-img)
+  [ ] Trust bar: nazwy klientów / partnerów
+  [ ] Features, process, showcase — treści sekcji
+  [ ] Testimonials: cytaty, zdjęcia awatarów, imiona
+  [ ] Pricing: ceny, plany, linki CTA
+  [ ] FAQ: pytania i odpowiedzi
+  [ ] Formularz: action mailto (script.js) + email w stopce
+  [ ] Stopka: linki, dane kontaktowe, social media
+  [ ] Kolory: zmienne w styles.css (:root)
+  [ ] theme-color w <meta>
+  ═══════════════════════════════════════════════════════════════
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content System — Panel treści marketingowych w jednym miejscu</title>
+  <meta name="description" content="Zarządzaj reklamami, postami i grafikami z jednego panelu. Content System porządkuje materiały marketingowe — offline, szybko, bez chaosu. Umów demo.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://contentsystem.pl/">
+  <meta property="og:title" content="Content System — Panel treści marketingowych">
+  <meta property="og:description" content="Reklamy, posty i grafiki w jednym miejscu. Panel dla marketerów i agencji.">
+  <!-- PODMIANA: własny obraz 1200×630 px -->
+  <meta property="og:image" content="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Content System — Panel treści marketingowych">
+  <meta name="twitter:description" content="Reklamy, posty i grafiki w jednym miejscu. Panel dla marketerów i agencji.">
+  <meta name="twitter:image" content="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop">
+
+  <meta name="theme-color" content="#07070d">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='white' opacity='.9'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='white' opacity='.9'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='white' opacity='.9'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='white' opacity='.9'/%3E%3C/svg%3E">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <a href="#main" class="skip-link">Przejdź do treści</a>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header" id="header">
+    <div class="container header__inner">
+      <a href="#" class="logo" aria-label="Content System — strona główna">
+        <span class="logo__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+        Content System
+      </a>
+
+      <nav class="nav" aria-label="Główne menu">
+        <ul class="nav__list">
+          <li><a href="#features" class="nav__link" data-section="features">Funkcje</a></li>
+          <li><a href="#weekly-news" class="nav__link" data-section="weekly-news">News tygodnia</a></li>
+          <li><a href="#process" class="nav__link" data-section="process">Jak działa</a></li>
+          <li><a href="#pricing" class="nav__link" data-section="pricing">Cennik</a></li>
+          <li><a href="#faq" class="nav__link" data-section="faq">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <div class="header__actions">
+        <a href="#contact" class="btn btn-primary">Umów demo</a>
+      </div>
+
+      <button class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="Otwórz menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile navigation -->
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Menu mobilne" aria-hidden="true">
+    <ul class="mobile-nav__list">
+      <li><a href="#features" class="mobile-nav__link" data-section="features">Funkcje</a></li>
+      <li><a href="#weekly-news" class="mobile-nav__link" data-section="weekly-news">News tygodnia</a></li>
+      <li><a href="#process" class="mobile-nav__link" data-section="process">Jak działa</a></li>
+      <li><a href="#pricing" class="mobile-nav__link" data-section="pricing">Cennik</a></li>
+      <li><a href="#faq" class="mobile-nav__link" data-section="faq">FAQ</a></li>
+    </ul>
+    <div class="mobile-nav__cta">
+      <a href="#contact" class="btn btn-primary">Umów demo</a>
+    </div>
+  </nav>
+
+  <main id="main">
+
+    <!-- ═══ HERO ═══ -->
+    <section class="hero" id="hero" aria-labelledby="hero-title">
+      <div class="hero__bg" aria-hidden="true">
+        <div class="hero__orb hero__orb--1"></div>
+        <div class="hero__orb hero__orb--2"></div>
+        <div class="hero__grid"></div>
+      </div>
+
+      <div class="container hero__inner">
+        <div class="hero__content">
+          <div class="hero__badge reveal">
+            <span class="hero__badge-dot" aria-hidden="true"></span>
+            Nowa wersja panelu 2026
+          </div>
+
+          <h1 class="hero__title reveal" id="hero-title">
+            Wszystkie treści marketingowe<br>
+            <span class="hero__title-accent">w jednym miejscu</span>
+          </h1>
+
+          <p class="hero__subtitle reveal">
+            Content System porządkuje reklamy, posty i grafiki w przejrzystym panelu.
+            Przeglądaj, filtruj i planuj publikacje — bez przełączania między folderami i arkuszami.
+          </p>
+
+          <div class="hero__actions reveal">
+            <a href="#contact" class="btn btn-primary">
+              Umów demo
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+            <a href="#features" class="btn btn-secondary">Zobacz funkcje</a>
+          </div>
+
+          <div class="hero__stats reveal">
+            <div>
+              <div class="hero__stat-value"><span data-counter="500" data-suffix="+">0</span></div>
+              <div class="hero__stat-label">Treści w panelach klientów</div>
+            </div>
+            <div>
+              <div class="hero__stat-value"><span data-counter="6" data-suffix="">0</span></div>
+              <div class="hero__stat-label">Platform social media</div>
+            </div>
+            <div>
+              <div class="hero__stat-value"><span data-counter="98" data-suffix="%">0</span></div>
+              <div class="hero__stat-label">Satysfakcji użytkowników</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero__visual reveal">
+          <div class="hero__mockup">
+            <div class="hero__mockup-bar" aria-hidden="true">
+              <span class="hero__mockup-dot"></span>
+              <span class="hero__mockup-dot"></span>
+              <span class="hero__mockup-dot"></span>
+            </div>
+            <!-- PODMIANA: zrzut ekranu panelu Content System -->
+            <img
+              class="hero__mockup-img"
+              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&h=562&fit=crop&q=80"
+              alt="Podgląd panelu Content System z siatką kart treści marketingowych"
+              width="900"
+              height="562"
+            >
+          </div>
+
+          <div class="hero__float-card hero__float-card--1" aria-hidden="true">
+            <div class="hero__float-icon hero__float-icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <div class="hero__float-text">
+              <strong>12 postów zaplanowanych</strong>
+              <span>Na ten tydzień</span>
+            </div>
+          </div>
+
+          <div class="hero__float-card hero__float-card--2" aria-hidden="true">
+            <div class="hero__float-icon hero__float-icon--indigo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+            </div>
+            <div class="hero__float-text">
+              <strong>Widok kalendarza</strong>
+              <span>Planuj z wyprzedzeniem</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TRUST BAR ═══ -->
+    <section class="trust" aria-label="Zaufali nam">
+      <div class="container">
+        <p class="trust__label reveal">Zaufali nam zespoły marketingowe</p>
+        <div class="trust__logos reveal-stagger">
+          <!-- PODMIANA: logotypy klientów (SVG/PNG) -->
+          <span class="trust__logo reveal">Northline</span>
+          <span class="trust__logo reveal">Studio Forma</span>
+          <span class="trust__logo reveal">Pixel &amp; Co</span>
+          <span class="trust__logo reveal">Growth Labs</span>
+          <span class="trust__logo reveal">Meridian</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FEATURES ═══ -->
+    <section class="features" id="features" aria-labelledby="features-title">
+      <div class="container">
+        <header class="section-header">
+          <span class="section-label reveal">Funkcje</span>
+          <h2 class="section-title reveal" id="features-title">Narzędzie stworzone dla marketerów</h2>
+          <p class="section-desc reveal">
+            Od przeglądania materiałów po planowanie publikacji — wszystko w jednym, lekkim panelu działającym offline.
+          </p>
+        </header>
+
+        <div class="features__grid reveal-stagger">
+          <article class="feature-card reveal">
+            <div class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </div>
+            <h3 class="feature-card__title">Jeden panel, wszystkie formaty</h3>
+            <p class="feature-card__desc">Reklamy, posty i grafiki w uporządkowanej siatce. Filtruj po typie, platformie lub dacie — bez szukania w folderach.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <h3 class="feature-card__title">Kalendarz treści</h3>
+            <p class="feature-card__desc">Widok miesiąca z kolorowymi chipami wg typu materiału. Planuj kampanie i widz harmonogramu na pierwszy rzut oka.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+            <h3 class="feature-card__title">Szybkie wyszukiwanie</h3>
+            <p class="feature-card__desc">Przeszukuj tytuły i pełne treści w czasie rzeczywistym. Znajdź materiał z zeszłego kwartału w sekundę.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 class="feature-card__title">Działa offline</h3>
+            <p class="feature-card__desc">Otwórz panel dwuklikiem — bez serwera, bez logowania. Idealne do prezentacji klientowi lub pracy w terenie.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </div>
+            <h3 class="feature-card__title">Podgląd grafik</h3>
+            <p class="feature-card__desc">Miniatury i panel szczegółów z pełną treścią, datą i przypisanymi platformami. Wszystko w jednym kliknięciu.</p>
+          </article>
+
+          <article class="feature-card reveal">
+            <div class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </div>
+            <h3 class="feature-card__title">Bezpieczne ukrywanie</h3>
+            <p class="feature-card__desc">Usuń treść z widoku bez kasowania plików. Przywróć jednym kliknięciem — pełna kontrola nad tym, co widać w panelu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PROCESS ═══ -->
+    <section class="process" id="process" aria-labelledby="process-title">
+      <div class="container">
+        <header class="section-header">
+          <span class="section-label reveal">Jak to działa</span>
+          <h2 class="section-title reveal" id="process-title">Trzy kroki do uporządkowanych treści</h2>
+          <p class="section-desc reveal">Prosty przepływ pracy — od materiału do gotowego wpisu w panelu.</p>
+        </header>
+
+        <div class="process__steps reveal-stagger">
+          <article class="process__step reveal">
+            <div class="process__step-num" aria-hidden="true"></div>
+            <h3 class="process__step-title">Dodaj materiał</h3>
+            <p class="process__step-desc">Zapisz grafikę do folderu media/ i dopisz wpis w pliku danych. Treść trafia na początek listy — automatycznie widoczna w panelu.</p>
+          </article>
+
+          <article class="process__step reveal">
+            <div class="process__step-num" aria-hidden="true"></div>
+            <h3 class="process__step-title">Przeglądaj i filtruj</h3>
+            <p class="process__step-desc">Użyj siatki lub kalendarza, filtruj po platformie (IG, FB, TT, YT, LI, X) i wyszukuj po słowach kluczowych.</p>
+          </article>
+
+          <article class="process__step reveal">
+            <div class="process__step-num" aria-hidden="true"></div>
+            <h3 class="process__step-title">Prezentuj i publikuj</h3>
+            <p class="process__step-desc">Otwórz szczegóły materiału, skopiuj treść i opublikuj na platformie. Panel służy jako centrum dowodzenia kampanii.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SHOWCASE ═══ -->
+    <section class="showcase" aria-labelledby="showcase-title">
+      <div class="container">
+        <div class="showcase__grid">
+          <div class="showcase__image-wrap reveal">
+            <!-- PODMIANA: zrzut ekranu widoku kalendarza -->
+            <img
+              class="showcase__image"
+              src="https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop&q=80"
+              alt="Zespół marketingowy planujący treści przy laptopie"
+              width="800"
+              height="600"
+              loading="lazy"
+            >
+            <div class="showcase__image-glow" aria-hidden="true"></div>
+          </div>
+
+          <div class="showcase__content reveal">
+            <span class="section-label">Prezentacja</span>
+            <h2 class="section-title" id="showcase-title">Panel, który robi wrażenie na klienta</h2>
+            <p class="section-desc">Ciemny, dopracowany interfejs z akcentem indygo. Prezentuj materiały profesjonalnie — na spotkaniu, w biurze lub zdalnie.</p>
+
+            <ul class="showcase__list">
+              <li class="showcase__list-item">
+                <span class="showcase__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                Responsywna siatka kart z miniaturami i metadanymi
+              </li>
+              <li class="showcase__list-item">
+                <span class="showcase__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                Wysuwany panel szczegółów z pełną treścią materiału
+              </li>
+              <li class="showcase__list-item">
+                <span class="showcase__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                Zero zależności — działa po otwarciu pliku HTML
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ WEEKLY IT NEWS ═══ -->
+    <section class="weekly-news" id="weekly-news" aria-labelledby="weekly-news-title">
+      <div class="weekly-news__glow" aria-hidden="true"></div>
+      <div class="container weekly-news__inner">
+        <div class="weekly-news__top">
+          <div class="weekly-news__intro reveal">
+            <span class="section-label">Automatyzacja treści</span>
+            <h2 class="section-title" id="weekly-news-title">News tygodnia IT, AWS i programowania</h2>
+            <p class="section-desc">
+              Cotygodniowy research branżowy zamieniamy w gotowe posty na social media — osobne wersje pod LinkedIn i Instagram, od razu widoczne w panelu Content System.
+            </p>
+            <div class="weekly-news__tags" aria-label="Obszary tematyczne">
+              <span class="weekly-news__tag weekly-news__tag--accent">AWS</span>
+              <span class="weekly-news__tag">Chmura</span>
+              <span class="weekly-news__tag">DevOps</span>
+              <span class="weekly-news__tag">Programowanie</span>
+              <span class="weekly-news__tag">Open Source</span>
+              <span class="weekly-news__tag">Bezpieczeństwo</span>
+            </div>
+            <div class="weekly-news__platforms" aria-label="Platformy docelowe">
+              <span class="weekly-news__platform">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+                LinkedIn
+              </span>
+              <span class="weekly-news__platform">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+                Instagram
+              </span>
+            </div>
+          </div>
+
+          <div class="weekly-news__steps reveal-stagger">
+            <article class="weekly-news__step reveal">
+              <div class="weekly-news__step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+              <div>
+                <h3 class="weekly-news__step-title">1. Research tygodnia</h3>
+                <p class="weekly-news__step-desc">3–5 najważniejszych newsów z IT, AWS i świata programowania — zweryfikowane źródła, konkretne daty, kontekst dla developera.</p>
+              </div>
+            </article>
+
+            <article class="weekly-news__step reveal">
+              <div class="weekly-news__step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+              <div>
+                <h3 class="weekly-news__step-title">2. Dwa formaty posta</h3>
+                <p class="weekly-news__step-desc">LinkedIn — dłuższy, z kontekstem i pytaniem do dyskusji. Instagram — krótszy hook, numerowana lista, hashtagi pod algorytm.</p>
+              </div>
+            </article>
+
+            <article class="weekly-news__step reveal">
+              <div class="weekly-news__step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              </div>
+              <div>
+                <h3 class="weekly-news__step-title">3. Wpis w panelu</h3>
+                <p class="weekly-news__step-desc">Treści trafiają do Content System — filtruj po platformie, podejrzyj w kalendarzu, skopiuj i opublikuj. Grafika opcjonalnie z HiggsField.</p>
+              </div>
+            </article>
+
+            <article class="weekly-news__step reveal">
+              <div class="weekly-news__step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+              </div>
+              <div>
+                <h3 class="weekly-news__step-title">4. Publikacja</h3>
+                <p class="weekly-news__step-desc">Gotowe materiały czekają w panelu — Ty decydujesz o terminie i kanale. Bez automatycznego publikowania w Twoim imieniu.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="weekly-news__schedule reveal">
+          <h3 class="weekly-news__schedule-title">Sugerowany rytm tygodnia</h3>
+          <div class="weekly-news__schedule-grid">
+            <div class="weekly-news__schedule-item">
+              <span class="weekly-news__schedule-day">Piątek</span>
+              <span class="weekly-news__schedule-text">Research + draft postów LinkedIn i Instagram</span>
+            </div>
+            <div class="weekly-news__schedule-item">
+              <span class="weekly-news__schedule-day">Weekend</span>
+              <span class="weekly-news__schedule-text">Grafika karuzeli / posta w HiggsField</span>
+            </div>
+            <div class="weekly-news__schedule-item">
+              <span class="weekly-news__schedule-day">Poniedziałek</span>
+              <span class="weekly-news__schedule-text">Publikacja na LinkedIn</span>
+            </div>
+            <div class="weekly-news__schedule-item">
+              <span class="weekly-news__schedule-day">Wtorek</span>
+              <span class="weekly-news__schedule-text">Publikacja na Instagram</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="weekly-news__cta reveal">
+          <a href="#contact" class="btn btn-primary">Chcę news tygodnia w panelu</a>
+          <p class="weekly-news__note">W Cursorze wystarczy napisać: „Przygotuj post z newsów tygodnia IT/AWS" — resztą zajmie się workflow Content System.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TESTIMONIALS ═══ -->
+    <section class="testimonials" aria-labelledby="testimonials-title">
+      <div class="container">
+        <header class="section-header">
+          <span class="section-label reveal">Opinie</span>
+          <h2 class="section-title reveal" id="testimonials-title">Co mówią użytkownicy</h2>
+        </header>
+
+        <div class="testimonials__grid reveal-stagger">
+          <blockquote class="testimonial-card reveal">
+            <div class="testimonial-card__stars" aria-label="Ocena 5 na 5">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <p class="testimonial-card__quote">„Wreszcie przestałam gubić wersje postów w Slacku i Drive. Content System to nasze jedyne źródło prawdy — klient widzi dokładnie to, co zaplanowaliśmy."</p>
+            <footer class="testimonial-card__author">
+              <!-- PODMIANA: zdjęcie -->
+              <img class="testimonial-card__avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=88&h=88&fit=crop&q=80" alt="" width="44" height="44" loading="lazy">
+              <div>
+                <cite class="testimonial-card__name">Anna Kowalska</cite>
+                <p class="testimonial-card__role">Head of Social, Studio Forma</p>
+              </div>
+            </footer>
+          </blockquote>
+
+          <blockquote class="testimonial-card reveal">
+            <div class="testimonial-card__stars" aria-label="Ocena 5 na 5">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <p class="testimonial-card__quote">„Kalendarz treści to game changer. Widzę luki w harmonogramie zanim klient je zauważy. A offline? Genialne na spotkaniach bez Wi-Fi."</p>
+            <footer class="testimonial-card__author">
+              <img class="testimonial-card__avatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=88&h=88&fit=crop&q=80" alt="" width="44" height="44" loading="lazy">
+              <div>
+                <cite class="testimonial-card__name">Michał Nowak</cite>
+                <p class="testimonial-card__role">Founder, Growth Labs</p>
+              </div>
+            </footer>
+          </blockquote>
+
+          <blockquote class="testimonial-card reveal">
+            <div class="testimonial-card__stars" aria-label="Ocena 5 na 5">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <p class="testimonial-card__quote">„Prosty w obsłudze, a wygląda jak narzędzie za tysiące złotych. Prezentuję panel klientom B2B i za każdym razem słyszę: wow."</p>
+            <footer class="testimonial-card__author">
+              <img class="testimonial-card__avatar" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=88&h=88&fit=crop&q=80" alt="" width="44" height="44" loading="lazy">
+              <div>
+                <cite class="testimonial-card__name">Karolina Wiśniewska</cite>
+                <p class="testimonial-card__role">Account Director, Pixel &amp; Co</p>
+              </div>
+            </footer>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PRICING ═══ -->
+    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
+      <div class="container">
+        <header class="section-header">
+          <span class="section-label reveal">Cennik</span>
+          <h2 class="section-title reveal" id="pricing-title">Proste plany, bez ukrytych kosztów</h2>
+          <p class="section-desc reveal">Wybierz plan dopasowany do wielkości zespołu. Wszystkie zawierają pełny panel i wsparcie wdrożeniowe.</p>
+        </header>
+
+        <div class="pricing__grid reveal-stagger">
+          <article class="pricing-card reveal">
+            <h3 class="pricing-card__name">Starter</h3>
+            <p class="pricing-card__desc">Dla freelancerów i małych projektów</p>
+            <div class="pricing-card__price">149 zł <span>/ mies.</span></div>
+            <ul class="pricing-card__features">
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                1 panel treści
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Do 100 materiałów
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Widok siatka + kalendarz
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Wsparcie e-mail
+              </li>
+            </ul>
+            <a href="#contact" class="btn btn-secondary">Zacznij</a>
+          </article>
+
+          <article class="pricing-card pricing-card--featured reveal">
+            <span class="pricing-card__badge">Popularny</span>
+            <h3 class="pricing-card__name">Team</h3>
+            <p class="pricing-card__desc">Dla agencji i zespołów marketingowych</p>
+            <div class="pricing-card__price">399 zł <span>/ mies.</span></div>
+            <ul class="pricing-card__features">
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Do 5 paneli (klientów)
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Nielimitowane materiały
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Wdrożenie + szkolenie 1h
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Priorytetowe wsparcie
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Workflow „News tygodnia" IT/AWS
+              </li>
+            </ul>
+            <a href="#contact" class="btn btn-primary">Umów demo</a>
+          </article>
+
+          <article class="pricing-card reveal">
+            <h3 class="pricing-card__name">Enterprise</h3>
+            <p class="pricing-card__desc">Dla organizacji z wieloma markami</p>
+            <div class="pricing-card__price">Indyw. <span>/ mies.</span></div>
+            <ul class="pricing-card__features">
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Nielimitowane panele
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Dedykowany opiekun
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                Custom branding panelu
+              </li>
+              <li class="pricing-card__feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                SLA i integracje API
+              </li>
+            </ul>
+            <a href="#contact" class="btn btn-secondary">Kontakt</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FAQ ═══ -->
+    <section class="faq" id="faq" aria-labelledby="faq-title">
+      <div class="container">
+        <header class="section-header">
+          <span class="section-label reveal">FAQ</span>
+          <h2 class="section-title reveal" id="faq-title">Najczęstsze pytania</h2>
+        </header>
+
+        <div class="faq__list reveal">
+          <details class="faq__item">
+            <summary class="faq__question">
+              Czy Content System wymaga internetu?
+              <svg class="faq__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p class="faq__answer">Nie. Panel działa w pełni offline — wystarczy otworzyć plik HTML w przeglądarce. Idealny do prezentacji u klienta lub pracy bez stabilnego połączenia.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              Jak dodaję nowe treści do panelu?
+              <svg class="faq__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p class="faq__answer">Zapisz grafikę w folderze media/ (wg typu: posty, reklamy, grafiki) i dopisz wpis na początku pliku content-data.js. Treść pojawi się automatycznie w panelu po odświeżeniu strony.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              Jakie platformy social media obsługuje panel?
+              <svg class="faq__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p class="faq__answer">Instagram (IG), Facebook (FB), TikTok (TT), YouTube (YT), LinkedIn (LI) i X. Filtr platform pokazuje tylko te, które realnie występują w Twoich materiałach.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              Czy mogę ukryć treść bez kasowania pliku?
+              <svg class="faq__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p class="faq__answer">Tak. Usunięcie w panelu ukrywa materiał z widoku (zapamiętuje w localStorage), ale nie kasuje pliku grafiki ani wpisu w pliku danych. Przywróć wszystko jednym kliknięciem.</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              Czy mogę dostosować wygląd panelu do marki klienta?
+              <svg class="faq__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p class="faq__answer">W planie Enterprise oferujemy custom branding — kolory, logo i układ dopasowane do marki klienta. Sam panel pozostaje narzędziem generycznym „Content System".</p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__question">
+              Jak działa „News tygodnia" dla IT i AWS?
+              <svg class="faq__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </summary>
+            <p class="faq__answer">Workflow researchuje aktualne newsy z branży IT, AWS i programowania, przygotowuje osobne wersje postów na LinkedIn i Instagram oraz dodaje je do panelu Content System. Ty publikujesz ręcznie — treści nie lecą automatycznie na social media. Uruchomisz to jednym poleceniem w Cursorze lub poproś nas o setup w planie Team.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CTA + FORM ═══ -->
+    <section class="cta-section" id="contact" aria-labelledby="contact-title">
+      <div class="cta-section__bg" aria-hidden="true"></div>
+      <div class="container cta-section__inner">
+        <div class="cta-section__content reveal">
+          <span class="section-label">Kontakt</span>
+          <h2 class="section-title" id="contact-title">Gotowy uporządkować swoje treści?</h2>
+          <p class="section-desc">Umów bezpłatne demo — pokażemy panel na Twoich materiałach i odpowiemy na pytania w 15 minut.</p>
+        </div>
+
+        <form class="cta-form reveal" id="contact-form" novalidate>
+          <div class="cta-form__fields">
+            <div class="cta-form__group">
+              <label class="cta-form__label" for="name">Imię i nazwisko</label>
+              <input class="cta-form__input" type="text" id="name" name="name" required autocomplete="name" placeholder="Jan Kowalski">
+            </div>
+            <div class="cta-form__group">
+              <label class="cta-form__label" for="email">Adres e-mail</label>
+              <input class="cta-form__input" type="email" id="email" name="email" required autocomplete="email" placeholder="jan@firma.pl">
+            </div>
+            <div class="cta-form__group">
+              <label class="cta-form__label" for="message">Wiadomość (opcjonalnie)</label>
+              <textarea class="cta-form__textarea" id="message" name="message" placeholder="Opowiedz krótko o swoim zespole i potrzebach…"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary cta-form__submit">Wyślij prośbę o demo</button>
+          </div>
+
+          <div class="cta-form__success" role="status" aria-live="polite">
+            <div class="cta-form__success-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <h3>Dziękujemy!</h3>
+            <p>Twoja prośba została zapisana. Odezwiemy się w ciągu 24 godzin roboczych.</p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <a href="#" class="logo" aria-label="Content System">
+            <span class="logo__mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </span>
+            Content System
+          </a>
+          <p class="footer__brand-desc">Panel treści marketingowych dla zespołów, które cenią porządek i estetykę.</p>
+        </div>
+
+        <div>
+          <h3 class="footer__col-title">Produkt</h3>
+          <ul class="footer__links">
+            <li><a href="#features" class="footer__link">Funkcje</a></li>
+            <li><a href="#weekly-news" class="footer__link">News tygodnia</a></li>
+            <li><a href="#pricing" class="footer__link">Cennik</a></li>
+            <li><a href="#faq" class="footer__link">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer__col-title">Firma</h3>
+          <ul class="footer__links">
+            <!-- PODMIANA: linki -->
+            <li><a href="#" class="footer__link">O nas</a></li>
+            <li><a href="#" class="footer__link">Blog</a></li>
+            <li><a href="#" class="footer__link">Kariera</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer__col-title">Kontakt</h3>
+          <ul class="footer__links">
+            <!-- PODMIANA: dane kontaktowe -->
+            <li><a href="mailto:hello@contentsystem.pl" class="footer__link">hello@contentsystem.pl</a></li>
+            <li><a href="tel:+48123456789" class="footer__link">+48 123 456 789</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer__bottom">
+        <p>&copy; 2026 Content System. Wszelkie prawa zastrzeżone.</p>
+        <p>
+          <a href="#" class="footer__link">Polityka prywatności</a>
+          &nbsp;·&nbsp;
+          <a href="#" class="footer__link">Regulamin</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

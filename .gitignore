@@ -1,0 +1,14 @@
+# Secrets
+.env
+**/.env
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Archives / local exports
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
