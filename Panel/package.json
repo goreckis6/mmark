@@ -7,6 +7,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.758.0",
-    "better-sqlite3": "^11.9.1"
+    "sql.js": "^1.13.0"
   }
 }

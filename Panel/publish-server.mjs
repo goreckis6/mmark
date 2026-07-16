@@ -18,9 +18,9 @@ import {
 } from "./auth.mjs";
 import {
   deletePostForUser,
-  getDb,
   getDeletedIds,
   getPostsForUser,
+  initDb,
   setDeletedIds,
   upsertPost
 } from "./db.mjs";
@@ -71,10 +71,6 @@ try {
 } catch (err) {
   console.warn("Bedrock client init skipped:", err.message);
 }
-
-getDb();
-ensureAdminUser();
-ensureBootstrapUsers();
 
 function ensureMediaDir() {
   fs.mkdirSync(MEDIA_DIR, { recursive: true });
@@ -371,8 +367,12 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+await initDb();
+ensureAdminUser();
+ensureBootstrapUsers();
+
 server.listen(PORT, () => {
   console.log(`Content System server → http://localhost:${PORT}`);
-  console.log("Panel + API + SQLite auth");
+  console.log("Panel + API + SQLite auth (sql.js)");
   console.log("Bedrock:", bedrockClient ? BEDROCK_MODEL_ID + " @ " + AWS_REGION : "wyłączony");
 });

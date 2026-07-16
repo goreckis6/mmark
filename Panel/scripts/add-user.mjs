@@ -21,7 +21,7 @@ if (fs.existsSync(envPath)) {
 }
 
 import { hashPassword } from "../auth.mjs";
-import { createUser, findUserByUsername, getDb } from "../db.mjs";
+import { createUser, findUserByUsername, initDb } from "../db.mjs";
 
 const username = process.argv[2];
 const password = process.argv[3];
@@ -31,7 +31,7 @@ if (!username || !password) {
   process.exit(1);
 }
 
-getDb();
+await initDb();
 
 if (findUserByUsername(username)) {
   console.error("Użytkownik już istnieje:", username);
