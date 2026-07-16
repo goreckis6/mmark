@@ -2506,10 +2506,20 @@
     }
 
     .main-app[hidden] { display: none !important; }
+
+    /* Zanim JS sprawdzi sesję — nie flashuj panelu */
+    body.auth-pending .main-app { display: none !important; }
+    body.auth-pending .auth-gate { display: flex !important; }
   </style>
+  <script>
+    document.documentElement.classList.add("auth-pending");
+    document.addEventListener("DOMContentLoaded", function () {
+      document.body.classList.add("auth-pending");
+    });
+  </script>
 </head>
-<body>
-  <div class="auth-gate" id="auth-gate" hidden>
+<body class="auth-pending">
+  <div class="auth-gate" id="auth-gate">
     <div class="auth-gate-card">
       <div class="auth-gate-logo">
         <div class="auth-gate-logo-icon">
@@ -2520,10 +2530,10 @@
         </div>
         <div>
           <h2>Content System</h2>
-          <p>Zaloguj się, aby wejść do panelu</p>
+          <p id="auth-gate-subtitle">Sprawdzanie sesji…</p>
         </div>
       </div>
-      <form id="auth-gate-form">
+      <form id="auth-gate-form" hidden>
         <div class="auth-field">
           <label for="auth-username">Login</label>
           <input type="text" id="auth-username" autocomplete="username" required>
@@ -2538,7 +2548,7 @@
     </div>
   </div>
 
-  <div class="app main-app" id="main-app">
+  <div class="app main-app" id="main-app" hidden>
     <aside class="sidebar">
       <div class="logo">
         <div class="logo-icon">
@@ -5503,13 +5513,24 @@
       function showAuthGate(show) {
         var gate = document.getElementById("auth-gate");
         var app = document.getElementById("main-app");
+        var form = document.getElementById("auth-gate-form");
+        var subtitle = document.getElementById("auth-gate-subtitle");
+        document.body.classList.remove("auth-pending");
+        document.documentElement.classList.remove("auth-pending");
         if (gate) gate.hidden = !show;
         if (app) app.hidden = show;
+        if (form) form.hidden = !show;
+        if (subtitle) {
+          subtitle.textContent = show
+            ? "Zaloguj się, aby wejść do panelu"
+            : "Sprawdzanie sesji…";
+        }
       }
 
       function bindAuthGateForm() {
         var form = document.getElementById("auth-gate-form");
         if (!form || form.dataset.bound) return;
+        form.hidden = false;
         form.dataset.bound = "1";
         form.addEventListener("submit", function (e) {
           e.preventDefault();
