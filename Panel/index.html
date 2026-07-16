@@ -5508,7 +5508,7 @@
         var errEl = document.getElementById("auth-error");
         if (errEl) {
           errEl.textContent =
-            "Serwer API nie działa (brak /health). hPanel: root ./ → build: npm run build → entry: app.js → redeploy.";
+            "API offline — Node.js nie działa. hPanel: typ strony = Node.js Web App (nie zwykły hosting). Build: npm run build. Entry: app.js. Potem Restart.";
           errEl.classList.add("show");
         }
         var btn = document.getElementById("auth-submit");
