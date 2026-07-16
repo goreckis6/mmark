@@ -250,13 +250,13 @@ export function createApp() {
     next();
   });
 
-  app.get("/health", async function (req, res) {
-    const bedrockReady = !!(await getBedrockClient());
+  // Lekki health — bez Bedrock (żeby start/health nie wisiał na AWS)
+  app.get("/health", function (req, res) {
     sendJson(req, res, 200, {
       ok: true,
       service: "content-system-server",
       upload: true,
-      bedrock: bedrockReady,
+      bedrock: !bedrockInitFailed,
       auth: true,
       store: "json",
       region: AWS_REGION,
