@@ -2656,11 +2656,11 @@
 
   <div class="gen-toast" id="gen-toast" role="status" aria-live="polite"></div>
 
-  <script src="content-data.js?v=4"></script>
-  <script src="image-formats.js?v=4"></script>
-  <script src="auth-client.js?v=4"></script>
-  <script src="brand-kit.js?v=4"></script>
-  <script src="post-manager.js?v=4"></script>
+  <script src="content-data.js?v=5"></script>
+  <script src="image-formats.js?v=5"></script>
+  <script src="auth-client.js?v=5"></script>
+  <script src="brand-kit.js?v=5"></script>
+  <script src="post-manager.js?v=5"></script>
   <script>
     (function () {
       "use strict";
@@ -3700,10 +3700,27 @@
         return str.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       }
 
+      function resolveFetchUrl(url) {
+        // Przez serwer Node — omija CORS (Reddit/Lobsters) i rate-limit przeglądarki
+        if (window.AuthClient && AuthClient.getToken && AuthClient.getToken()) {
+          return AuthClient.getApiBase() + "/api/proxy?url=" + encodeURIComponent(url);
+        }
+        return url;
+      }
+
+      function authFetchHeaders(extra) {
+        var headers = Object.assign({ Accept: "application/json" }, extra || {});
+        if (window.AuthClient && AuthClient.getToken && AuthClient.getToken()) {
+          headers.Authorization = "Bearer " + AuthClient.getToken();
+        }
+        return headers;
+      }
+
       function fetchJson(url, timeoutMs) {
         timeoutMs = timeoutMs || 14000;
+        var requestUrl = resolveFetchUrl(url);
         return Promise.race([
-          fetch(url, { headers: { Accept: "application/json" } }).then(function (res) {
+          fetch(requestUrl, { headers: authFetchHeaders() }).then(function (res) {
             if (!res.ok) throw new Error("HTTP " + res.status);
             return res.json();
           }),
@@ -3711,6 +3728,28 @@
             setTimeout(function () { reject(new Error("timeout")); }, timeoutMs);
           })
         ]);
+      }
+
+      function delayMs(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+      }
+
+      function mapPool(items, concurrency, worker) {
+        var cursor = 0;
+        var results = new Array(items.length);
+        function next() {
+          if (cursor >= items.length) return Promise.resolve();
+          var idx = cursor++;
+          return Promise.resolve(worker(items[idx], idx)).then(function (value) {
+            results[idx] = value;
+            return next();
+          });
+        }
+        var starters = [];
+        for (var n = 0; n < Math.min(concurrency, items.length); n++) {
+          starters.push(next());
+        }
+        return Promise.all(starters).then(function () { return results; });
       }
 
       function isRecentUnix(ts, days) {
@@ -4126,8 +4165,10 @@
       }
 
       function fetchRssFeed(feedUrl, source, maxItems) {
-        var proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(feedUrl);
-        return fetch(proxy, { headers: { Accept: "application/xml, text/xml, */*" } })
+        var requestUrl = resolveFetchUrl(feedUrl);
+        return fetch(requestUrl, {
+          headers: authFetchHeaders({ Accept: "application/xml, text/xml, application/rss+xml, */*" })
+        })
           .then(function (res) {
             if (!res.ok) throw new Error("rss");
             return res.text();
@@ -4290,27 +4331,39 @@
         var perSource = Math.max(4, Math.ceil(count / 2));
         if (hasExclude) perSource = Math.max(perSource * 2, count * 3);
         var hnScan = hasExclude ? Math.min(120, count * 10) : count;
+
+        var devTags = ["aws", "devops", "programming", "cloud", "security", "ai"];
+        var redditSubs = ["aws", "programming", "devops", "kubernetes", "sysadmin", "technology"];
+        var rssFeeds = [
+          ["https://feeds.arstechnica.com/arstechnica/technology-lab", "Ars Technica"],
+          ["https://www.theregister.com/headlines.atom", "The Register"],
+          ["https://www.infoworld.com/index.rss", "InfoWorld"],
+          ["https://techcrunch.com/feed/", "TechCrunch"],
+          ["https://www.zdnet.com/news/rss.xml", "ZDNet"]
+        ];
+
+        // Max 2 równoległe do Dev.to (unikamy 429), Reddit/RSS też z limitem
         return Promise.all([
-          fetchHackerNewsStories(hnScan),
-          fetchLobsters(),
-          fetchDevToTag("aws", perSource),
-          fetchDevToTag("devops", perSource),
-          fetchDevToTag("programming", perSource),
-          fetchDevToTag("cloud", perSource),
-          fetchDevToTag("security", perSource),
-          fetchDevToTag("ai", perSource),
-          fetchRedditSubreddit("aws", perSource),
-          fetchRedditSubreddit("programming", perSource),
-          fetchRedditSubreddit("devops", perSource),
-          fetchRedditSubreddit("kubernetes", perSource),
-          fetchRedditSubreddit("sysadmin", perSource),
-          fetchRedditSubreddit("technology", perSource),
-          fetchRssFeed("https://feeds.arstechnica.com/arstechnica/technology-lab", "Ars Technica", perSource),
-          fetchRssFeed("https://www.theregister.com/headlines.atom", "The Register", perSource),
-          fetchRssFeed("https://www.infoworld.com/index.rss", "InfoWorld", perSource),
-          fetchRssFeed("https://techcrunch.com/feed/", "TechCrunch", perSource),
-          fetchRssFeed("https://www.zdnet.com/news/rss.xml", "ZDNet", perSource)
-        ]).then(function (results) {
+          fetchHackerNewsStories(hnScan).catch(function () { return []; }),
+          fetchLobsters().catch(function () { return []; }),
+          mapPool(devTags, 2, function (tag, i) {
+            return delayMs(i * 350).then(function () {
+              return fetchDevToTag(tag, perSource);
+            });
+          }),
+          mapPool(redditSubs, 2, function (sub, i) {
+            return delayMs(i * 250).then(function () {
+              return fetchRedditSubreddit(sub, perSource);
+            });
+          }),
+          mapPool(rssFeeds, 2, function (pair) {
+            return fetchRssFeed(pair[0], pair[1], perSource);
+          })
+        ]).then(function (groups) {
+          var results = [groups[0], groups[1]]
+            .concat(groups[2] || [])
+            .concat(groups[3] || [])
+            .concat(groups[4] || []);
           var news = mergeWeeklyNews(results, count, excludeMap);
           if (news.length < Math.min(3, count)) {
             return fetchHackerNewsStories(Math.max(count * 4, 40)).then(function (hn) {

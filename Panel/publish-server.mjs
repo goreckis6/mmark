@@ -328,6 +328,81 @@ export function createApp() {
     }
   });
 
+  // Proxy news sources (Reddit/Lobsters/dev.to/RSS) — omija CORS i 403 przeglądarki
+  const PROXY_HOSTS = new Set([
+    "lobste.rs",
+    "www.reddit.com",
+    "reddit.com",
+    "oauth.reddit.com",
+    "dev.to",
+    "hacker-news.firebaseio.com",
+    "feeds.arstechnica.com",
+    "www.theregister.com",
+    "www.infoworld.com",
+    "techcrunch.com",
+    "www.zdnet.com",
+    "feeds.feedburner.com"
+  ]);
+  const proxyCache = new Map();
+
+  function isAllowedProxyUrl(raw) {
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+      return PROXY_HOSTS.has(u.hostname.toLowerCase());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  app.get("/api/proxy", async function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    const target = String(req.query.url || "").trim();
+    if (!target || !isAllowedProxyUrl(target)) {
+      return sendJson(req, res, 400, { error: "Niedozwolony URL proxy" });
+    }
+
+    const cached = proxyCache.get(target);
+    if (cached && cached.expires > Date.now()) {
+      res.status(cached.status);
+      res.setHeader("Content-Type", cached.contentType);
+      res.setHeader("X-Proxy-Cache", "HIT");
+      return res.end(cached.body);
+    }
+
+    try {
+      const upstream = await fetch(target, {
+        headers: {
+          Accept: "application/json, application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; ContentSystem/1.0; +https://morphyimg.com) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        },
+        redirect: "follow"
+      });
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      const contentType = upstream.headers.get("content-type") || "application/octet-stream";
+      if (upstream.ok && buf.length < 2 * 1024 * 1024) {
+        proxyCache.set(target, {
+          status: upstream.status,
+          contentType,
+          body: buf,
+          expires: Date.now() + 5 * 60 * 1000
+        });
+        if (proxyCache.size > 80) {
+          const first = proxyCache.keys().next().value;
+          proxyCache.delete(first);
+        }
+      }
+      res.status(upstream.status);
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("X-Proxy-Cache", "MISS");
+      res.end(buf);
+    } catch (err) {
+      sendJson(req, res, 502, { error: err.message || "Proxy fetch failed" });
+    }
+  });
+
   app.post("/ai/translate", async function (req, res) {
     const auth = requireAuth(req, res);
     if (!auth) return;
