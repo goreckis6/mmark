@@ -250,9 +250,15 @@ const server = http.createServer(async (req, res) => {
         upload: true,
         bedrock: !!bedrockClient,
         auth: true,
+        store: "json",
         region: AWS_REGION,
         model: BEDROCK_MODEL_ID
       });
+    }
+
+    if (req.method === "GET" && pathname === "/favicon.ico") {
+      res.writeHead(204);
+      return res.end();
     }
 
     if (pathname === "/auth/login" && req.method === "POST") {
@@ -372,14 +378,21 @@ try {
   ensureAdminUser();
   ensureBootstrapUsers();
 } catch (err) {
-  console.error("FATAL — baza danych:", err.message);
-  process.exit(1);
+  console.error("WARN — baza danych:", err.message, "— serwer startuje bez auth DB");
 }
 
 const HOST = process.env.HOST || "0.0.0.0";
 
 server.listen(PORT, HOST, () => {
   console.log(`Content System server → http://${HOST}:${PORT}`);
-  console.log("Panel + API + SQLite auth (sql.js)");
+  console.log("Panel + API + auth (JSON store)");
   console.log("Bedrock:", bedrockClient ? BEDROCK_MODEL_ID + " @ " + AWS_REGION : "wyłączony");
+});
+
+process.on("uncaughtException", function (err) {
+  console.error("uncaughtException:", err);
+});
+
+process.on("unhandledRejection", function (err) {
+  console.error("unhandledRejection:", err);
 });
