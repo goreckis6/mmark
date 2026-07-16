@@ -358,7 +358,9 @@
 
   function proxyBase() {
     if (global.AuthClient) return global.AuthClient.getApiBase();
-    if (global.BrandKit) return (global.BrandKit.getUploadProxy() || "").replace(/\/$/, "");
+    if (global.location && global.location.protocol !== "file:") {
+      return global.location.origin.replace(/\/$/, "");
+    }
     return "http://localhost:8787";
   }
 
@@ -373,7 +375,7 @@
   function uploadImage(file) {
     var base = proxyBase();
     if (!base) {
-      return Promise.reject(new Error("Uruchom serwer uploadu: node publish-server.mjs (ustaw URL w Motyw marki)"));
+      return Promise.reject(new Error("Uruchom serwer: npm start (brak URL API)"));
     }
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
@@ -539,9 +541,17 @@
       return '<option value="' + s + '"' + sel + ">" + STATUS_LABELS[s] + "</option>";
     }).join("");
 
-    var topicOpts = global.BrandKit
-      ? global.BrandKit.renderTopicOptions(p.topic)
-      : '<option value="">— wybierz temat —</option>';
+    var defaultTopics = [
+      "IT / AWS", "Rekrutacja", "Case study", "Edukacja", "Ogłoszenie", "News tygodnia"
+    ];
+    var topicOpts = '<option value="">— wybierz temat —</option>';
+    defaultTopics.forEach(function (t) {
+      var sel = t === p.topic ? " selected" : "";
+      topicOpts += '<option value="' + escapeAttr(t) + '"' + sel + ">" + escapeHtml(t) + "</option>";
+    });
+    if (p.topic && defaultTopics.indexOf(p.topic) === -1) {
+      topicOpts += '<option value="' + escapeAttr(p.topic) + '" selected>' + escapeHtml(p.topic) + "</option>";
+    }
 
     var preview = p.image
       ? '<img src="' + escapeAttr(p.image) + '" alt="" class="editor-preview-img">'
@@ -615,7 +625,6 @@
               "</div>" +
             "</div>" +
             '<div class="editor-side">' +
-              (global.BrandKit ? global.BrandKit.renderEditorBrandHint() : "") +
               '<div class="editor-field">' +
                 '<span class="editor-label">Grafika</span>' +
                 '<div class="editor-drop" id="editor-drop">' + preview + "</div>" +

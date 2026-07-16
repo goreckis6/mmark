@@ -30,14 +30,12 @@
     if (global.location && global.location.protocol !== "file:") {
       origin = global.location.origin.replace(/\/$/, "");
     }
-
-    if (global.BrandKit) {
-      var fromBrand = (global.BrandKit.getUploadProxy() || "").replace(/\/$/, "");
-      // Na produkcji ignoruj stare ustawienie proxy z localhost
-      if (fromBrand && !(origin && isLocalHostUrl(fromBrand) && !isLocalHostUrl(origin))) {
-        return fromBrand;
+    try {
+      var stored = (localStorage.getItem("content-system-upload-proxy") || "").replace(/\/$/, "");
+      if (stored && !(origin && isLocalHostUrl(stored) && !isLocalHostUrl(origin))) {
+        return stored;
       }
-    }
+    } catch (e) { /* ignore */ }
     if (global.location.protocol === "file:") return "http://localhost:8787";
     if (global.location.port === "8080") return "http://localhost:8787";
     return origin || "http://localhost:8787";

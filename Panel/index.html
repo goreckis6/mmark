@@ -2589,12 +2589,6 @@
             <span>Generator newsów</span>
           </div>
         </div>
-        <div class="nav-item" id="nav-brand" role="button" tabindex="0">
-          <div class="nav-item-left">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-            <span>Motyw marki</span>
-          </div>
-        </div>
         <div class="nav-item" id="nav-formats" role="button" tabindex="0">
           <div class="nav-item-left">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
@@ -2680,11 +2674,10 @@
 
   <div class="gen-toast" id="gen-toast" role="status" aria-live="polite"></div>
 
-  <script src="content-data.js?v=5"></script>
-  <script src="image-formats.js?v=5"></script>
-  <script src="auth-client.js?v=5"></script>
-  <script src="brand-kit.js?v=5"></script>
-  <script src="post-manager.js?v=5"></script>
+  <script src="content-data.js?v=6"></script>
+  <script src="image-formats.js?v=6"></script>
+  <script src="auth-client.js?v=6"></script>
+  <script src="post-manager.js?v=6"></script>
   <script>
     (function () {
       "use strict";
@@ -3067,10 +3060,6 @@
         if (genNav) {
           genNav.classList.toggle("active", state.mode === "generator");
         }
-        var intNav = document.getElementById("nav-brand");
-        if (intNav) {
-          intNav.classList.toggle("active", state.mode === "brand");
-        }
         var fmtNav = document.getElementById("nav-formats");
         if (fmtNav) {
           fmtNav.classList.toggle("active", state.mode === "formats");
@@ -3157,12 +3146,6 @@
           document.getElementById("view-title").textContent = "Generator newsów";
           document.getElementById("breadcrumbs").innerHTML =
             'NARZĘDZIA / <span>News tygodnia</span>';
-          return;
-        }
-        if (state.mode === "brand") {
-          document.getElementById("view-title").textContent = "Motyw marki";
-          document.getElementById("breadcrumbs").innerHTML =
-            'NARZĘDZIA / <span>Logo · kolory · tematy</span>';
           return;
         }
         if (state.mode === "formats") {
@@ -3417,16 +3400,6 @@
         if (state.mode === "generator") {
           area.innerHTML = renderGeneratorHTML();
           bindGeneratorEvents();
-          return;
-        }
-
-        if (state.mode === "brand") {
-          if (window.BrandKit) {
-            area.innerHTML = BrandKit.renderBrandHTML();
-            BrandKit.bindBrandEvents(showToast);
-          } else {
-            area.innerHTML = '<p class="empty-state">Brak modułu brand-kit.js</p>';
-          }
           return;
         }
 
@@ -3945,7 +3918,6 @@
 
       function getLocalServerUrl() {
         if (window.AuthClient && AuthClient.getApiBase) return AuthClient.getApiBase();
-        if (window.BrandKit) return BrandKit.getUploadProxy();
         if (location.protocol !== "file:") return location.origin.replace(/\/$/, "");
         return "http://localhost:8787";
       }
@@ -5420,12 +5392,6 @@
         render();
       }
 
-      function openBrand() {
-        state.mode = "brand";
-        closeDetail();
-        render();
-      }
-
       function openFormats() {
         state.mode = "formats";
         closeDetail();
@@ -5444,17 +5410,6 @@
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             openGenerator();
-          }
-        });
-      }
-
-      var navBrand = document.getElementById("nav-brand");
-      if (navBrand) {
-        navBrand.addEventListener("click", openBrand);
-        navBrand.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            openBrand();
           }
         });
       }
