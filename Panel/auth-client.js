@@ -21,14 +21,26 @@
     return getAppBase() + "/";
   }
 
+  function isLocalHostUrl(url) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(url || "");
+  }
+
   function getApiBase() {
+    var origin = "";
+    if (global.location && global.location.protocol !== "file:") {
+      origin = global.location.origin.replace(/\/$/, "");
+    }
+
     if (global.BrandKit) {
       var fromBrand = (global.BrandKit.getUploadProxy() || "").replace(/\/$/, "");
-      if (fromBrand) return fromBrand;
+      // Na produkcji ignoruj stare ustawienie proxy z localhost
+      if (fromBrand && !(origin && isLocalHostUrl(fromBrand) && !isLocalHostUrl(origin))) {
+        return fromBrand;
+      }
     }
     if (global.location.protocol === "file:") return "http://localhost:8787";
     if (global.location.port === "8080") return "http://localhost:8787";
-    return global.location.origin.replace(/\/$/, "");
+    return origin || "http://localhost:8787";
   }
 
   function checkHealth() {

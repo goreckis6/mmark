@@ -65,17 +65,30 @@
     localStorage.setItem(TOPICS_KEY, JSON.stringify(list));
   }
 
-  function getUploadProxy() {
-    var stored = localStorage.getItem(UPLOAD_PROXY_KEY);
-    if (stored) return stored;
+  function defaultUploadProxy() {
     if (global.location && global.location.protocol !== "file:") {
       return global.location.origin.replace(/\/$/, "");
     }
     return "http://localhost:8787";
   }
 
+  function getUploadProxy() {
+    var stored = (localStorage.getItem(UPLOAD_PROXY_KEY) || "").trim();
+    var fallback = defaultUploadProxy();
+    // Stare lokalne ustawienie z dev nie może nadpisywać produkcji
+    if (stored && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(stored)) {
+      if (fallback.indexOf("localhost") === -1 && fallback.indexOf("127.0.0.1") === -1) {
+        localStorage.setItem(UPLOAD_PROXY_KEY, fallback);
+        return fallback;
+      }
+    }
+    if (stored) return stored;
+    return fallback;
+  }
+
   function saveUploadProxy(url) {
-    localStorage.setItem(UPLOAD_PROXY_KEY, (url || "").trim() || "http://localhost:8787");
+    var next = (url || "").trim() || defaultUploadProxy();
+    localStorage.setItem(UPLOAD_PROXY_KEY, next);
   }
 
   function renderBrandHTML() {

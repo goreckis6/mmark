@@ -2656,11 +2656,11 @@
 
   <div class="gen-toast" id="gen-toast" role="status" aria-live="polite"></div>
 
-  <script src="content-data.js"></script>
-  <script src="image-formats.js"></script>
-  <script src="auth-client.js?v=3"></script>
-  <script src="brand-kit.js"></script>
-  <script src="post-manager.js"></script>
+  <script src="content-data.js?v=4"></script>
+  <script src="image-formats.js?v=4"></script>
+  <script src="auth-client.js?v=4"></script>
+  <script src="brand-kit.js?v=4"></script>
+  <script src="post-manager.js?v=4"></script>
   <script>
     (function () {
       "use strict";
@@ -2882,7 +2882,7 @@
       }
 
       function getDeletedIds() {
-        if (window.PostManager && PostManager.isServerMode()) {
+        if (window.PostManager && typeof PostManager.isServerMode === "function" && PostManager.isServerMode()) {
           return PostManager.getDeletedIds();
         }
         try {
@@ -2894,7 +2894,7 @@
       }
 
       function saveDeletedIds(ids) {
-        if (window.PostManager && PostManager.isServerMode()) {
+        if (window.PostManager && typeof PostManager.isServerMode === "function" && PostManager.isServerMode()) {
           PostManager.saveDeletedIds(ids);
           return;
         }
@@ -3881,7 +3881,10 @@
       var bedrockAvailableCache = null;
 
       function getLocalServerUrl() {
-        return window.BrandKit ? BrandKit.getUploadProxy() : "http://localhost:8787";
+        if (window.AuthClient && AuthClient.getApiBase) return AuthClient.getApiBase();
+        if (window.BrandKit) return BrandKit.getUploadProxy();
+        if (location.protocol !== "file:") return location.origin.replace(/\/$/, "");
+        return "http://localhost:8787";
       }
 
       function checkBedrockAvailable() {
