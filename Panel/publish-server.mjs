@@ -228,9 +228,9 @@ function serveStatic(req, res, filePath) {
   return true;
 }
 
-export async function createApp() {
+export function createApp() {
   try {
-    await initDb();
+    initDb();
     ensureAdminUser();
     ensureBootstrapUsers();
   } catch (err) {

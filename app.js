@@ -1,17 +1,33 @@
 /**
  * Hostinger entry — startup file: app.js
- * Express app: panel + API + auth
+ * Compatible with Passenger (listen on "passenger") and local npm start (PORT).
  */
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { createApp } from "./Panel/publish-server.mjs";
 
-const PORT = Number(process.env.PORT) || 8787;
+const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
+const app = createApp();
 
-const app = await createApp();
+function startServer() {
+  if (typeof globalThis.PhusionPassenger !== "undefined") {
+    globalThis.PhusionPassenger.configure({ autoInstall: false });
+    app.listen("passenger", function () {
+      console.log("Content System via Passenger");
+    });
+    return;
+  }
+  app.listen(PORT, HOST, function () {
+    console.log("Content System → http://" + HOST + ":" + PORT);
+  });
+}
 
-app.listen(PORT, HOST, function () {
-  console.log("Content System → http://" + HOST + ":" + PORT);
-  console.log("Express + JSON store + auth");
-});
+const entry = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const isEntryFile = entry === path.resolve(fileURLToPath(import.meta.url));
+
+if (isEntryFile || process.env.PASSENGER_APP_ENV) {
+  startServer();
+}
 
 export default app;

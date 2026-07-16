@@ -40,7 +40,7 @@ function persistStore() {
   fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2));
 }
 
-export async function initDb() {
+export function initDb() {
   loadStore();
   return store;
 }
