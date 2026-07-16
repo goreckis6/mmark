@@ -7,6 +7,20 @@
   var TOKEN_KEY = "content-system-auth-token";
   var USER_KEY = "content-system-auth-user";
 
+  function getAppBase() {
+    var path = global.location.pathname;
+    if (path === "/Panel" || path.indexOf("/Panel/") === 0) return "/Panel";
+    return "";
+  }
+
+  function getLoginUrl() {
+    return getAppBase() + "/login.html";
+  }
+
+  function getHomeUrl() {
+    return getAppBase() + "/";
+  }
+
   function getApiBase() {
     if (global.BrandKit) {
       var fromBrand = (global.BrandKit.getUploadProxy() || "").replace(/\/$/, "");
@@ -78,7 +92,7 @@
         if (res.status === 401 && path !== "/auth/login") {
           clearSession();
           if (isServerMode() && !/login\.html$/i.test(global.location.pathname)) {
-            global.location.href = "/login.html";
+            global.location.href = getLoginUrl();
           }
         }
         if (!res.ok) {
@@ -108,7 +122,7 @@
     return apiFetch("/auth/logout", { method: "POST" }).catch(function () { /* ignore */ })
       .finally(function () {
         clearSession();
-        global.location.href = "/login.html";
+        global.location.href = getLoginUrl();
       });
   }
 
@@ -117,7 +131,7 @@
     var redirect = options.redirect !== false;
     if (!getToken()) {
       if (redirect && isServerMode() && !/login\.html$/i.test(global.location.pathname)) {
-        global.location.href = "/login.html";
+        global.location.href = getLoginUrl();
       }
       return Promise.reject(new Error("redirect"));
     }
@@ -126,13 +140,16 @@
       return data.user;
     }).catch(function (err) {
       if (redirect && err.message !== "redirect" && isServerMode()) {
-        global.location.href = "/login.html";
+        global.location.href = getLoginUrl();
       }
       throw err;
     });
   }
 
   global.AuthClient = {
+    getAppBase: getAppBase,
+    getLoginUrl: getLoginUrl,
+    getHomeUrl: getHomeUrl,
     getApiBase: getApiBase,
     isServerMode: isServerMode,
     detectAuthRequired: detectAuthRequired,

@@ -13,4 +13,5 @@ Options -Indexes +FollowSymLinks
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteRule ^$ Panel/ [R=302,L]
+  RewriteRule ^login\.html$ Panel/login.html [R=302,L]
 </IfModule>

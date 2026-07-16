@@ -148,7 +148,7 @@
     (function () {
       if (AuthClient.getToken()) {
         AuthClient.requireAuth().then(function () {
-          window.location.href = "/";
+          window.location.href = AuthClient.getHomeUrl();
         }).catch(function () { /* form */ });
       }
 
@@ -166,7 +166,7 @@
           document.getElementById("username").value.trim(),
           document.getElementById("password").value
         ).then(function () {
-          window.location.href = "/";
+          window.location.href = AuthClient.getHomeUrl();
         }).catch(function (err) {
           errEl.textContent = (err && err.message) || "Nie udało się zalogować";
           errEl.classList.add("show");
