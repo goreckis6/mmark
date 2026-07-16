@@ -5494,9 +5494,26 @@
           });
       }
 
+      function showApiDownMessage() {
+        showAuthGate(true);
+        bindAuthGateForm();
+        var errEl = document.getElementById("auth-error");
+        if (errEl) {
+          errEl.textContent =
+            "Serwer API nie działa (brak /health). W hPanel: Node.js Web App → root: Panel → entry: app.js → redeploy.";
+          errEl.classList.add("show");
+        }
+        var btn = document.getElementById("auth-submit");
+        if (btn) btn.disabled = true;
+      }
+
       if (window.AuthClient) {
-        AuthClient.detectAuthRequired().then(function (required) {
-          if (!required) {
+        AuthClient.checkHealth().then(function (health) {
+          if (AuthClient.isServerMode() && !health.reachable) {
+            showApiDownMessage();
+            return;
+          }
+          if (!health.auth) {
             showAuthGate(false);
             bootApp();
             return;

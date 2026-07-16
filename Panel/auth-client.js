@@ -31,16 +31,22 @@
     return global.location.origin.replace(/\/$/, "");
   }
 
-  function detectAuthRequired() {
+  function checkHealth() {
     return fetch(getApiBase() + "/health", { headers: { Accept: "application/json" } })
       .then(function (res) {
-        if (!res.ok) return false;
-        return res.json();
+        if (!res.ok) return { reachable: false, auth: false };
+        return res.json().then(function (data) {
+          return {
+            reachable: !!(data && data.ok),
+            auth: !!(data && data.auth)
+          };
+        });
       })
-      .then(function (data) {
-        return !!(data && data.auth);
-      })
-      .catch(function () { return false; });
+      .catch(function () { return { reachable: false, auth: false }; });
+  }
+
+  function detectAuthRequired() {
+    return checkHealth().then(function (h) { return h.auth; });
   }
 
   function isServerMode() {
@@ -152,6 +158,7 @@
     getHomeUrl: getHomeUrl,
     getApiBase: getApiBase,
     isServerMode: isServerMode,
+    checkHealth: checkHealth,
     detectAuthRequired: detectAuthRequired,
     getToken: getToken,
     getUser: getUser,
