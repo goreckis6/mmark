@@ -159,8 +159,9 @@
         };
         healthCheck().then(function (health) {
           if (!health.reachable) {
-            errEl.textContent =
-              "API offline — Node.js nie działa. hPanel: Node.js Web App → build: npm run build → entry: app.js → Restart.";
+            errEl.innerHTML =
+              "Brak serwera API na Hostingerze (tylko hosting plików). " +
+              "<a href=\"./\" style=\"color:#818cf8\">Wejdź do panelu bez logowania →</a>";
             errEl.classList.add("show");
             btn.disabled = true;
           }

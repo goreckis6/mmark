@@ -5502,28 +5502,31 @@
         });
       }
 
-      function showApiDownMessage() {
-        showAuthGate(true);
-        bindAuthGateForm();
-        var errEl = document.getElementById("auth-error");
-        if (errEl) {
-          errEl.textContent =
-            "API offline — Node.js nie działa. hPanel: typ strony = Node.js Web App (nie zwykły hosting). Build: npm run build. Entry: app.js. Potem Restart.";
-          errEl.classList.add("show");
-        }
-        var btn = document.getElementById("auth-submit");
-        if (btn) btn.disabled = true;
+      function showLocalModeBanner() {
+        var existing = document.getElementById("local-mode-banner");
+        if (existing) return;
+        var banner = document.createElement("div");
+        banner.id = "local-mode-banner";
+        banner.style.cssText =
+          "position:fixed;bottom:12px;left:12px;right:12px;z-index:9999;padding:10px 14px;" +
+          "background:#1c1c28;border:1px solid #3f3f52;border-radius:8px;color:#c8c8d8;" +
+          "font-size:12px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.35)";
+        banner.innerHTML =
+          "Tryb lokalny (bez API). Dane tylko w tej przeglądarce. " +
+          "Logowanie / sync / Bedrock wymagają Node.js Web App w hPanel. " +
+          "<button type=\"button\" id=\"local-mode-dismiss\" style=\"margin-left:8px;background:#2a2a3a;border:1px solid #444;color:#eee;border-radius:6px;padding:2px 8px;cursor:pointer\">OK</button>";
+        document.body.appendChild(banner);
+        var btn = document.getElementById("local-mode-dismiss");
+        if (btn) btn.onclick = function () { banner.remove(); };
       }
 
       if (window.AuthClient) {
         getHealthCheck().then(function (health) {
-          if (AuthClient.isServerMode() && !health.reachable) {
-            showApiDownMessage();
-            return;
-          }
-          if (!health.auth) {
+          // Brak Node na Hostingerze → panel działa lokalnie (localStorage), bez blokady
+          if (!health.reachable || !health.auth) {
             showAuthGate(false);
             bootApp();
+            if (AuthClient.isServerMode() && !health.reachable) showLocalModeBanner();
             return;
           }
           if (!AuthClient.getToken()) {
