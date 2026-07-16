@@ -1,9 +1,4 @@
 /**
- * Hostinger entry point — startup file: server.js
+ * Hostinger alternate entry — startup file: server.js
  */
-try {
-  await import("./publish-server.mjs");
-} catch (err) {
-  console.error("STARTUP FAILED:", err);
-  throw err;
-}
+import "./app.js";
