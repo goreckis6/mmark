@@ -1,5 +1,5 @@
 /**
- * Hostinger entry point — startup file: server.js
+ * Hostinger alternate entry — startup file: app.js
  */
 try {
   await import("./publish-server.mjs");

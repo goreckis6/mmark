@@ -7,7 +7,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { URL } from "node:url";
-import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import {
   ensureAdminUser,
   ensureBootstrapUsers,
@@ -66,10 +65,20 @@ const AWS_REGION = process.env.AWS_REGION || "eu-central-1";
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "eu.anthropic.claude-opus-4-8";
 
 let bedrockClient = null;
-try {
-  bedrockClient = new BedrockRuntimeClient({ region: AWS_REGION });
-} catch (err) {
-  console.warn("Bedrock client init skipped:", err.message);
+let bedrockInitFailed = false;
+
+async function getBedrockClient() {
+  if (bedrockClient) return bedrockClient;
+  if (bedrockInitFailed) return null;
+  try {
+    const { BedrockRuntimeClient } = await import("@aws-sdk/client-bedrock-runtime");
+    bedrockClient = new BedrockRuntimeClient({ region: AWS_REGION });
+    return bedrockClient;
+  } catch (err) {
+    bedrockInitFailed = true;
+    console.warn("Bedrock client init skipped:", err.message);
+    return null;
+  }
 }
 
 function ensureMediaDir() {
@@ -158,8 +167,10 @@ function parseBedrockText(modelId, rawBody) {
 }
 
 async function invokeBedrock({ system, prompt, maxTokens }) {
-  if (!bedrockClient) throw new Error("Bedrock niedostępny — sprawdź AWS credentials i region");
+  const client = await getBedrockClient();
+  if (!client) throw new Error("Bedrock niedostępny — sprawdź AWS credentials i region");
 
+  const { InvokeModelCommand } = await import("@aws-sdk/client-bedrock-runtime");
   const modelId = BEDROCK_MODEL_ID;
   let body;
 
@@ -199,7 +210,7 @@ async function invokeBedrock({ system, prompt, maxTokens }) {
     body
   });
 
-  const response = await bedrockClient.send(command);
+  const response = await client.send(command);
   return parseBedrockText(modelId, response.body).trim();
 }
 
@@ -244,11 +255,12 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (req.method === "GET" && pathname === "/health") {
+      const bedrockReady = !!(await getBedrockClient());
       return json(res, req, 200, {
         ok: true,
         service: "content-system-server",
         upload: true,
-        bedrock: !!bedrockClient,
+        bedrock: bedrockReady,
         auth: true,
         store: "json",
         region: AWS_REGION,
@@ -386,7 +398,7 @@ const HOST = process.env.HOST || "0.0.0.0";
 server.listen(PORT, HOST, () => {
   console.log(`Content System server → http://${HOST}:${PORT}`);
   console.log("Panel + API + auth (JSON store)");
-  console.log("Bedrock:", bedrockClient ? BEDROCK_MODEL_ID + " @ " + AWS_REGION : "wyłączony");
+  console.log("Bedrock:", bedrockInitFailed ? "wyłączony" : "lazy-load @ " + AWS_REGION);
 });
 
 process.on("uncaughtException", function (err) {

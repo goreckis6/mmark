@@ -1,7 +1,10 @@
 {
   "private": true,
   "scripts": {
-    "start": "npm start --prefix Panel",
-    "postinstall": "npm install --prefix Panel"
+    "build": "npm install --prefix Panel",
+    "start": "node Panel/server.js"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

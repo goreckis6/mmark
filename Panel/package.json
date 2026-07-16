@@ -2,7 +2,11 @@
   "name": "content-system-panel-server",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
+    "build": "echo build-ok",
     "start": "node server.js"
   },
   "dependencies": {
