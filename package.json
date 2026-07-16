@@ -1,12 +1,17 @@
 {
+  "name": "content-system",
   "private": true,
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "build": "npm install --prefix Panel",
+    "build": "npm install",
     "start": "node app.js"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.758.0",
+    "express": "^4.21.2"
   }
 }

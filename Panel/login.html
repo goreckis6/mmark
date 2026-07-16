@@ -160,7 +160,7 @@
         healthCheck().then(function (health) {
           if (!health.reachable) {
             errEl.textContent =
-              "Serwer API nie działa. hPanel: root ./ → build: npm run build → entry: app.js → redeploy.";
+              "API offline — Node.js nie działa. hPanel: Node.js Web App → build: npm run build → entry: app.js → Restart.";
             errEl.classList.add("show");
             btn.disabled = true;
           }
