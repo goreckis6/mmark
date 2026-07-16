@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
   <title>Logowanie — Content System</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -143,7 +144,7 @@
       </form>
     </div>
 
-  <script src="auth-client.js"></script>
+  <script src="auth-client.js?v=3"></script>
   <script>
     (function () {
       var form = document.getElementById("login-form");
@@ -151,10 +152,15 @@
       var btn = document.getElementById("login-btn");
 
       if (AuthClient.isServerMode()) {
-        AuthClient.checkHealth().then(function (health) {
+        var healthCheck = AuthClient.checkHealth || function () {
+          return AuthClient.detectAuthRequired().then(function (auth) {
+            return { reachable: !!auth, auth: !!auth };
+          });
+        };
+        healthCheck().then(function (health) {
           if (!health.reachable) {
             errEl.textContent =
-              "Serwer API nie działa. W hPanel: Node.js Web App → root: Panel → entry: app.js → redeploy.";
+              "Serwer API nie działa. hPanel: root ./ → build: npm run build → entry: app.js → redeploy.";
             errEl.classList.add("show");
             btn.disabled = true;
           }

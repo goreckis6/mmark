@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
   <title>Content System</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2657,7 +2658,7 @@
 
   <script src="content-data.js"></script>
   <script src="image-formats.js"></script>
-  <script src="auth-client.js"></script>
+  <script src="auth-client.js?v=3"></script>
   <script src="brand-kit.js"></script>
   <script src="post-manager.js"></script>
   <script>
@@ -5494,13 +5495,20 @@
           });
       }
 
+      function getHealthCheck() {
+        if (AuthClient.checkHealth) return AuthClient.checkHealth();
+        return AuthClient.detectAuthRequired().then(function (auth) {
+          return { reachable: !!auth, auth: !!auth };
+        });
+      }
+
       function showApiDownMessage() {
         showAuthGate(true);
         bindAuthGateForm();
         var errEl = document.getElementById("auth-error");
         if (errEl) {
           errEl.textContent =
-            "Serwer API nie działa (brak /health). W hPanel: Node.js Web App → root: Panel → entry: app.js → redeploy.";
+            "Serwer API nie działa (brak /health). hPanel: root ./ → build: npm run build → entry: app.js → redeploy.";
           errEl.classList.add("show");
         }
         var btn = document.getElementById("auth-submit");
@@ -5508,7 +5516,7 @@
       }
 
       if (window.AuthClient) {
-        AuthClient.checkHealth().then(function (health) {
+        getHealthCheck().then(function (health) {
           if (AuthClient.isServerMode() && !health.reachable) {
             showApiDownMessage();
             return;
