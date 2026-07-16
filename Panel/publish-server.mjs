@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 /**
- * Content System — lokalny serwer: upload grafik + proxy AWS Bedrock
- * Uruchom: npm install && npm start
- * Credentials: Panel/.env lub aws configure (profil domyślny)
+ * Content System — serwer: statyczne pliki, auth, SQLite, upload, Bedrock
  */
 import http from "node:http";
 import fs from "node:fs";
@@ -10,10 +8,40 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { URL } from "node:url";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import {
+  ensureAdminUser,
+  ensureBootstrapUsers,
+  getSessionUser,
+  login,
+  logout,
+  parseBearerToken
+} from "./auth.mjs";
+import {
+  deletePostForUser,
+  getDb,
+  getDeletedIds,
+  getPostsForUser,
+  setDeletedIds,
+  upsertPost
+} from "./db.mjs";
 
 const PORT = Number(process.env.PORT) || 8787;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MEDIA_DIR = path.join(__dirname, "media", "posty");
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".md": "text/markdown; charset=utf-8"
+};
 
 function loadEnvFile() {
   const envPath = path.join(__dirname, ".env");
@@ -44,6 +72,10 @@ try {
   console.warn("Bedrock client init skipped:", err.message);
 }
 
+getDb();
+ensureAdminUser();
+ensureBootstrapUsers();
+
 function ensureMediaDir() {
   fs.mkdirSync(MEDIA_DIR, { recursive: true });
 }
@@ -61,10 +93,12 @@ function safeFilename(name) {
   return base || "grafika.jpg";
 }
 
-function cors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+function cors(res, req) {
+  const origin = req.headers.origin || "*";
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
 function readBody(req) {
@@ -79,10 +113,20 @@ function readBody(req) {
   });
 }
 
-function json(res, status, data) {
-  cors(res);
+function json(res, req, status, data) {
+  cors(res, req);
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
+}
+
+function requireAuth(req, res) {
+  const token = parseBearerToken(req);
+  const user = getSessionUser(token);
+  if (!user) {
+    json(res, req, 401, { error: "Wymagane logowanie" });
+    return null;
+  }
+  return { token, user };
 }
 
 function saveUploadedImage({ filename, data }) {
@@ -169,74 +213,166 @@ async function translateText({ text, sourceLang, targetLang }) {
   const system =
     "You are a professional translator for IT and cloud industry content. " +
     "Return ONLY the translated text, without quotes or commentary.";
-  const prompt =
-    "Translate from " + src + " to " + tgt + ":\n\n" + text;
+  const prompt = "Translate from " + src + " to " + tgt + ":\n\n" + text;
   return invokeBedrock({ system, prompt, maxTokens: 4096 });
 }
 
+function safeStaticPath(urlPath) {
+  const decoded = decodeURIComponent(urlPath.split("?")[0]);
+  const rel = decoded === "/" ? "/index.html" : decoded;
+  const resolved = path.normalize(path.join(__dirname, rel));
+  if (!resolved.startsWith(__dirname)) return null;
+  return resolved;
+}
+
+function serveStatic(req, res, filePath) {
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    return false;
+  }
+  const ext = path.extname(filePath).toLowerCase();
+  cors(res, req);
+  res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+  fs.createReadStream(filePath).pipe(res);
+  return true;
+}
+
 const server = http.createServer(async (req, res) => {
-  cors(res);
+  cors(res, req);
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     return res.end();
   }
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
-
-  if (req.method === "GET" && url.pathname === "/health") {
-    return json(res, 200, {
-      ok: true,
-      service: "content-system-local-server",
-      upload: true,
-      bedrock: !!bedrockClient,
-      region: AWS_REGION,
-      model: BEDROCK_MODEL_ID
-    });
-  }
-
-  if (req.method !== "POST") {
-    return json(res, 405, { error: "Method not allowed" });
-  }
+  const pathname = url.pathname;
 
   try {
-    const body = await readBody(req);
-
-    if (url.pathname === "/upload/image") {
-      const result = saveUploadedImage(body);
-      return json(res, 200, result);
-    }
-
-    if (url.pathname === "/ai/translate") {
-      const text = (body.text || "").trim();
-      if (!text) return json(res, 400, { error: "Brak pola text" });
-      const translated = await translateText({
-        text,
-        sourceLang: body.sourceLang || "en",
-        targetLang: body.targetLang || "pl"
+    if (req.method === "GET" && pathname === "/health") {
+      return json(res, req, 200, {
+        ok: true,
+        service: "content-system-server",
+        upload: true,
+        bedrock: !!bedrockClient,
+        auth: true,
+        region: AWS_REGION,
+        model: BEDROCK_MODEL_ID
       });
-      return json(res, 200, { text: translated, provider: "bedrock" });
     }
 
-    if (url.pathname === "/ai/complete") {
-      const prompt = (body.prompt || "").trim();
-      if (!prompt) return json(res, 400, { error: "Brak pola prompt" });
-      const result = await invokeBedrock({
-        system: body.system || "",
-        prompt,
-        maxTokens: body.maxTokens || 4096
+    if (pathname === "/auth/login" && req.method === "POST") {
+      const body = await readBody(req);
+      const result = login(body.username, body.password);
+      if (!result) return json(res, req, 401, { error: "Nieprawidłowy login lub hasło" });
+      return json(res, req, 200, result);
+    }
+
+    if (pathname === "/auth/logout" && req.method === "POST") {
+      logout(parseBearerToken(req));
+      return json(res, req, 200, { ok: true });
+    }
+
+    if (pathname === "/auth/me" && req.method === "GET") {
+      const user = getSessionUser(parseBearerToken(req));
+      if (!user) return json(res, req, 401, { error: "Niezalogowany" });
+      return json(res, req, 200, { user });
+    }
+
+    if (pathname === "/api/posts" && req.method === "GET") {
+      const auth = requireAuth(req, res);
+      if (!auth) return;
+      return json(res, req, 200, {
+        posts: getPostsForUser(auth.user.id),
+        deletedIds: getDeletedIds(auth.user.id)
       });
-      return json(res, 200, { text: result, provider: "bedrock" });
     }
 
-    json(res, 404, { error: "Not found" });
+    if (pathname === "/api/posts" && req.method === "PUT") {
+      const auth = requireAuth(req, res);
+      if (!auth) return;
+      const body = await readBody(req);
+      const post = body.post || body;
+      if (!post || !post.id) return json(res, req, 400, { error: "Brak post.id" });
+      upsertPost(auth.user.id, post);
+      return json(res, req, 200, { ok: true, post });
+    }
+
+    if (pathname.startsWith("/api/posts/") && req.method === "DELETE") {
+      const auth = requireAuth(req, res);
+      if (!auth) return;
+      const postId = decodeURIComponent(pathname.slice("/api/posts/".length));
+      deletePostForUser(auth.user.id, postId);
+      return json(res, req, 200, { ok: true });
+    }
+
+    if (pathname === "/api/deleted-ids" && req.method === "PUT") {
+      const auth = requireAuth(req, res);
+      if (!auth) return;
+      const body = await readBody(req);
+      setDeletedIds(auth.user.id, body.deletedIds || []);
+      return json(res, req, 200, { ok: true });
+    }
+
+    const protectedApi =
+      pathname.startsWith("/upload/") ||
+      pathname.startsWith("/ai/") ||
+      pathname.startsWith("/api/");
+
+    if (protectedApi) {
+      const auth = requireAuth(req, res);
+      if (!auth) return;
+
+      if (req.method === "POST" && pathname === "/upload/image") {
+        const body = await readBody(req);
+        const result = saveUploadedImage(body);
+        return json(res, req, 200, result);
+      }
+
+      if (req.method === "POST" && pathname === "/ai/translate") {
+        const body = await readBody(req);
+        const text = (body.text || "").trim();
+        if (!text) return json(res, req, 400, { error: "Brak pola text" });
+        const translated = await translateText({
+          text,
+          sourceLang: body.sourceLang || "en",
+          targetLang: body.targetLang || "pl"
+        });
+        return json(res, req, 200, { text: translated, provider: "bedrock" });
+      }
+
+      if (req.method === "POST" && pathname === "/ai/complete") {
+        const body = await readBody(req);
+        const prompt = (body.prompt || "").trim();
+        if (!prompt) return json(res, req, 400, { error: "Brak pola prompt" });
+        const result = await invokeBedrock({
+          system: body.system || "",
+          prompt,
+          maxTokens: body.maxTokens || 4096
+        });
+        return json(res, req, 200, { text: result, provider: "bedrock" });
+      }
+
+      return json(res, req, 404, { error: "Not found" });
+    }
+
+    if (req.method === "GET") {
+      let filePath = safeStaticPath(pathname);
+      if (filePath && serveStatic(req, res, filePath)) return;
+      if (pathname === "/" || !path.extname(pathname)) {
+        filePath = safeStaticPath("/index.html");
+        if (filePath && serveStatic(req, res, filePath)) return;
+      }
+      return json(res, req, 404, { error: "Not found" });
+    }
+
+    json(res, req, 405, { error: "Method not allowed" });
   } catch (err) {
     console.error(err);
-    json(res, 500, { error: err.message || "Server error" });
+    json(res, req, 500, { error: err.message || "Server error" });
   }
 });
 
 server.listen(PORT, () => {
-  console.log(`Content System local server → http://localhost:${PORT}`);
-  console.log("Endpoints: POST /upload/image | POST /ai/translate | POST /ai/complete | GET /health");
-  console.log("Bedrock:", bedrockClient ? BEDROCK_MODEL_ID + " @ " + AWS_REGION : "wyłączony (brak credentials?)");
+  console.log(`Content System server → http://localhost:${PORT}`);
+  console.log("Panel + API + SQLite auth");
+  console.log("Bedrock:", bedrockClient ? BEDROCK_MODEL_ID + " @ " + AWS_REGION : "wyłączony");
 });

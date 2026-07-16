@@ -66,7 +66,12 @@
   }
 
   function getUploadProxy() {
-    return localStorage.getItem(UPLOAD_PROXY_KEY) || "http://localhost:8787";
+    var stored = localStorage.getItem(UPLOAD_PROXY_KEY);
+    if (stored) return stored;
+    if (global.location && global.location.protocol !== "file:") {
+      return global.location.origin.replace(/\/$/, "");
+    }
+    return "http://localhost:8787";
   }
 
   function saveUploadProxy(url) {

@@ -9,6 +9,10 @@ node_modules/
 # Archives / local exports
 *.zip
 
+# SQLite
+data/
+*.db
+
 # OS
 .DS_Store
 Thumbs.db

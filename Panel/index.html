@@ -179,6 +179,38 @@
       opacity: 0.6;
     }
 
+    .sidebar-user {
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 0 8px 8px;
+      word-break: break-word;
+    }
+
+    .btn-logout {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-logout:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-dim);
+    }
+
+    .btn-logout svg { width: 14px; height: 14px; }
+
     .btn-restore {
       width: 100%;
       padding: 10px 14px;
@@ -2361,10 +2393,152 @@
       font-size: 11px;
       line-height: 1.6;
     }
+
+    /* ── Auth gate (logowanie) ── */
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99, 102, 241, 0.18), transparent),
+        var(--bg-base);
+    }
+
+    .auth-gate[hidden] { display: none !important; }
+
+    .auth-gate-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .auth-gate-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .auth-gate-logo-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-gate-logo-icon svg { width: 22px; height: 22px; }
+
+    .auth-gate-logo h2 { font-size: 18px; font-weight: 600; }
+    .auth-gate-logo p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+    .auth-field { margin-bottom: 16px; }
+    .auth-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .auth-field input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f0f16;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .auth-field input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .auth-submit {
+      width: 100%;
+      margin-top: 8px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .auth-submit:disabled { opacity: 0.6; cursor: wait; }
+
+    .auth-error {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--danger-dim);
+      color: #fca5a5;
+      font-size: 13px;
+      display: none;
+    }
+
+    .auth-error.show { display: block; }
+
+    .auth-hint {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .main-app[hidden] { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="app">
+  <div class="auth-gate" id="auth-gate" hidden>
+    <div class="auth-gate-card">
+      <div class="auth-gate-logo">
+        <div class="auth-gate-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Content System</h2>
+          <p>Zaloguj się, aby wejść do panelu</p>
+        </div>
+      </div>
+      <form id="auth-gate-form">
+        <div class="auth-field">
+          <label for="auth-username">Login</label>
+          <input type="text" id="auth-username" autocomplete="username" required>
+        </div>
+        <div class="auth-field">
+          <label for="auth-password">Hasło</label>
+          <input type="password" id="auth-password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="auth-submit" id="auth-submit">Zaloguj się</button>
+        <div class="auth-error" id="auth-error"></div>
+      </form>
+      <p class="auth-hint">Posty zapisywane w bazie SQLite na serwerze.<br>Uruchom: <code>npm start</code> w folderze Panel.</p>
+    </div>
+  </div>
+
+  <div class="app main-app" id="main-app">
     <aside class="sidebar">
       <div class="logo">
         <div class="logo-icon">
@@ -2413,6 +2587,11 @@
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
           </svg>
           <span id="restore-label">Przywróć usunięte</span>
+        </button>
+        <div class="sidebar-user" id="sidebar-user" hidden></div>
+        <button type="button" class="btn-logout" id="btn-logout" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Wyloguj
         </button>
         <div class="sidebar-brand-footer">Content System</div>
       </div>
@@ -2479,6 +2658,7 @@
 
   <script src="content-data.js"></script>
   <script src="image-formats.js"></script>
+  <script src="auth-client.js"></script>
   <script src="brand-kit.js"></script>
   <script src="post-manager.js"></script>
   <script>
@@ -2702,6 +2882,9 @@
       }
 
       function getDeletedIds() {
+        if (window.PostManager && PostManager.isServerMode()) {
+          return PostManager.getDeletedIds();
+        }
         try {
           var raw = localStorage.getItem(STORAGE_KEY);
           return raw ? JSON.parse(raw) : [];
@@ -2711,6 +2894,10 @@
       }
 
       function saveDeletedIds(ids) {
+        if (window.PostManager && PostManager.isServerMode()) {
+          PostManager.saveDeletedIds(ids);
+          return;
+        }
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
         } catch (e) { /* best-effort on file:// */ }
@@ -3586,14 +3773,23 @@
         "- Never describe a story that duplicates an existing title or topic";
 
       function completeViaBedrock(system, prompt, maxTokens) {
+        var payload = {
+          system: system || "",
+          prompt: prompt,
+          maxTokens: maxTokens || 2048
+        };
+        if (window.AuthClient && AuthClient.getToken()) {
+          return AuthClient.apiFetch("/ai/complete", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }).then(function (data) {
+            return (data && data.text) ? String(data.text).trim() : "";
+          });
+        }
         return fetch(getLocalServerUrl() + "/ai/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({
-            system: system || "",
-            prompt: prompt,
-            maxTokens: maxTokens || 2048
-          })
+          body: JSON.stringify(payload)
         }).then(function (res) {
           if (!res.ok) throw new Error("bedrock complete failed");
           return res.json();
@@ -3716,14 +3912,23 @@
       }
 
       function translateViaBedrock(text) {
+        var payload = {
+          text: text.trim(),
+          sourceLang: "en",
+          targetLang: "pl"
+        };
+        if (window.AuthClient && AuthClient.getToken()) {
+          return AuthClient.apiFetch("/ai/translate", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }).then(function (data) {
+            return (data && data.text) ? String(data.text).trim() : text.trim();
+          });
+        }
         return fetch(getLocalServerUrl() + "/ai/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({
-            text: text.trim(),
-            sourceLang: "en",
-            targetLang: "pl"
-          })
+          body: JSON.stringify(payload)
         }).then(function (res) {
           if (!res.ok) throw new Error("bedrock translate failed");
           return res.json();
@@ -5220,7 +5425,94 @@
         if (e.key === "Escape") closeDetail();
       });
 
-      render();
+      function updateAuthUI() {
+        var userEl = document.getElementById("sidebar-user");
+        var logoutBtn = document.getElementById("btn-logout");
+        if (!window.AuthClient || !AuthClient.isServerMode()) {
+          if (userEl) userEl.hidden = true;
+          if (logoutBtn) logoutBtn.hidden = true;
+          return;
+        }
+        var user = AuthClient.getUser();
+        if (userEl) {
+          userEl.hidden = false;
+          userEl.textContent = user && user.username ? ("Zalogowany: " + user.username) : "";
+        }
+        if (logoutBtn) {
+          logoutBtn.hidden = false;
+          logoutBtn.onclick = function () { AuthClient.logout(); };
+        }
+      }
+
+      function showAuthGate(show) {
+        var gate = document.getElementById("auth-gate");
+        var app = document.getElementById("main-app");
+        if (gate) gate.hidden = !show;
+        if (app) app.hidden = show;
+      }
+
+      function bindAuthGateForm() {
+        var form = document.getElementById("auth-gate-form");
+        if (!form || form.dataset.bound) return;
+        form.dataset.bound = "1";
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var errEl = document.getElementById("auth-error");
+          var btn = document.getElementById("auth-submit");
+          if (errEl) errEl.classList.remove("show");
+          if (btn) { btn.disabled = true; btn.textContent = "Logowanie…"; }
+          AuthClient.login(
+            document.getElementById("auth-username").value.trim(),
+            document.getElementById("auth-password").value
+          ).then(function () {
+            showAuthGate(false);
+            return PostManager.initFromServer();
+          }).then(bootApp).catch(function (err) {
+            if (errEl) {
+              errEl.textContent = (err && err.message) || "Nie udało się zalogować";
+              errEl.classList.add("show");
+            }
+            if (btn) { btn.disabled = false; btn.textContent = "Zaloguj się"; }
+          });
+        });
+      }
+
+      function bootApp() {
+        updateAuthUI();
+        render();
+      }
+
+      function startWithAuth() {
+        AuthClient.requireAuth({ redirect: false })
+          .then(function () { return PostManager.initFromServer(); })
+          .then(function () {
+            showAuthGate(false);
+            bootApp();
+          })
+          .catch(function () {
+            showAuthGate(true);
+            bindAuthGateForm();
+          });
+      }
+
+      if (window.AuthClient) {
+        AuthClient.detectAuthRequired().then(function (required) {
+          if (!required) {
+            showAuthGate(false);
+            bootApp();
+            return;
+          }
+          if (!AuthClient.getToken()) {
+            showAuthGate(true);
+            bindAuthGateForm();
+            return;
+          }
+          startWithAuth();
+        });
+      } else {
+        showAuthGate(false);
+        bootApp();
+      }
     })();
   </script>
 </body>

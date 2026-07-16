@@ -6,6 +6,11 @@
 
   var USER_POSTS_KEY = "content-system-user-posts";
   var LEGACY_GENERATED_KEY = "content-system-generated-posts";
+  var DELETED_IDS_KEY = "content-system-deleted-ids";
+
+  var serverMode = false;
+  var postsCache = null;
+  var deletedIdsCache = null;
 
   var STATUS_LABELS = {
     draft: "Szkic",
@@ -135,6 +140,59 @@
     return trimTo(t, 2200);
   }
 
+  function getDeletedIdsLocal() {
+    try {
+      var raw = localStorage.getItem(DELETED_IDS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveDeletedIdsLocal(ids) {
+    localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(ids || []));
+  }
+
+  function getDeletedIds() {
+    if (serverMode && deletedIdsCache !== null) return deletedIdsCache.slice();
+    return getDeletedIdsLocal();
+  }
+
+  function saveDeletedIds(ids, skipServer) {
+    var list = ids || [];
+    if (serverMode && !skipServer && global.AuthClient) {
+      deletedIdsCache = list.slice();
+      return global.AuthClient.apiFetch("/api/deleted-ids", {
+        method: "PUT",
+        body: JSON.stringify({ deletedIds: list })
+      }).catch(function () {
+        saveDeletedIdsLocal(list);
+      });
+    }
+    saveDeletedIdsLocal(list);
+    return Promise.resolve();
+  }
+
+  function enableServerMode(data) {
+    serverMode = true;
+    postsCache = (data && data.posts ? data.posts : []).map(normalizePost);
+    deletedIdsCache = (data && data.deletedIds) ? data.deletedIds.slice() : [];
+  }
+
+  function initFromServer() {
+    if (!global.AuthClient || !global.AuthClient.isServerMode()) {
+      return Promise.resolve(null);
+    }
+    return global.AuthClient.apiFetch("/api/posts").then(function (data) {
+      enableServerMode(data);
+      return data;
+    });
+  }
+
+  function isServerMode() {
+    return serverMode;
+  }
+
   function getEffectiveStatus(item) {
     var plats = item.platforms || [];
     var done = item.donePlatforms || [];
@@ -144,6 +202,7 @@
   }
 
   function getUserPosts() {
+    if (serverMode && postsCache !== null) return postsCache.map(normalizePost);
     try {
       var raw = localStorage.getItem(USER_POSTS_KEY);
       if (raw) {
@@ -166,7 +225,28 @@
   }
 
   function saveUserPosts(posts) {
-    localStorage.setItem(USER_POSTS_KEY, JSON.stringify(posts.map(normalizePost)));
+    var normalized = posts.map(normalizePost);
+    if (serverMode && global.AuthClient) {
+      postsCache = normalized;
+      return;
+    }
+    localStorage.setItem(USER_POSTS_KEY, JSON.stringify(normalized));
+  }
+
+  function persistPostToServer(post) {
+    if (!serverMode || !global.AuthClient) return Promise.resolve(post);
+    var normalized = normalizePost(post);
+    return global.AuthClient.apiFetch("/api/posts", {
+      method: "PUT",
+      body: JSON.stringify({ post: normalized })
+    }).then(function () {
+      var posts = getUserPosts();
+      var idx = posts.findIndex(function (p) { return p.id === normalized.id; });
+      if (idx === -1) posts.unshift(normalized);
+      else posts[idx] = normalized;
+      postsCache = posts;
+      return normalized;
+    });
   }
 
   function isUserManaged(id) {
@@ -204,6 +284,9 @@
 
   function savePost(post) {
     var normalized = normalizePost(post);
+    if (serverMode && global.AuthClient) {
+      return persistPostToServer(normalized);
+    }
     var posts = getUserPosts();
     var idx = posts.findIndex(function (p) { return p.id === normalized.id; });
     if (idx === -1) {
@@ -212,7 +295,7 @@
       posts[idx] = normalized;
     }
     saveUserPosts(posts);
-    return normalized;
+    return Promise.resolve(normalized);
   }
 
   function createNewPost() {
@@ -234,13 +317,19 @@
     });
   }
 
-  function deletePost(id, deletedIds, saveDeletedIds) {
+  function deletePost(id, deletedIds, saveDeletedIdsFn) {
     if (isUserManaged(id)) {
+      if (serverMode && global.AuthClient) {
+        postsCache = getUserPosts().filter(function (p) { return p.id !== id; });
+        return global.AuthClient.apiFetch("/api/posts/" + encodeURIComponent(id), {
+          method: "DELETE"
+        }).catch(function () { /* ignore */ });
+      }
       saveUserPosts(getUserPosts().filter(function (p) { return p.id !== id; }));
     } else {
       var ids = deletedIds.slice();
       if (ids.indexOf(id) === -1) ids.push(id);
-      saveDeletedIds(ids);
+      saveDeletedIdsFn(ids);
     }
   }
 
@@ -268,8 +357,17 @@
   }
 
   function proxyBase() {
+    if (global.AuthClient) return global.AuthClient.getApiBase();
     if (global.BrandKit) return (global.BrandKit.getUploadProxy() || "").replace(/\/$/, "");
     return "http://localhost:8787";
+  }
+
+  function authHeaders(extra) {
+    var headers = Object.assign({}, extra || {});
+    if (global.AuthClient && global.AuthClient.getToken()) {
+      headers.Authorization = "Bearer " + global.AuthClient.getToken();
+    }
+    return headers;
   }
 
   function uploadImage(file) {
@@ -290,7 +388,7 @@
 
         fetch(base + "/upload/image", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ filename: safeName, data: base64, mime: file.type || "" })
         }).then(function (res) {
           return res.json().then(function (body) {
@@ -820,6 +918,10 @@
     savePost: savePost,
     createNewPost: createNewPost,
     deletePost: deletePost,
+    getDeletedIds: getDeletedIds,
+    saveDeletedIds: saveDeletedIds,
+    initFromServer: initFromServer,
+    isServerMode: isServerMode,
     togglePlatformDone: togglePlatformDone,
     getTextForPlatform: getTextForPlatform,
     formatForLinkedIn: formatForLinkedIn,
