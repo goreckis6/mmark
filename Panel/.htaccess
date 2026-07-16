@@ -1,0 +1,13 @@
+# Hostinger: przekieruj API i dynamiczne ścieżki do Node (Passenger)
+# Statyczne pliki (.html, .js, .css, media/) serwuje Apache bezpośrednio
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^(.*)$ http://internal/$1 [P,L]
+</IfModule>

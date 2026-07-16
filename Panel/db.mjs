@@ -1,7 +1,10 @@
 import initSqlJs from "sql.js";
+import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+const require = createRequire(import.meta.url);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "data");
@@ -90,7 +93,15 @@ function initSchema() {
 export async function initDb() {
   if (db) return db;
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  const wasmPath = path.join(__dirname, "node_modules", "sql.js", "dist", "sql-wasm.wasm");
+  let wasmPath;
+  try {
+    wasmPath = require.resolve("sql.js/dist/sql-wasm.wasm");
+  } catch (e) {
+    wasmPath = path.join(__dirname, "node_modules", "sql.js", "dist", "sql-wasm.wasm");
+  }
+  if (!fs.existsSync(wasmPath)) {
+    throw new Error("Brak sql-wasm.wasm — uruchom npm install w folderze Panel");
+  }
   const SQL = await initSqlJs({
     locateFile: function () { return wasmPath; }
   });

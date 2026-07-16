@@ -367,12 +367,19 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-await initDb();
-ensureAdminUser();
-ensureBootstrapUsers();
+try {
+  await initDb();
+  ensureAdminUser();
+  ensureBootstrapUsers();
+} catch (err) {
+  console.error("FATAL — baza danych:", err.message);
+  process.exit(1);
+}
 
-server.listen(PORT, () => {
-  console.log(`Content System server → http://localhost:${PORT}`);
+const HOST = process.env.HOST || "0.0.0.0";
+
+server.listen(PORT, HOST, () => {
+  console.log(`Content System server → http://${HOST}:${PORT}`);
   console.log("Panel + API + SQLite auth (sql.js)");
   console.log("Bedrock:", bedrockClient ? BEDROCK_MODEL_ID + " @ " + AWS_REGION : "wyłączony");
 });
