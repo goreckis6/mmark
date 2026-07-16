@@ -16,3 +16,6 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Cursor skills (local)
+.cursor/skills/weekly-it-news-post/
