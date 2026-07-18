@@ -2524,6 +2524,280 @@
     /* Zanim JS sprawdzi sesję — nie flashuj panelu */
     body.auth-pending .main-app { display: none !important; }
     body.auth-pending .auth-gate { display: flex !important; }
+
+    .menu-toggle {
+      display: none;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-right: 10px;
+    }
+
+    .menu-toggle svg { width: 20px; height: 20px; }
+
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 90;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .sidebar-backdrop.show {
+      display: block;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ── Tablet ── */
+    @media (max-width: 1024px) {
+      .menu-toggle { display: inline-flex; }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 100;
+        width: min(300px, 88vw);
+        min-width: 0;
+        transform: translateX(-105%);
+        transition: transform 0.25s ease;
+        box-shadow: none;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      body.nav-open .sidebar {
+        transform: translateX(0);
+        box-shadow: var(--shadow);
+      }
+
+      .topbar {
+        padding: 0 14px;
+        gap: 10px;
+      }
+
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .topbar-left h1 {
+        font-size: 16px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .breadcrumbs { display: none; }
+
+      .search-wrap {
+        width: min(220px, 36vw);
+        flex-shrink: 0;
+      }
+
+      .toolbar {
+        padding: 12px 14px;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .content-area { padding: 14px 14px 28px; }
+
+      .grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+      }
+
+      .detail-panel {
+        width: min(420px, 100vw);
+      }
+
+      .generator-panel { padding: 16px; }
+
+      .gen-status-bar {
+        top: 0;
+        margin-bottom: 12px;
+      }
+
+      .gen-btn-row {
+        flex-wrap: wrap;
+      }
+
+      .gen-btn {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 640px) {
+      html, body {
+        overflow: auto;
+        height: auto;
+        min-height: 100%;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100dvh;
+        flex-direction: column;
+      }
+
+      .main {
+        min-height: 100dvh;
+      }
+
+      .topbar {
+        height: auto;
+        min-height: var(--header-h);
+        padding: 10px 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .topbar-left {
+        width: calc(100% - 50px);
+        order: 1;
+      }
+
+      .menu-toggle { order: 0; margin-right: 8px; }
+
+      .search-wrap {
+        order: 2;
+        width: 100%;
+        margin-top: 8px;
+      }
+
+      .toolbar {
+        padding: 10px 12px;
+        align-items: stretch;
+      }
+
+      .toolbar-left {
+        width: 100%;
+      }
+
+      .queue-filters {
+        flex: 1;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+      }
+
+      .view-switch {
+        width: 100%;
+      }
+
+      .view-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 9px 10px;
+      }
+
+      .btn-new-post {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .content-area {
+        padding: 12px 12px 88px;
+        overflow: visible;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .card:hover { transform: none; }
+
+      .card-copy { opacity: 1; }
+
+      .detail-panel {
+        width: 100vw;
+        max-width: 100vw;
+      }
+
+      .detail-close {
+        top: 10px;
+        right: 10px;
+      }
+
+      .generator-intro {
+        font-size: 12px;
+        padding: 12px 14px;
+      }
+
+      .generator-panel {
+        padding: 14px;
+      }
+
+      .gen-preview-box {
+        max-height: none;
+        font-size: 13px;
+      }
+
+      .gen-copy-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .gen-copy-actions .gen-btn {
+        width: 100%;
+      }
+
+      .auth-gate {
+        padding: 16px;
+        align-items: flex-start;
+        padding-top: 12vh;
+      }
+
+      .auth-gate-card {
+        padding: 24px 18px;
+      }
+
+      .gen-toast {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: auto;
+        max-width: none;
+      }
+
+      .calendar-wrap,
+      .calendar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .editor-row-2 {
+        grid-template-columns: 1fr !important;
+      }
+
+      .post-editor {
+        padding-bottom: 24px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .logo-text { font-size: 14px; }
+      .topbar-left h1 { font-size: 15px; }
+      .view-btn { font-size: 12px; padding: 8px 6px; }
+    }
   </style>
   <script>
     document.documentElement.classList.add("auth-pending");
@@ -2562,8 +2836,10 @@
     </div>
   </div>
 
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
   <div class="app main-app" id="main-app" hidden>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="logo">
         <div class="logo-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -2617,9 +2893,16 @@
 
     <main class="main">
       <header class="topbar">
+        <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Otwórz menu" aria-expanded="false" aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 7h16M4 12h16M4 17h16"/>
+          </svg>
+        </button>
         <div class="topbar-left">
-          <h1 id="view-title">Posty</h1>
-          <div class="breadcrumbs" id="breadcrumbs">PUBLIKACJE / <span>Do wrzucenia</span></div>
+          <div>
+            <h1 id="view-title">Posty</h1>
+            <div class="breadcrumbs" id="breadcrumbs">PUBLIKACJE / <span>Do wrzucenia</span></div>
+          </div>
         </div>
         <div class="search-wrap" id="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -5386,15 +5669,32 @@
         renderContent();
       }
 
+      function setNavOpen(open) {
+        var backdrop = document.getElementById("sidebar-backdrop");
+        var toggle = document.getElementById("menu-toggle");
+        document.body.classList.toggle("nav-open", !!open);
+        if (backdrop) {
+          backdrop.classList.toggle("show", !!open);
+          backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+        }
+        if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+
+      function closeNav() {
+        setNavOpen(false);
+      }
+
       function openGenerator() {
         state.mode = "generator";
         closeDetail();
+        closeNav();
         render();
       }
 
       function openFormats() {
         state.mode = "formats";
         closeDetail();
+        closeNav();
         render();
       }
 
@@ -5458,8 +5758,36 @@
       document.getElementById("detail-close").addEventListener("click", closeDetail);
       document.getElementById("detail-overlay").addEventListener("click", closeDetail);
 
+      var menuToggle = document.getElementById("menu-toggle");
+      var sidebarBackdrop = document.getElementById("sidebar-backdrop");
+      if (menuToggle) {
+        menuToggle.addEventListener("click", function () {
+          setNavOpen(!document.body.classList.contains("nav-open"));
+        });
+      }
+      if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener("click", closeNav);
+      }
+
+      var sidebarEl = document.getElementById("sidebar");
+      if (sidebarEl) {
+        sidebarEl.addEventListener("click", function (e) {
+          var chip = e.target.closest(".platform-chip, .queue-chip, .nav-item, .btn-restore, .btn-logout");
+          if (chip && window.matchMedia("(max-width: 1024px)").matches) {
+            setTimeout(closeNav, 80);
+          }
+        });
+      }
+
+      window.addEventListener("resize", function () {
+        if (window.innerWidth > 1024) closeNav();
+      });
+
       document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") closeDetail();
+        if (e.key === "Escape") {
+          if (document.body.classList.contains("nav-open")) closeNav();
+          else closeDetail();
+        }
       });
 
       function updateAuthUI() {
