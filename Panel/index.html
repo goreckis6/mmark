@@ -2056,6 +2056,15 @@
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
     }
 
+    .gen-status-bar[hidden] {
+      display: none !important;
+    }
+
+    /* Pusty pasek (bez statusu i bez progressu) — nie zajmuje miejsca */
+    .gen-status-bar:not(:has(.gen-fetch-status:not(:empty))):not(:has(.gen-progress:not([hidden]))) {
+      display: none !important;
+    }
+
     .gen-fetch-status {
       font-size: 12px;
       color: var(--text-muted);
@@ -4465,6 +4474,16 @@
         }
       }
 
+      function syncGenStatusBar() {
+        var bar = document.getElementById("gen-status-bar");
+        if (!bar) return;
+        var status = document.getElementById("gen-fetch-status");
+        var progress = document.getElementById("gen-progress");
+        var hasStatus = !!(status && String(status.textContent || "").trim());
+        var hasProgress = !!(progress && !progress.hidden);
+        bar.hidden = !(hasStatus || hasProgress);
+      }
+
       function setGeneratorProgress(show, pct, label) {
         var wrap = document.getElementById("gen-progress");
         var bar = document.getElementById("gen-progress-bar");
@@ -4477,6 +4496,7 @@
           status.textContent = label;
           status.className = "gen-fetch-status";
         }
+        syncGenStatusBar();
       }
 
       function translateNewsList(news, onProgress) {
