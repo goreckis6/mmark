@@ -3091,8 +3091,8 @@
         </button>
         <div class="topbar-left">
           <div>
-            <h1 id="view-title">Posty</h1>
-            <div class="breadcrumbs" id="breadcrumbs">PUBLIKACJE / <span>Do wrzucenia</span></div>
+            <h1 id="view-title">Generator newsów</h1>
+            <div class="breadcrumbs" id="breadcrumbs">NARZĘDZIA / <span>News tygodnia</span></div>
           </div>
         </div>
         <div class="search-wrap" id="search-wrap">
@@ -3111,7 +3111,6 @@
           </button>
           <div class="queue-filters" id="queue-filters">
             <button type="button" class="queue-chip active" data-queue="all">Wszystko</button>
-            <button type="button" class="queue-chip" data-queue="publish">Do publikacji</button>
           </div>
         </div>
         <div class="view-switch">
@@ -3181,7 +3180,7 @@
       var WEEKDAYS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
 
       var state = {
-        mode: "browse",
+        mode: "generator",
         platformFilter: null,
         topicFilter: null,
         queueFilter: "all",
@@ -3423,19 +3422,10 @@
         return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
       }
 
-      function getQueueCount() {
-        if (!window.PostManager) return 0;
-        return PostManager.countQueueItems(getAllNonDeletedItems());
-      }
-
       function getVisibleItems() {
         var items = getAllItems().filter(function (item) {
           return !isDeleted(item.id) && item.type === "post";
         });
-
-        if (state.queueFilter === "publish" && window.PostManager) {
-          items = items.filter(function (item) { return PostManager.needsPublish(item); });
-        }
 
         if (state.topicFilter) {
           items = items.filter(function (item) {
@@ -3598,18 +3588,13 @@
       function renderQueueFilters() {
         var container = document.getElementById("queue-filters");
         if (!container) return;
-        var count = getQueueCount();
         container.innerHTML =
           '<button type="button" class="queue-chip' + (state.queueFilter === "all" ? " active" : "") +
-            '" data-queue="all">Wszystko</button>' +
-          '<button type="button" class="queue-chip' + (state.queueFilter === "publish" ? " active" : "") +
-            '" data-queue="publish">Do publikacji' +
-            (count ? '<span class="queue-count">' + count + "</span>" : "") +
-          "</button>";
+            '" data-queue="all">Wszystko</button>';
 
         container.querySelectorAll(".queue-chip").forEach(function (el) {
           el.addEventListener("click", function () {
-            state.queueFilter = el.dataset.queue;
+            state.queueFilter = "all";
             render();
           });
         });
@@ -3635,12 +3620,8 @@
           return;
         }
 
-        document.getElementById("view-title").textContent =
-          state.queueFilter === "publish" ? "Do publikacji" : "Posty";
-        document.getElementById("breadcrumbs").innerHTML =
-          state.queueFilter === "publish"
-            ? 'PUBLIKACJE / <span>Gotowe do wrzucenia</span>'
-            : 'PUBLIKACJE / <span>Do wrzucenia</span>';
+        document.getElementById("view-title").textContent = "Posty";
+        document.getElementById("breadcrumbs").innerHTML = 'PUBLIKACJE / <span>Lista</span>';
 
         document.getElementById("btn-grid").classList.toggle("active", state.view === "grid");
         document.getElementById("btn-calendar").classList.toggle("active", state.view === "calendar");
@@ -3654,18 +3635,13 @@
 
       function renderGrid(items) {
         if (!items.length) {
-          var emptyMsg = state.queueFilter === "publish"
-            ? "Brak postów gotowych do wrzucenia. Ustaw status „Gotowy” i oznacz platformy po ręcznej publikacji."
-            : "Brak postów.";
           return (
             '<div class="empty-state">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' +
-              '<p>' + emptyMsg + '</p>' +
-              (state.queueFilter !== "publish"
-                ? '<button type="button" class="btn-new-post" id="empty-new-post">' +
-                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>' +
-                  'Dodaj pierwszy post</button>'
-                : "") +
+              '<p>Brak postów.</p>' +
+              '<button type="button" class="btn-new-post" id="empty-new-post">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>' +
+                'Dodaj pierwszy post</button>' +
             '</div>'
           );
         }
@@ -5022,7 +4998,7 @@
                 '</div>' +
               '</div>' +
               '<div class="generator-panel">' +
-                '<h2 class="generator-panel-title">Podgląd i publikacja</h2>' +
+                '<h2 class="generator-panel-title">Podgląd</h2>' +
                 '<div class="gen-preview-tabs">' +
                   '<button type="button" class="gen-preview-tab' + (activeTab === "li" ? " active" : "") + '" data-tab="li">LinkedIn</button>' +
                   '<button type="button" class="gen-preview-tab' + (activeTab === "ig" ? " active" : "") + '" data-tab="ig">Instagram</button>' +
@@ -5039,23 +5015,6 @@
                 '<div class="gen-preview-meta" id="gen-preview-meta">' +
                   (weekLabel ? "Tydzień: " + escapeHtml(weekLabel) : "") +
                 '</div>' +
-                '<div class="gen-row-2" style="margin-top:14px">' +
-                  '<div class="gen-field">' +
-                    '<label class="gen-label" for="gen-date-li">Data publikacji LI</label>' +
-                    '<input type="date" class="gen-input" id="gen-date-li" value="' + escapeAttr(draft.dateLi) + '">' +
-                  '</div>' +
-                  '<div class="gen-field">' +
-                    '<label class="gen-label" for="gen-date-ig">Data publikacji IG</label>' +
-                    '<input type="date" class="gen-input" id="gen-date-ig" value="' + escapeAttr(draft.dateIg) + '">' +
-                  '</div>' +
-                '</div>' +
-                '<div class="gen-field" style="margin-top:12px">' +
-                  '<span class="gen-label">Platformy do zapisu</span>' +
-                  '<div class="gen-platforms">' +
-                    '<label class="gen-check"><input type="checkbox" id="gen-platform-li" checked> LinkedIn</label>' +
-                    '<label class="gen-check"><input type="checkbox" id="gen-platform-ig" checked> Instagram</label>' +
-                  '</div>' +
-                '</div>' +
                 '<div class="gen-field" style="margin-top:12px">' +
                   '<label class="gen-label" for="gen-post-image">Grafika (opcjonalnie)</label>' +
                   '<input type="text" class="gen-input" id="gen-post-image" value="' + escapeAttr(postImage) + '" placeholder="media/posty/16-news-tygodnia.jpg">' +
@@ -5066,8 +5025,7 @@
                   '</div>' +
                 '</div>' +
                 '<div class="gen-btn-row">' +
-                  '<button type="button" class="gen-btn gen-btn-primary" id="gen-save-panel">Zapisz szkic w panelu</button>' +
-                  '<button type="button" class="gen-btn" id="gen-save-md">Zapisz do pliku .md</button>' +
+                  '<button type="button" class="gen-btn gen-btn-primary" id="gen-save-md">Zapisz do pliku .md</button>' +
                   '<button type="button" class="gen-btn" id="gen-copy-snippet">Kopiuj do content-data.js</button>' +
                 '</div>' +
                 '<div class="gen-snippet" id="gen-snippet-wrap" style="display:none">' +
@@ -5172,8 +5130,8 @@
             newsCount: newsCountEl ? parseInt(newsCountEl.value, 10) || 5 : (draft.newsCount || 5),
             dateFrom: document.getElementById("gen-date-from").value,
             dateTo: document.getElementById("gen-date-to").value,
-            dateLi: document.getElementById("gen-date-li").value,
-            dateIg: document.getElementById("gen-date-ig").value,
+            dateLi: draft.dateLi || document.getElementById("gen-date-to").value,
+            dateIg: draft.dateIg || document.getElementById("gen-date-to").value,
             topics: collectTopicsFromDOM(),
             news: collectNewsFromDOM(),
             li: draft.li,
@@ -5370,7 +5328,7 @@
 
         document.querySelectorAll(".gen-news-remove").forEach(bindNewsRemove);
 
-        ["gen-hook", "gen-post-title", "gen-post-image", "gen-date-from", "gen-date-to", "gen-date-li", "gen-date-ig"].forEach(function (id) {
+        ["gen-hook", "gen-post-title", "gen-post-image", "gen-date-from", "gen-date-to"].forEach(function (id) {
           var el = document.getElementById(id);
           if (el) el.addEventListener("change", function () { persistDraft(); });
           if (el && el.tagName === "INPUT") el.addEventListener("input", function () { persistDraft(); });
@@ -5380,10 +5338,10 @@
           var w = getCurrentWeekRange();
           document.getElementById("gen-date-from").value = toISODate(w.from);
           document.getElementById("gen-date-to").value = toISODate(w.to);
-          document.getElementById("gen-date-li").value = toISODate(w.to);
+          draft.dateLi = toISODate(w.to);
           var igDate = new Date(w.to);
           igDate.setDate(igDate.getDate() + 3);
-          document.getElementById("gen-date-ig").value = toISODate(igDate);
+          draft.dateIg = toISODate(igDate);
           var wl = formatWeekLabel(toISODate(w.from), toISODate(w.to));
           document.getElementById("gen-hook").value = buildAutoHook(wl);
           var pt = document.getElementById("gen-post-title");
@@ -5637,10 +5595,10 @@
           var imagePath = (document.getElementById("gen-post-image") && document.getElementById("gen-post-image").value.trim()) || "";
           var snippet = buildContentDataSnippet(
             titleBase,
-            document.getElementById("gen-date-li").value,
-            document.getElementById("gen-date-ig").value,
-            document.getElementById("gen-platform-li").checked ? draft.li : "",
-            document.getElementById("gen-platform-ig").checked ? draft.ig : "",
+            document.getElementById("gen-date-to").value || draft.dateLi || "",
+            document.getElementById("gen-date-to").value || draft.dateIg || "",
+            draft.li || "",
+            draft.ig || "",
             suggestNextId(),
             imagePath
           );
@@ -5666,77 +5624,26 @@
             title: titleBase,
             weekLabel: wl,
             lang: draft.lang || "en",
-            dateLi: document.getElementById("gen-date-li").value,
-            dateIg: document.getElementById("gen-date-ig").value,
+            dateLi: document.getElementById("gen-date-to").value || draft.dateLi || "",
+            dateIg: document.getElementById("gen-date-to").value || draft.dateIg || "",
             image: imagePath,
             topics: collectTopicsFromDOM(),
             hook: document.getElementById("gen-hook").value,
             news: news,
-            li: document.getElementById("gen-platform-li").checked ? draft.li : "",
-            ig: document.getElementById("gen-platform-ig").checked ? draft.ig : ""
+            li: draft.li || "",
+            ig: draft.ig || ""
           });
           var datePart = (document.getElementById("gen-date-to").value || toISODate(new Date())).replace(/-/g, "");
           var filename = slugifyFilename(titleBase) + "-" + datePart + ".md";
           saveMarkdownFile(filename, md);
         });
 
-        document.getElementById("gen-save-panel").addEventListener("click", function () {
-          if (!window.PostManager) return;
-          if (!draft.li && !draft.ig) {
-            showToast("Najpierw wygeneruj post");
-            return;
-          }
-          var wl = formatWeekLabel(
-            document.getElementById("gen-date-from").value,
-            document.getElementById("gen-date-to").value
-          );
-          var titleBase = (document.getElementById("gen-post-title") && document.getElementById("gen-post-title").value.trim()) ||
-            buildAutoPostTitle(wl);
-          var imagePath = (document.getElementById("gen-post-image") && document.getElementById("gen-post-image").value.trim()) || "";
-          var platforms = [];
-          if (document.getElementById("gen-platform-li").checked) platforms.push("li");
-          if (document.getElementById("gen-platform-ig").checked) platforms.push("ig");
-          if (!platforms.length) platforms = ["li", "ig"];
-          var textMaster = draft.li || draft.ig;
-          var textFb = PostManager.formatForFacebook(textMaster);
-          var postDate = (document.getElementById("gen-date-li") && document.getElementById("gen-date-li").value) ||
-            (document.getElementById("gen-date-ig") && document.getElementById("gen-date-ig").value) ||
-            new Date().toISOString().slice(0, 10);
-          PostManager.savePost({
-            id: "gen-" + Date.now(),
-            type: "post",
-            title: titleBase,
-            topic: "News tygodnia",
-            date: postDate,
-            platforms: platforms,
-            image: imagePath,
-            textMaster: textMaster,
-            textLi: draft.li || "",
-            textFb: textFb,
-            textIg: draft.ig || "",
-            status: "draft",
-            donePlatforms: []
-          });
-          state.mode = "browse";
-          showToast("Szkic zapisany w panelu");
-          render();
-        });
-
         function updateGenFormatHint() {
           var wrap = document.getElementById("gen-format-hint");
           if (!wrap || !window.ImageFormats) return;
-          var plats = [];
-          var liEl = document.getElementById("gen-platform-li");
-          var igEl = document.getElementById("gen-platform-ig");
-          if (liEl && liEl.checked) plats.push("li");
-          if (igEl && igEl.checked) plats.push("ig");
-          wrap.innerHTML = ImageFormats.renderGeneratorHintHTML(plats.length ? plats : ["li", "ig"]);
+          wrap.innerHTML = ImageFormats.renderGeneratorHintHTML(["li", "ig"]);
         }
 
-        ["gen-platform-li", "gen-platform-ig"].forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) el.addEventListener("change", updateGenFormatHint);
-        });
         updateGenFormatHint();
         updateGeneratorPreview();
         updateLangTabs();
