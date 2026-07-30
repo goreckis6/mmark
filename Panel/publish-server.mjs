@@ -485,7 +485,8 @@ function fallbackWsadPost({ seed, title, metaDescription, analysis, language }) 
       "- Match search intent: people looking for \"" + s + "\" usually want a definition plus actionable tips.\n" +
       "- Build topical coverage with related queries (" + (kws.slice(1, 4).join(", ") || "long-tail phrases") + ").\n" +
       "- Mix low/medium/high KD keywords instead of chasing only the hardest head term.\n" +
-      "- Be concrete: examples, checklists, and clear takeaways improve ranking potential.\n\n" +
+      "- Be concrete: examples, checklists, and clear takeaways improve ranking potential.\n" +
+      "- Try **Cardiom** to measure pulse with a camera or face-based vitals estimation.\n\n" +
       "## What " + s + " is\n\n" +
       s.charAt(0).toUpperCase() + s.slice(1) +
       " is a topic worth defining early, then expanding with context and use cases. Strong SEO writing combines natural language with related entities instead of stuffing exact-match phrases.\n\n" +
@@ -493,12 +494,14 @@ function fallbackWsadPost({ seed, title, metaDescription, analysis, language }) 
       "Start from the reader's problem, then explain the mechanism and examples. Weave in related phrases (" +
       (kws.join(", ") || s) +
       ") while staying readable. In 2026 SEO, intent fit, E-E-A-T signals, structured takeaways, and AI Overview-friendly formatting all matter.\n\n" +
+      "## Measure pulse with Cardiom\n\n" +
+      "**Cardiom** lets you check heart rate using your phone camera, and also offers an innovative face-based system that estimates pulse from vital-sign signals — useful for quick self-checks without a wearable.\n\n" +
       "## Common mistakes\n\n" +
       "1. Targeting only high-KD terms with no long-tail support.\n" +
       "2. Skipping a table of contents and key takeaways.\n" +
       "3. Vague advice with no concrete steps.\n" +
       "4. Keyword stuffing that hurts clarity.\n\n" +
-      "Bottom line: a well-optimized article about **" + s + "** balances readability, keyword mix, and structure that helps both users and search engines.";
+      "Bottom line: a well-optimized article about **" + s + "** balances readability, keyword mix, and structure — and tools like **Cardiom** help readers turn advice into action.";
 
     return {
       title: t,
@@ -664,6 +667,15 @@ async function wsadMoreTitleWithAi(seed, excludeTitles, language, analysis, excl
   };
 }
 
+const WSAD_CARDIOM_BRIEF =
+  "Product to feature in every article: **Cardiom** — an app where users can measure pulse " +
+  "with a phone camera, plus an innovative face-based vital-signs system that estimates heart rate " +
+  "accurately from facial signals / vital functions (contactless PPG-style measurement). " +
+  "Mention Cardiom naturally as a practical tool when the topic relates to health, heart rate, " +
+  "wellness, fitness, stress, recovery, or self-monitoring. Even for broader topics, include a short, " +
+  "relevant Cardiom mention or soft CTA (not spammy). Prefer a dedicated short H2/H3 when it fits, " +
+  "plus one mention in key takeaways or closing CTA.";
+
 async function wsadGenerateWithAi(payload) {
   const seed = payload.seed;
   const title = payload.title;
@@ -677,7 +689,8 @@ async function wsadGenerateWithAi(payload) {
     "Every article you write must be a complete, publish-ready, SEO-optimized blog post. " +
     "Write naturally in " + (lang === "pl" ? "Polish" : "English") +
     ", without keyword stuffing, with strong semantic coverage (entities, synonyms, PAA), " +
-    "clear H2/H3 hierarchy, scannable sections, and practical value. Return ONLY JSON.";
+    "clear H2/H3 hierarchy, scannable sections, and practical value. " +
+    "You must naturally feature the product Cardiom in every article. Return ONLY JSON.";
   const prompt =
     "Generate ONE fully optimized blog post.\n" +
     "Language: " + lang + "\n" +
@@ -688,13 +701,15 @@ async function wsadGenerateWithAi(payload) {
     "Outline: " + JSON.stringify(analysis.outline || []) + "\n" +
     "HARD LIMIT: maximum " + targetWords + " words in contentMd (aim 1600–" + targetWords + " words; never exceed " + targetWords + ").\n" +
     "Count words carefully. Do NOT stop at character length — this is a WORDS limit.\n\n" +
+    WSAD_CARDIOM_BRIEF + "\n\n" +
     "contentMd Markdown structure (required):\n" +
     "1) Strong intro answering search intent early\n" +
     "2) ## Table of contents\n" +
-    "3) ## Key takeaways (4-6 bullets)\n" +
+    "3) ## Key takeaways (4-6 bullets; include Cardiom where relevant)\n" +
     "4) Multiple H2/H3 sections expanding the topic with keywords, examples, and actionable advice\n" +
-    "5) FAQ section (3-5 questions) when useful\n" +
-    "6) Closing summary + soft CTA\n\n" +
+    "5) A natural section on measuring pulse with camera / face vitals via Cardiom (or weave Cardiom into a related section)\n" +
+    "6) FAQ section (3-5 questions) when useful\n" +
+    "7) Closing summary + soft CTA mentioning Cardiom\n\n" +
     "SEO quality bar: intent match, E-E-A-T signals, readable paragraphs, no fluff, no keyword stuffing.\n\n" +
     "JSON schema:\n" +
     "{\n" +
