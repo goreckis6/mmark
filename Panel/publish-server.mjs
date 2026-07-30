@@ -69,10 +69,15 @@ loadEnvFile();
 
 const AWS_REGION = process.env.AWS_REGION || "eu-central-1";
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "eu.anthropic.claude-opus-4-8";
-/** Titan Image jest tylko w US (nie w eu-central-1) — domyślnie us-east-1 */
+/**
+ * W Frankfurt (eu-central-1) nie ma natywnego modelu image (Titan/Nova/Stability).
+ * Domyślnie: SVG thumbnail przez Claude (ten sam model co blog) w eu-central-1.
+ * Opcjonalnie: BEDROCK_IMAGE_ENGINE=raster + model/region poza Frankfurt.
+ */
+const BEDROCK_IMAGE_ENGINE = String(process.env.BEDROCK_IMAGE_ENGINE || "svg").toLowerCase();
 const BEDROCK_IMAGE_MODEL_ID =
-  process.env.BEDROCK_IMAGE_MODEL_ID || "amazon.titan-image-generator-v2:0";
-const BEDROCK_IMAGE_REGION = process.env.BEDROCK_IMAGE_REGION || "us-east-1";
+  process.env.BEDROCK_IMAGE_MODEL_ID || "amazon.nova-canvas-v1:0";
+const BEDROCK_IMAGE_REGION = process.env.BEDROCK_IMAGE_REGION || "eu-west-1";
 
 let bedrockImageClients = new Map();
 let bedrockImageInitFailed = false;
@@ -136,16 +141,16 @@ function getImageModelCandidates() {
   const preferred = {
     modelId: BEDROCK_IMAGE_MODEL_ID,
     region: BEDROCK_IMAGE_REGION,
-    family: BEDROCK_IMAGE_MODEL_ID.includes("nova-canvas")
+    family: String(BEDROCK_IMAGE_MODEL_ID).includes("nova-canvas")
       ? "Amazon Nova Canvas"
-      : "Amazon Titan Image Generator v2"
+      : String(BEDROCK_IMAGE_MODEL_ID).includes("stability")
+        ? "Stability AI"
+        : "Bedrock Image"
   };
   const fallbacks = [
     preferred,
-    { modelId: "amazon.titan-image-generator-v2:0", region: "us-east-1", family: "Amazon Titan Image Generator v2" },
-    { modelId: "amazon.titan-image-generator-v2:0", region: "us-west-2", family: "Amazon Titan Image Generator v2" },
-    { modelId: "amazon.nova-canvas-v1:0", region: "us-east-1", family: "Amazon Nova Canvas" },
-    { modelId: "amazon.nova-canvas-v1:0", region: "eu-west-1", family: "Amazon Nova Canvas" }
+    { modelId: "amazon.nova-canvas-v1:0", region: "eu-west-1", family: "Amazon Nova Canvas" },
+    { modelId: "amazon.nova-canvas-v1:0", region: "us-east-1", family: "Amazon Nova Canvas" }
   ];
   const seen = new Set();
   return fallbacks.filter(function (c) {
@@ -159,22 +164,31 @@ function getImageModelCandidates() {
 async function invokeImageModel({ client, modelId, textPrompt, width, height }) {
   const { InvokeModelCommand } = await import("@aws-sdk/client-bedrock-runtime");
   const isNova = String(modelId).includes("nova-canvas");
-  const bodyObj = {
-    taskType: "TEXT_IMAGE",
-    textToImageParams: {
-      text: textPrompt
-    },
-    imageGenerationConfig: {
-      numberOfImages: 1,
-      quality: "standard",
-      height: height,
-      width: width
+  const isStability = String(modelId).startsWith("stability.");
+  let bodyObj;
+  if (isStability) {
+    bodyObj = {
+      prompt: textPrompt,
+      mode: "text-to-image",
+      aspect_ratio: "16:9",
+      output_format: "png"
+    };
+  } else {
+    bodyObj = {
+      taskType: "TEXT_IMAGE",
+      textToImageParams: { text: textPrompt },
+      imageGenerationConfig: {
+        numberOfImages: 1,
+        quality: "standard",
+        height: height,
+        width: width
+      }
+    };
+    if (!isNova) {
+      bodyObj.textToImageParams.negativeText =
+        "text, watermark, logo, blurry, low quality, deformed hands, collage, screenshot";
+      bodyObj.imageGenerationConfig.cfgScale = 8;
     }
-  };
-  if (!isNova) {
-    bodyObj.textToImageParams.negativeText =
-      "text, watermark, logo, blurry, low quality, deformed hands, collage, screenshot";
-    bodyObj.imageGenerationConfig.cfgScale = 8;
   }
   const response = await client.send(new InvokeModelCommand({
     modelId,
@@ -184,12 +198,74 @@ async function invokeImageModel({ client, modelId, textPrompt, width, height }) 
   }));
   const parsed = JSON.parse(new TextDecoder().decode(response.body));
   if (parsed.error) throw new Error(String(parsed.error));
-  const b64 = parsed.images && parsed.images[0];
+  const b64 = (parsed.images && parsed.images[0]) ||
+    (parsed.artifacts && parsed.artifacts[0] && parsed.artifacts[0].base64) ||
+    parsed.image ||
+    null;
   if (!b64) throw new Error("Brak obrazu w odpowiedzi modelu");
   return b64;
 }
 
-async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
+function extractSvgMarkup(text) {
+  const match = String(text || "").match(/<svg[\s\S]*?<\/svg>/i);
+  if (!match) throw new Error("Model nie zwrócił poprawnego SVG");
+  let svg = match[0].trim();
+  if (!/xmlns=/.test(svg)) {
+    svg = svg.replace(/<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  if (!/\bviewBox=/.test(svg) && !/\bwidth=/.test(svg)) {
+    svg = svg.replace(/<svg\b/i, '<svg viewBox="0 0 1280 720" width="1280" height="720"');
+  }
+  return svg;
+}
+
+function saveSvgFile({ filename, svg }) {
+  ensureMediaDir();
+  const safe = safeFilename(filename.endsWith(".svg") ? filename : filename + ".svg");
+  const unique = Date.now() + "-" + safe;
+  const fullPath = path.join(MEDIA_DIR, unique);
+  const buf = Buffer.from(String(svg || ""), "utf8");
+  if (buf.length > 2 * 1024 * 1024) throw new Error("SVG za duże (max 2 MB)");
+  fs.writeFileSync(fullPath, buf);
+  return { path: "media/posty/" + unique, filename: unique };
+}
+
+async function generateWsadThumbnailSvg({ title, seed, keywords }) {
+  const topic = String(seed || title || "wellness").trim();
+  const kws = (keywords || []).filter(Boolean).slice(0, 5).join(", ");
+  const system =
+    "You design editorial SVG blog thumbnails. Return ONLY a complete SVG document, no markdown fences, no commentary.";
+  const prompt =
+    "Create one unique 1280x720 SVG blog hero thumbnail.\n" +
+    "Topic: " + topic + "\n" +
+    (title ? "Article title: " + title + "\n" : "") +
+    (kws ? "Motifs: " + kws + "\n" : "") +
+    "Style: modern editorial illustration — soft gradients, geometric shapes, calm professional mood, " +
+    "magazine cover feel. NO text, NO letters, NO logos, NO watermarks, NO photorealistic faces.\n" +
+    "Requirements: root <svg> with xmlns, viewBox=\"0 0 1280 720\", width/height 1280/720. " +
+    "Use only basic SVG (rects, circles, paths, linearGradient). Keep file under 40KB.";
+
+  const result = await invokeBedrock({ system, prompt, maxTokens: 3500 });
+  const svg = extractSvgMarkup(result.text);
+  const slug = slugifyPl(title || seed || "thumbnail") || "thumbnail";
+  const saved = saveSvgFile({ filename: "thumb-" + slug + ".svg", svg: svg });
+  const alt = buildThumbnailAlt({ title, seed, keywords });
+  return {
+    path: saved.path,
+    filename: saved.filename,
+    url: saved.path,
+    alt: alt,
+    prompt: prompt.slice(0, 400),
+    cost: result.cost,
+    usage: result.usage,
+    modelId: result.modelId || BEDROCK_MODEL_ID,
+    region: AWS_REGION,
+    engine: "svg-claude",
+    format: "svg"
+  };
+}
+
+async function generateWsadThumbnailRaster({ title, seed, keywords, prompt }) {
   const textPrompt = String(prompt || buildThumbnailPrompt({ title, seed, keywords })).slice(0, 512);
   const candidates = getImageModelCandidates();
   const errors = [];
@@ -231,7 +307,7 @@ async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
 
   if (!b64 || !used) {
     throw new Error(
-      "Nie udało się wygenerować thumbnaila. Włącz Titan Image (us-east-1) lub Nova Canvas w Bedrock. " +
+      "Raster image models unavailable. " +
       "Ostatnie błędy: " + errors.slice(0, 3).join(" | ")
     );
   }
@@ -242,25 +318,49 @@ async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
     data: b64
   });
   const alt = buildThumbnailAlt({ title, seed, keywords });
-  const cost = {
-    modelId: used.modelId,
-    family: used.family,
-    totalUsd: 0.008,
-    totalUsdDisplay: "0.008",
-    currency: "USD",
-    note: "Estimate for Bedrock image generation (" + used.region + " / " + used.modelId + ")."
-  };
-
   return {
     path: saved.path,
     filename: saved.filename,
     url: saved.path,
     alt: alt,
     prompt: textPrompt,
-    cost: cost,
+    cost: {
+      modelId: used.modelId,
+      family: used.family,
+      totalUsd: 0.008,
+      totalUsdDisplay: "0.008",
+      currency: "USD",
+      note: "Estimate for Bedrock image generation (" + used.region + " / " + used.modelId + ")."
+    },
     modelId: used.modelId,
-    region: used.region
+    region: used.region,
+    engine: "raster",
+    format: "png"
   };
+}
+
+async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
+  // Frankfurt: default SVG via Claude (only generative option available there).
+  if (BEDROCK_IMAGE_ENGINE !== "raster") {
+    try {
+      return await generateWsadThumbnailSvg({ title, seed, keywords });
+    } catch (svgErr) {
+      console.warn("WSAD SVG thumbnail failed, trying raster fallback:", svgErr.message);
+    }
+  }
+  try {
+    return await generateWsadThumbnailRaster({ title, seed, keywords, prompt });
+  } catch (rasterErr) {
+    if (BEDROCK_IMAGE_ENGINE === "raster") {
+      // last resort even if raster forced
+      try {
+        return await generateWsadThumbnailSvg({ title, seed, keywords });
+      } catch (svgErr) {
+        throw new Error(rasterErr.message + " | SVG fallback: " + svgErr.message);
+      }
+    }
+    throw rasterErr;
+  }
 }
 
 function ensureMediaDir() {
@@ -273,9 +373,9 @@ function safeFilename(name) {
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "");
   const ext = path.extname(base).slice(1).toLowerCase();
-  const allowed = new Set(["jpg", "jpeg", "png", "webp"]);
+  const allowed = new Set(["jpg", "jpeg", "png", "webp", "svg"]);
   if (!allowed.has(ext)) {
-    throw new Error("Dozwolone formaty: JPG, PNG, WEBP");
+    throw new Error("Dozwolone formaty: JPG, PNG, WEBP, SVG");
   }
   return base || "grafika.jpg";
 }

@@ -370,12 +370,12 @@
 
         <div class="thumb-box">
           <label>Blog thumbnail</label>
-          <div id="thumb-empty" class="thumb-empty">No thumbnail yet — generate with Titan or upload your own</div>
+          <div id="thumb-empty" class="thumb-empty">No thumbnail yet — generate with Claude (Frankfurt SVG) or upload your own</div>
           <img id="thumb-preview" class="thumb-preview hidden" alt="">
           <label for="editor-thumb-alt" style="margin-top:0.75rem">Image alt text</label>
           <input id="editor-thumb-alt" type="text" placeholder="Descriptive alt for SEO / accessibility">
           <div class="btns" style="margin-top:0.65rem">
-            <button type="button" class="primary" id="btn-gen-thumb">Generate thumbnail (Titan)</button>
+            <button type="button" class="primary" id="btn-gen-thumb">Generate thumbnail (Claude EU)</button>
             <button type="button" id="btn-upload-thumb">Upload thumbnail</button>
             <button type="button" class="ghost" id="btn-clear-thumb">Clear</button>
             <input type="file" id="thumb-file" accept="image/jpeg,image/png,image/webp" hidden>
@@ -1052,7 +1052,7 @@
           return Promise.reject(new Error("Missing title/seed"));
         }
         setBusy(el.thumbProgress, true, el.btnGenThumb);
-        showStatus(el.editorStatus, "Generating thumbnail with Titan Image…");
+        showStatus(el.editorStatus, "Generating thumbnail with Claude (Frankfurt)…");
         return api("/api/wsad/thumbnail", {
           title: title,
           seed: seed,
