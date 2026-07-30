@@ -69,11 +69,12 @@ loadEnvFile();
 
 const AWS_REGION = process.env.AWS_REGION || "eu-central-1";
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "eu.anthropic.claude-opus-4-8";
+/** Titan Image jest tylko w US (nie w eu-central-1) — domyślnie us-east-1 */
 const BEDROCK_IMAGE_MODEL_ID =
   process.env.BEDROCK_IMAGE_MODEL_ID || "amazon.titan-image-generator-v2:0";
-const BEDROCK_IMAGE_REGION = process.env.BEDROCK_IMAGE_REGION || AWS_REGION;
+const BEDROCK_IMAGE_REGION = process.env.BEDROCK_IMAGE_REGION || "us-east-1";
 
-let bedrockImageClient = null;
+let bedrockImageClients = new Map();
 let bedrockImageInitFailed = false;
 
 let bedrockClient = null;
@@ -93,13 +94,15 @@ async function getBedrockClient() {
   }
 }
 
-async function getBedrockImageClient() {
-  if (bedrockImageClient) return bedrockImageClient;
+async function getBedrockImageClient(region) {
+  const r = region || BEDROCK_IMAGE_REGION;
+  if (bedrockImageClients.has(r)) return bedrockImageClients.get(r);
   if (bedrockImageInitFailed) return null;
   try {
     const { BedrockRuntimeClient } = await import("@aws-sdk/client-bedrock-runtime");
-    bedrockImageClient = new BedrockRuntimeClient({ region: BEDROCK_IMAGE_REGION });
-    return bedrockImageClient;
+    const client = new BedrockRuntimeClient({ region: r });
+    bedrockImageClients.set(r, client);
+    return client;
   } catch (err) {
     bedrockImageInitFailed = true;
     console.warn("Bedrock image client init skipped:", err.message);
@@ -129,48 +132,108 @@ function buildThumbnailAlt({ title, seed, keywords }) {
   return alt.slice(0, 160);
 }
 
-async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
-  const client = await getBedrockImageClient();
-  if (!client) throw new Error("Bedrock image niedostępny — sprawdź AWS credentials i region");
+function getImageModelCandidates() {
+  const preferred = {
+    modelId: BEDROCK_IMAGE_MODEL_ID,
+    region: BEDROCK_IMAGE_REGION,
+    family: BEDROCK_IMAGE_MODEL_ID.includes("nova-canvas")
+      ? "Amazon Nova Canvas"
+      : "Amazon Titan Image Generator v2"
+  };
+  const fallbacks = [
+    preferred,
+    { modelId: "amazon.titan-image-generator-v2:0", region: "us-east-1", family: "Amazon Titan Image Generator v2" },
+    { modelId: "amazon.titan-image-generator-v2:0", region: "us-west-2", family: "Amazon Titan Image Generator v2" },
+    { modelId: "amazon.nova-canvas-v1:0", region: "us-east-1", family: "Amazon Nova Canvas" },
+    { modelId: "amazon.nova-canvas-v1:0", region: "eu-west-1", family: "Amazon Nova Canvas" }
+  ];
+  const seen = new Set();
+  return fallbacks.filter(function (c) {
+    const key = c.region + "::" + c.modelId;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
+async function invokeImageModel({ client, modelId, textPrompt, width, height }) {
   const { InvokeModelCommand } = await import("@aws-sdk/client-bedrock-runtime");
-  const modelId = BEDROCK_IMAGE_MODEL_ID;
-  const textPrompt = String(prompt || buildThumbnailPrompt({ title, seed, keywords })).slice(0, 512);
+  const isNova = String(modelId).includes("nova-canvas");
+  const bodyObj = {
+    taskType: "TEXT_IMAGE",
+    textToImageParams: {
+      text: textPrompt
+    },
+    imageGenerationConfig: {
+      numberOfImages: 1,
+      quality: "standard",
+      height: height,
+      width: width
+    }
+  };
+  if (!isNova) {
+    bodyObj.textToImageParams.negativeText =
+      "text, watermark, logo, blurry, low quality, deformed hands, collage, screenshot";
+    bodyObj.imageGenerationConfig.cfgScale = 8;
+  }
+  const response = await client.send(new InvokeModelCommand({
+    modelId,
+    contentType: "application/json",
+    accept: "application/json",
+    body: JSON.stringify(bodyObj)
+  }));
+  const parsed = JSON.parse(new TextDecoder().decode(response.body));
+  if (parsed.error) throw new Error(String(parsed.error));
+  const b64 = parsed.images && parsed.images[0];
+  if (!b64) throw new Error("Brak obrazu w odpowiedzi modelu");
+  return b64;
+}
 
-  async function invokeWithSize(width, height) {
-    const body = JSON.stringify({
-      taskType: "TEXT_IMAGE",
-      textToImageParams: {
-        text: textPrompt,
-        negativeText: "text, watermark, logo, blurry, low quality, deformed hands, collage, screenshot"
-      },
-      imageGenerationConfig: {
-        numberOfImages: 1,
-        quality: "standard",
-        cfgScale: 8,
-        height: height,
-        width: width
+async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
+  const textPrompt = String(prompt || buildThumbnailPrompt({ title, seed, keywords })).slice(0, 512);
+  const candidates = getImageModelCandidates();
+  const errors = [];
+  let b64 = null;
+  let used = null;
+
+  for (const candidate of candidates) {
+    const client = await getBedrockImageClient(candidate.region);
+    if (!client) {
+      errors.push(candidate.region + "/" + candidate.modelId + ": brak klienta Bedrock");
+      continue;
+    }
+    try {
+      try {
+        b64 = await invokeImageModel({
+          client: client,
+          modelId: candidate.modelId,
+          textPrompt: textPrompt,
+          width: 1280,
+          height: 768
+        });
+      } catch (sizeErr) {
+        b64 = await invokeImageModel({
+          client: client,
+          modelId: candidate.modelId,
+          textPrompt: textPrompt,
+          width: 1024,
+          height: 1024
+        });
       }
-    });
-    const response = await client.send(new InvokeModelCommand({
-      modelId,
-      contentType: "application/json",
-      accept: "application/json",
-      body
-    }));
-    const parsed = JSON.parse(new TextDecoder().decode(response.body));
-    if (parsed.error) throw new Error(String(parsed.error));
-    const b64 = parsed.images && parsed.images[0];
-    if (!b64) throw new Error("Brak obrazu w odpowiedzi Titan");
-    return b64;
+      used = candidate;
+      break;
+    } catch (err) {
+      const msg = err && err.message ? err.message : String(err);
+      console.warn("WSAD thumbnail candidate failed:", candidate.region, candidate.modelId, msg);
+      errors.push(candidate.region + "/" + candidate.modelId + ": " + msg);
+    }
   }
 
-  let b64;
-  try {
-    b64 = await invokeWithSize(1280, 768);
-  } catch (err) {
-    console.warn("WSAD thumbnail 1280x768 failed, retry 1024x1024:", err.message);
-    b64 = await invokeWithSize(1024, 1024);
+  if (!b64 || !used) {
+    throw new Error(
+      "Nie udało się wygenerować thumbnaila. Włącz Titan Image (us-east-1) lub Nova Canvas w Bedrock. " +
+      "Ostatnie błędy: " + errors.slice(0, 3).join(" | ")
+    );
   }
 
   const slug = slugifyPl(title || seed || "thumbnail") || "thumbnail";
@@ -180,12 +243,12 @@ async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
   });
   const alt = buildThumbnailAlt({ title, seed, keywords });
   const cost = {
-    modelId: modelId,
-    family: "Amazon Titan Image Generator v2",
+    modelId: used.modelId,
+    family: used.family,
     totalUsd: 0.008,
     totalUsdDisplay: "0.008",
     currency: "USD",
-    note: "Estimate for standard Titan image generation on Bedrock (" + BEDROCK_IMAGE_REGION + ")."
+    note: "Estimate for Bedrock image generation (" + used.region + " / " + used.modelId + ")."
   };
 
   return {
@@ -195,7 +258,8 @@ async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
     alt: alt,
     prompt: textPrompt,
     cost: cost,
-    modelId: modelId
+    modelId: used.modelId,
+    region: used.region
   };
 }
 
