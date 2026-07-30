@@ -332,7 +332,7 @@
     </div>
   </div>
 
-  <script src="../auth-client.js?v=wsad3"></script>
+  <script src="../auth-client.js?v=wsad4"></script>
   <script>
     (function () {
       "use strict";
@@ -786,6 +786,43 @@
         });
       }
 
+      function apiGet(path) {
+        if (window.AuthClient && AuthClient.getToken()) {
+          return AuthClient.apiFetch(path, { method: "GET" });
+        }
+        return fetch((window.AuthClient ? AuthClient.getApiBase() : "") + path, {
+          method: "GET",
+          headers: { Accept: "application/json" }
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error((data && data.error) || ("HTTP " + res.status));
+            return data;
+          });
+        });
+      }
+
+      function pollGenerateJob(jobId, statusEl) {
+        var tries = 0;
+        return new Promise(function (resolve, reject) {
+          function tick() {
+            tries += 1;
+            apiGet("/api/wsad/generate/" + encodeURIComponent(jobId)).then(function (data) {
+              if (data.status === "running") {
+                var step = data.step === "bedrock" ? "Bedrock pisze artykuł…" : "Start generowania…";
+                showStatus(statusEl, "W tle: " + step + " (" + tries + ")");
+                if (tries > 120) return reject(new Error("Timeout generowania (4 min) — spróbuj ponownie"));
+                setTimeout(tick, 2000);
+                return;
+              }
+              if (data.status === "done" && data.post) return resolve(data);
+              if (data.status === "error") return reject(new Error(data.error || "Generation failed"));
+              reject(new Error("Nieoczekiwany status joba"));
+            }).catch(reject);
+          }
+          tick();
+        });
+      }
+
       function runGenerate(opts) {
         opts = opts || {};
         var seed = (opts.seed || el.seed.value || el.titlesSeed.value || "").trim();
@@ -800,7 +837,7 @@
         }
         if (!seed) seed = title.split(/[:\-–—]/)[0].trim() || title;
         setBusy(progressEl, true, btn);
-        showStatus(statusEl, "Generating optimized English blog post (max 2000 words)…");
+        showStatus(statusEl, "Starting generation job (avoids 504 timeout)…");
         var analysis = state.analysis || {
           primaryKeyword: seed,
           keywords: [{ term: seed, kd: "medium", reason: "Seed" }],
@@ -814,6 +851,12 @@
           targetWords: 2000,
           language: LANG
         }).then(function (data) {
+          if (data && data.jobId) {
+            showStatus(statusEl, "Job started — generating in background…");
+            return pollGenerateJob(data.jobId, statusEl);
+          }
+          return data;
+        }).then(function (data) {
           var post = data.post || data;
           post.seed = post.seed || seed;
           post.metaDescription = post.metaDescription || meta;
@@ -821,10 +864,14 @@
           var saved = saveGeneratedPost(post);
           fillEditor(saved || post);
           renderSavedPosts();
-          showStatus(statusEl, "Post ready and saved.");
+          showStatus(statusEl, "Post ready and saved" + (data.warning ? " (fallback: " + data.warning + ")" : "") + ".");
           switchTab("editor");
         }).catch(function (err) {
-          showStatus(statusEl, err.message || "Generation failed", true);
+          var msg = err.message || "Generation failed";
+          if (err.status === 504 || /504|timeout|gateway/i.test(msg)) {
+            msg = "504 timeout — po deployu generowanie idzie w tle. Odśwież stronę i spróbuj ponownie.";
+          }
+          showStatus(statusEl, msg, true);
         }).finally(function () {
           setBusy(progressEl, false, btn);
         });

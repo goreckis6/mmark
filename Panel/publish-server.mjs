@@ -681,7 +681,7 @@ async function wsadGenerateWithAi(payload) {
   const title = payload.title;
   const meta = payload.metaDescription || "";
   const analysis = payload.analysis || {};
-  const targetWords = Math.min(2000, Math.max(800, Number(payload.targetWords) || Number(payload.targetChars) || 2000));
+  const targetWords = Math.min(2000, Math.max(900, Number(payload.targetWords) || Number(payload.targetChars) || 2000));
   const lang = (payload.language || "en").toLowerCase();
   const kws = (analysis.keywords || []).map(function (k) { return k.term + " [" + k.kd + "]"; }).join("; ");
   const system =
@@ -699,7 +699,8 @@ async function wsadGenerateWithAi(payload) {
     "Meta: " + meta + "\n" +
     "Keywords (use a natural mix of low/medium/high KD): " + kws + "\n" +
     "Outline: " + JSON.stringify(analysis.outline || []) + "\n" +
-    "HARD LIMIT: maximum " + targetWords + " words in contentMd (aim 1600–" + targetWords + " words; never exceed " + targetWords + ").\n" +
+    "HARD LIMIT: maximum " + targetWords + " words in contentMd (aim 1200–1800 words; never exceed " + targetWords + ").\n" +
+    "Be complete but efficient — prefer dense, useful prose over filler so generation finishes reliably.\n" +
     "Count words carefully. Do NOT stop at character length — this is a WORDS limit.\n\n" +
     WSAD_CARDIOM_BRIEF + "\n\n" +
     "contentMd Markdown structure (required):\n" +
@@ -721,7 +722,7 @@ async function wsadGenerateWithAi(payload) {
     "  \"wordCount\": number,\n" +
     "  \"keywordsUsed\": [string]\n" +
     "}";
-  const text = await invokeBedrock({ system, prompt, maxTokens: 8192 });
+  const text = await invokeBedrock({ system, prompt, maxTokens: 6144 });
   const parsed = extractJsonObject(text);
   if (!parsed.contentMd) throw new Error("Missing contentMd in model response");
   parsed.slug = parsed.slug || slugifyPl(parsed.title || title);
@@ -736,6 +737,20 @@ function safeStaticPath(urlPath) {
   const resolved = path.normalize(path.join(__dirname, rel));
   if (!resolved.startsWith(__dirname)) return null;
   return resolved;
+}
+
+const wsadJobs = new Map();
+
+function cleanupWsadJobs() {
+  const maxAge = 30 * 60 * 1000;
+  const now = Date.now();
+  for (const [id, job] of wsadJobs.entries()) {
+    if (!job || (now - (job.createdAt || 0)) > maxAge) wsadJobs.delete(id);
+  }
+  while (wsadJobs.size > 40) {
+    const first = wsadJobs.keys().next().value;
+    wsadJobs.delete(first);
+  }
 }
 
 function serveStatic(req, res, filePath) {
@@ -1038,17 +1053,62 @@ export function createApp() {
       targetWords: Number(req.body && (req.body.targetWords || req.body.targetChars)) || 2000,
       language
     };
-    try {
-      const post = await wsadGenerateWithAi(payload);
-      sendJson(req, res, 200, { post, provider: "bedrock" });
-    } catch (err) {
-      console.warn("WSAD generate fallback:", err.message);
-      sendJson(req, res, 200, {
-        post: fallbackWsadPost(payload),
-        provider: "fallback",
-        warning: err.message || "Bedrock niedostępny — użyto szablonu lokalnego"
-      });
+
+    // Async job — unika 504 na Hostingerze (proxy timeout przy długim Bedrock)
+    const jobId = "wsad-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    wsadJobs.set(jobId, {
+      status: "running",
+      step: "starting",
+      createdAt: Date.now(),
+      userId: auth.user.id
+    });
+    cleanupWsadJobs();
+    sendJson(req, res, 202, { jobId: jobId, status: "running" });
+
+    setImmediate(async function () {
+      try {
+        wsadJobs.set(jobId, Object.assign({}, wsadJobs.get(jobId), { step: "bedrock" }));
+        const post = await wsadGenerateWithAi(payload);
+        wsadJobs.set(jobId, {
+          status: "done",
+          step: "done",
+          post: post,
+          provider: "bedrock",
+          createdAt: Date.now(),
+          userId: auth.user.id
+        });
+      } catch (err) {
+        console.warn("WSAD generate fallback:", err.message);
+        wsadJobs.set(jobId, {
+          status: "done",
+          step: "done",
+          post: fallbackWsadPost(payload),
+          provider: "fallback",
+          warning: err.message || "Bedrock niedostępny — użyto szablonu lokalnego",
+          createdAt: Date.now(),
+          userId: auth.user.id
+        });
+      }
+    });
+  });
+
+  app.get("/api/wsad/generate/:jobId", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    const job = wsadJobs.get(String(req.params.jobId || ""));
+    if (!job) return sendJson(req, res, 404, { error: "Nie znaleziono joba generowania" });
+    if (job.userId && job.userId !== auth.user.id) {
+      return sendJson(req, res, 403, { error: "Brak dostępu do tego joba" });
     }
+    sendJson(req, res, 200, {
+      jobId: req.params.jobId,
+      status: job.status,
+      step: job.step || "",
+      post: job.post || null,
+      provider: job.provider || null,
+      warning: job.warning || null,
+      error: job.error || null
+    });
   });
 
   app.get("*", function (req, res) {

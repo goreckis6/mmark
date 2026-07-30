@@ -122,9 +122,12 @@
             global.location.href = getLoginUrl(global.location.pathname + (global.location.search || ""));
           }
         }
-        if (!res.ok) {
+        if (!res.ok && res.status !== 202) {
           var err = new Error((data && data.error) || ("HTTP " + res.status));
           err.status = res.status;
+          if (res.status === 504) {
+            err.message = "Timeout serwera (504). Spróbuj ponownie — dłuższe generowanie działa w tle po aktualizacji.";
+          }
           if (res.status === 404 && path.indexOf("/auth/") === 0) {
             err.message = "API niedostępne (404). W hPanel: Node.js Web App → root: Panel → entry: app.js → redeploy. Test: /health";
           }
