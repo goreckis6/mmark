@@ -1067,7 +1067,7 @@
           return thumb;
         }).catch(function (err) {
           showStatus(el.editorStatus, err.message || "Thumbnail generation failed", true);
-          throw err;
+          return null;
         }).finally(function () {
           setBusy(el.thumbProgress, false, el.btnGenThumb);
         });
