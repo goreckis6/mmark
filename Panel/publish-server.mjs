@@ -16,11 +16,19 @@ import {
 } from "./auth.mjs";
 import {
   deletePostForUser,
+  deleteWsadPost,
+  deleteWsadTitle,
   getDeletedIds,
   getPostsForUser,
+  getWsadPostsForUser,
+  getWsadTitlesForUser,
   initDb,
+  replaceWsadPostsForUser,
+  replaceWsadTitlesForUser,
   setDeletedIds,
-  upsertPost
+  upsertPost,
+  upsertWsadPost,
+  upsertWsadTitle
 } from "./db.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1580,6 +1588,79 @@ export function createApp() {
         warning: err.message || "Bedrock niedostępny — użyto analizy lokalnej"
       });
     }
+  });
+
+  app.get("/api/wsad/library", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    sendJson(req, res, 200, {
+      titles: getWsadTitlesForUser(auth.user.id),
+      posts: getWsadPostsForUser(auth.user.id)
+    });
+  });
+
+  app.get("/api/wsad/titles", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    sendJson(req, res, 200, { titles: getWsadTitlesForUser(auth.user.id) });
+  });
+
+  app.put("/api/wsad/titles", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    const titles = Array.isArray(req.body && req.body.titles) ? req.body.titles : [];
+    const saved = replaceWsadTitlesForUser(auth.user.id, titles.slice(0, 200));
+    sendJson(req, res, 200, { titles: saved, ok: true });
+  });
+
+  app.post("/api/wsad/titles", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    try {
+      const item = upsertWsadTitle(auth.user.id, req.body || {});
+      sendJson(req, res, 200, { title: item, ok: true });
+    } catch (err) {
+      sendJson(req, res, 400, { error: err.message || "Nie udało się zapisać tytułu" });
+    }
+  });
+
+  app.delete("/api/wsad/titles/:id", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    deleteWsadTitle(auth.user.id, String(req.params.id || ""));
+    sendJson(req, res, 200, { ok: true });
+  });
+
+  app.get("/api/wsad/posts", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    sendJson(req, res, 200, { posts: getWsadPostsForUser(auth.user.id) });
+  });
+
+  app.put("/api/wsad/posts", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    const posts = Array.isArray(req.body && req.body.posts) ? req.body.posts : [];
+    const saved = replaceWsadPostsForUser(auth.user.id, posts.slice(0, 80));
+    sendJson(req, res, 200, { posts: saved, ok: true });
+  });
+
+  app.post("/api/wsad/posts", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    try {
+      const item = upsertWsadPost(auth.user.id, req.body || {});
+      sendJson(req, res, 200, { post: item, ok: true });
+    } catch (err) {
+      sendJson(req, res, 400, { error: err.message || "Nie udało się zapisać posta" });
+    }
+  });
+
+  app.delete("/api/wsad/posts/:id", function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    deleteWsadPost(auth.user.id, String(req.params.id || ""));
+    sendJson(req, res, 200, { ok: true });
   });
 
   app.post("/api/wsad/title-more", async function (req, res) {

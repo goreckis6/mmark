@@ -10,7 +10,9 @@ const EMPTY_STORE = {
   users: [],
   sessions: [],
   posts: [],
-  settings: []
+  settings: [],
+  wsadTitles: [],
+  wsadPosts: []
 };
 
 let store = null;
@@ -32,6 +34,8 @@ function loadStore() {
   if (!Array.isArray(store.sessions)) store.sessions = [];
   if (!Array.isArray(store.posts)) store.posts = [];
   if (!Array.isArray(store.settings)) store.settings = [];
+  if (!Array.isArray(store.wsadTitles)) store.wsadTitles = [];
+  if (!Array.isArray(store.wsadPosts)) store.wsadPosts = [];
   return store;
 }
 
@@ -186,5 +190,132 @@ export function setDeletedIds(userId, ids) {
   } else {
     getDb().settings.push({ user_id: userId, deleted_ids: payload });
   }
+  persistStore();
+}
+
+function parseWsadRow(row) {
+  if (!row) return null;
+  try {
+    var parsed = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function getWsadTitlesForUser(userId) {
+  return getDb().wsadTitles
+    .filter(function (p) { return p.user_id === userId; })
+    .sort(function (a, b) {
+      return (b.updated_at || "").localeCompare(a.updated_at || "");
+    })
+    .map(parseWsadRow)
+    .filter(Boolean);
+}
+
+export function replaceWsadTitlesForUser(userId, titles) {
+  getDb().wsadTitles = getDb().wsadTitles.filter(function (p) { return p.user_id !== userId; });
+  var now = new Date().toISOString();
+  (titles || []).forEach(function (item, idx) {
+    if (!item || !item.title) return;
+    var id = item.id || ("wtitle-" + Date.now() + "-" + idx);
+    var payload = Object.assign({}, item, { id: id });
+    getDb().wsadTitles.push({
+      id: id,
+      user_id: userId,
+      data: JSON.stringify(payload),
+      updated_at: payload.savedAt || now
+    });
+  });
+  persistStore();
+  return getWsadTitlesForUser(userId);
+}
+
+export function upsertWsadTitle(userId, item) {
+  if (!item || !item.title) throw new Error("Brak tytułu");
+  var now = new Date().toISOString();
+  var id = item.id || ("wtitle-" + Date.now());
+  var payload = Object.assign({}, item, { id: id, savedAt: item.savedAt || now });
+  var existing = getDb().wsadTitles.find(function (p) {
+    return p.user_id === userId && p.id === id;
+  });
+  if (existing) {
+    existing.data = JSON.stringify(payload);
+    existing.updated_at = now;
+  } else {
+    getDb().wsadTitles.push({
+      id: id,
+      user_id: userId,
+      data: JSON.stringify(payload),
+      updated_at: now
+    });
+  }
+  persistStore();
+  return payload;
+}
+
+export function deleteWsadTitle(userId, titleId) {
+  getDb().wsadTitles = getDb().wsadTitles.filter(function (p) {
+    return !(p.user_id === userId && p.id === titleId);
+  });
+  persistStore();
+}
+
+export function getWsadPostsForUser(userId) {
+  return getDb().wsadPosts
+    .filter(function (p) { return p.user_id === userId; })
+    .sort(function (a, b) {
+      return (b.updated_at || "").localeCompare(a.updated_at || "");
+    })
+    .map(parseWsadRow)
+    .filter(Boolean);
+}
+
+export function replaceWsadPostsForUser(userId, posts) {
+  getDb().wsadPosts = getDb().wsadPosts.filter(function (p) { return p.user_id !== userId; });
+  var now = new Date().toISOString();
+  (posts || []).forEach(function (item, idx) {
+    if (!item || !item.title) return;
+    var id = item.id || ("wpost-" + Date.now() + "-" + idx);
+    var payload = Object.assign({}, item, { id: id });
+    getDb().wsadPosts.push({
+      id: id,
+      user_id: userId,
+      data: JSON.stringify(payload),
+      updated_at: payload.savedAt || now
+    });
+  });
+  persistStore();
+  return getWsadPostsForUser(userId);
+}
+
+export function upsertWsadPost(userId, item) {
+  if (!item || !item.title) throw new Error("Brak tytułu posta");
+  var now = new Date().toISOString();
+  var id = item.id || ("wpost-" + Date.now());
+  var payload = Object.assign({}, item, { id: id, savedAt: item.savedAt || now });
+  var existing = getDb().wsadPosts.find(function (p) {
+    return p.user_id === userId && p.id === id;
+  });
+  if (existing) {
+    existing.data = JSON.stringify(payload);
+    existing.updated_at = now;
+  } else {
+    getDb().wsadPosts.push({
+      id: id,
+      user_id: userId,
+      data: JSON.stringify(payload),
+      updated_at: now
+    });
+  }
+  persistStore();
+  return payload;
+}
+
+export function deleteWsadPost(userId, postId) {
+  getDb().wsadPosts = getDb().wsadPosts.filter(function (p) {
+    return !(p.user_id === userId && p.id === postId);
+  });
   persistStore();
 }

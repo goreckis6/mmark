@@ -309,7 +309,7 @@
     <div class="tab-panel" id="tab-titles">
       <section class="card">
         <h2>Saved titles</h2>
-        <p class="hint" style="margin-top:0">All saved titles in one place. Select one and generate a blog post from here.</p>
+        <p class="hint" style="margin-top:0">All saved titles in one place (synced to your account DB). Select one and generate a blog post from here.</p>
         <div class="grid-2">
           <div>
             <label>Titles library</label>
@@ -340,7 +340,7 @@
     <div class="tab-panel" id="tab-posts">
       <section class="card">
         <h2>Saved blog posts</h2>
-        <p class="hint" style="margin-top:0">Generated posts are saved automatically. Click one to open it in the Editor.</p>
+        <p class="hint" style="margin-top:0">Generated posts are saved to your account database — same list on every device after login.</p>
         <div class="title-list" id="saved-posts"></div>
       </section>
     </div>
@@ -425,7 +425,7 @@
     </div>
   </div>
 
-  <script src="../auth-client.js?v=wsad5"></script>
+  <script src="../auth-client.js?v=wsad6"></script>
   <script>
     (function () {
       "use strict";
@@ -442,7 +442,10 @@
         post: null,
         postId: null,
         images: [],
-        thumbnail: null
+        thumbnail: null,
+        savedTitles: [],
+        savedPosts: [],
+        libraryReady: false
       };
 
       var el = {};
@@ -576,22 +579,150 @@
         if (el.countPosts) el.countPosts.textContent = String(loadSavedPosts().length);
       }
 
-      function loadSavedTitles() {
+      function readLocalTitles() {
         try { var list = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); return Array.isArray(list) ? list : []; }
         catch (e) { return []; }
       }
-      function persistSavedTitles(list) { localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 200))); updateCounts(); }
-      function upsertSavedTitle(list, item) {
-        var key = normalizeTitleKey(item.title);
-        list = list.filter(function (x) { return normalizeTitleKey(x.title) !== key; });
-        list.unshift(item);
-        return list;
-      }
-      function loadSavedPosts() {
+      function readLocalPosts() {
         try { var list = JSON.parse(localStorage.getItem(SAVED_POSTS_KEY) || "[]"); return Array.isArray(list) ? list : []; }
         catch (e) { return []; }
       }
-      function persistSavedPosts(list) { localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify(list.slice(0, 80))); updateCounts(); }
+      function cacheLocalBackup() {
+        try {
+          localStorage.setItem(SAVED_KEY, JSON.stringify((state.savedTitles || []).slice(0, 200)));
+          localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify((state.savedPosts || []).slice(0, 80)));
+        } catch (e) { /* ignore quota */ }
+      }
+
+      function loadSavedTitles() { return state.savedTitles || []; }
+      function loadSavedPosts() { return state.savedPosts || []; }
+
+      function ensureTitleIds(list) {
+        return (list || []).map(function (item, idx) {
+          var copy = Object.assign({}, item);
+          if (!copy.id) copy.id = "wtitle-" + Date.now() + "-" + idx;
+          return copy;
+        });
+      }
+
+      function apiPut(path, body) {
+        if (window.AuthClient && AuthClient.getToken()) {
+          return AuthClient.apiFetch(path, { method: "PUT", body: JSON.stringify(body) });
+        }
+        return fetch((window.AuthClient ? AuthClient.getApiBase() : "") + path, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(body)
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error((data && data.error) || ("HTTP " + res.status));
+            return data;
+          });
+        });
+      }
+
+      function apiDelete(path) {
+        if (window.AuthClient && AuthClient.getToken()) {
+          return AuthClient.apiFetch(path, { method: "DELETE" });
+        }
+        return fetch((window.AuthClient ? AuthClient.getApiBase() : "") + path, {
+          method: "DELETE",
+          headers: { Accept: "application/json" }
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error((data && data.error) || ("HTTP " + res.status));
+            return data;
+          });
+        });
+      }
+
+      function persistSavedTitles(list) {
+        state.savedTitles = ensureTitleIds(list || []).slice(0, 200);
+        updateCounts();
+        cacheLocalBackup();
+        if (!window.AuthClient || !AuthClient.getToken()) {
+          return Promise.resolve(state.savedTitles);
+        }
+        return apiPut("/api/wsad/titles", { titles: state.savedTitles }).then(function (data) {
+          if (data && Array.isArray(data.titles)) state.savedTitles = data.titles;
+          updateCounts();
+          cacheLocalBackup();
+          return state.savedTitles;
+        });
+      }
+
+      function persistSavedPosts(list) {
+        state.savedPosts = (list || []).slice(0, 80);
+        updateCounts();
+        cacheLocalBackup();
+        if (!window.AuthClient || !AuthClient.getToken()) {
+          return Promise.resolve(state.savedPosts);
+        }
+        return apiPut("/api/wsad/posts", { posts: state.savedPosts }).then(function (data) {
+          if (data && Array.isArray(data.posts)) state.savedPosts = data.posts;
+          updateCounts();
+          cacheLocalBackup();
+          return state.savedPosts;
+        });
+      }
+
+      function upsertSavedTitle(list, item) {
+        var copy = Object.assign({}, item);
+        copy.id = copy.id || ("wtitle-" + Date.now());
+        copy.savedAt = copy.savedAt || new Date().toISOString();
+        var key = normalizeTitleKey(copy.title);
+        list = (list || []).filter(function (x) {
+          return normalizeTitleKey(x.title) !== key && x.id !== copy.id;
+        });
+        list.unshift(copy);
+        return list;
+      }
+
+      function syncLibraryFromServer() {
+        if (!window.AuthClient || !AuthClient.getToken()) {
+          state.savedTitles = readLocalTitles();
+          state.savedPosts = readLocalPosts();
+          state.libraryReady = true;
+          updateCounts();
+          return Promise.resolve({ migrated: false });
+        }
+        return apiGet("/api/wsad/library").then(function (data) {
+          var remoteTitles = Array.isArray(data.titles) ? data.titles : [];
+          var remotePosts = Array.isArray(data.posts) ? data.posts : [];
+          var localTitles = readLocalTitles();
+          var localPosts = readLocalPosts();
+          var tasks = [];
+          var migrated = false;
+
+          if (!remoteTitles.length && localTitles.length) {
+            migrated = true;
+            tasks.push(persistSavedTitles(localTitles));
+          } else {
+            state.savedTitles = remoteTitles;
+          }
+
+          if (!remotePosts.length && localPosts.length) {
+            migrated = true;
+            tasks.push(persistSavedPosts(localPosts));
+          } else {
+            state.savedPosts = remotePosts;
+          }
+
+          return Promise.all(tasks).then(function () {
+            state.libraryReady = true;
+            updateCounts();
+            cacheLocalBackup();
+            return { migrated: migrated };
+          });
+        }).catch(function (err) {
+          console.warn("WSAD library sync failed, using local cache:", err.message);
+          state.savedTitles = readLocalTitles();
+          state.savedPosts = readLocalPosts();
+          state.libraryReady = true;
+          updateCounts();
+          return { migrated: false, warning: err.message };
+        });
+      }
 
       function getCurrentTitles() {
         return ((state.analysis && state.analysis.titles) || []).map(titleText).filter(Boolean);
@@ -947,7 +1078,7 @@
         item.id = item.id || ("post-" + Date.now());
         item.title = (item.title || "").trim();
         item.contentMd = item.contentMd || item.content || "";
-        if (!item.title || !item.contentMd) return null;
+        if (!item.title || !item.contentMd) return Promise.resolve(null);
         item.slug = item.slug || slugify(item.title);
         item.charCount = item.charCount || countChars(item.contentMd);
         item.wordCount = item.wordCount || (item.contentMd.trim() ? item.contentMd.trim().split(/\s+/).length : 0);
@@ -957,9 +1088,8 @@
           return p.id !== item.id && normalizeTitleKey(p.title) !== normalizeTitleKey(item.title);
         });
         list.unshift(item);
-        persistSavedPosts(list);
         state.postId = item.id;
-        return item;
+        return persistSavedPosts(list).then(function () { return item; });
       }
 
       function syncEditorPreview() {
@@ -1171,29 +1301,31 @@
           post.keywords = post.keywords || post.keywordsUsed ||
             ((analysis.keywords || []).map(function (k) { return k.term; }).filter(Boolean));
           post.keywordsUsed = post.keywords;
-          var saved = saveGeneratedPost(post);
-          fillEditor(saved || post);
-          renderSavedPosts();
-          var researchHint = post.research && post.research.sourceCount
-            ? " · research " + post.research.sourceCount + " sources"
-            : "";
-          var costHint = post.cost && post.cost.totalUsd != null
-            ? " · est. " + formatCostUsd(post.cost) + " (" + (post.cost.inputTokens || 0) + " in / " + (post.cost.outputTokens || 0) + " out tok)"
-            : "";
-          showStatus(statusEl, "Post ready and saved" + researchHint + costHint + (data.warning ? " (fallback: " + data.warning + ")" : "") + ". Generating thumbnail…");
-          switchTab("editor");
-          return requestThumbnail().then(function (thumb) {
-            var current = collectEditorPost();
-            current.thumbnail = thumb;
-            current.research = post.research || current.research || null;
-            var again = saveGeneratedPost(current);
-            fillEditor(again || current);
+          return saveGeneratedPost(post).then(function (saved) {
+            fillEditor(saved || post);
             renderSavedPosts();
-            showStatus(statusEl, "Post + thumbnail ready" + researchHint + costHint +
-              (thumb && thumb.cost ? " · thumb ~$" + thumb.cost.totalUsdDisplay : "") +
-              (data.warning ? " (fallback text: " + data.warning + ")" : "") + ".");
-          }).catch(function () {
-            showStatus(statusEl, "Post saved" + researchHint + costHint + " — thumbnail failed (use Generate thumbnail in editor).");
+            var researchHint = post.research && post.research.sourceCount
+              ? " · research " + post.research.sourceCount + " sources"
+              : "";
+            var costHint = post.cost && post.cost.totalUsd != null
+              ? " · est. " + formatCostUsd(post.cost) + " (" + (post.cost.inputTokens || 0) + " in / " + (post.cost.outputTokens || 0) + " out tok)"
+              : "";
+            showStatus(statusEl, "Post ready and saved to DB" + researchHint + costHint + (data.warning ? " (fallback: " + data.warning + ")" : "") + ". Generating thumbnail…");
+            switchTab("editor");
+            return requestThumbnail().then(function (thumb) {
+              var current = collectEditorPost();
+              current.thumbnail = thumb;
+              current.research = post.research || current.research || null;
+              return saveGeneratedPost(current).then(function (again) {
+                fillEditor(again || current);
+                renderSavedPosts();
+                showStatus(statusEl, "Post + thumbnail saved to DB" + researchHint + costHint +
+                  (thumb && thumb.cost ? " · thumb ~$" + thumb.cost.totalUsdDisplay : "") +
+                  (data.warning ? " (fallback text: " + data.warning + ")" : "") + ".");
+              });
+            }).catch(function () {
+              showStatus(statusEl, "Post saved to DB" + researchHint + costHint + " — thumbnail failed (use Generate thumbnail in editor).");
+            });
           });
         }).catch(function (err) {
           var msg = err.message || "Generation failed";
@@ -1209,9 +1341,19 @@
       function bootApp() {
         el.authGate.hidden = true;
         el.app.hidden = false;
-        updateCounts();
-        renderSavedTitles();
-        renderSavedPosts();
+        showStatus(el.analyzeStatus, "Ładuję bibliotekę z bazy…");
+        syncLibraryFromServer().then(function (info) {
+          renderSavedTitles();
+          renderSavedPosts();
+          updateCounts();
+          if (info && info.migrated) {
+            showStatus(el.analyzeStatus, "Zmigrowano lokalne tytuły/posty do bazy konta — działają na wszystkich urządzeniach.");
+          } else if (info && info.warning) {
+            showStatus(el.analyzeStatus, "Biblioteka lokalna (sync DB nieudany: " + info.warning + ")", true);
+          } else {
+            showStatus(el.analyzeStatus, "");
+          }
+        });
       }
       function showLogin(msg) {
         el.app.hidden = true;
@@ -1280,9 +1422,12 @@
         if (!title) { showStatus(el.generateStatus, "Select or type a title first.", true); return; }
         persistSavedTitles(upsertSavedTitle(loadSavedTitles(), {
           title: title, seed: el.seed.value.trim(), meta: el.metaDesc.value.trim(), savedAt: new Date().toISOString()
-        }));
-        renderSavedTitles();
-        showStatus(el.generateStatus, "Title saved — see Saved titles tab.");
+        })).then(function () {
+          renderSavedTitles();
+          showStatus(el.generateStatus, "Title saved to DB — see Saved titles tab.");
+        }).catch(function (err) {
+          showStatus(el.generateStatus, err.message || "Save failed", true);
+        });
       });
 
       el.btnSaveAllTitles.addEventListener("click", function () {
@@ -1300,9 +1445,12 @@
           });
           saved += 1;
         });
-        persistSavedTitles(list);
-        renderSavedTitles();
-        showStatus(el.generateStatus, "Saved all " + saved + " titles — open Saved titles tab.");
+        persistSavedTitles(list).then(function () {
+          renderSavedTitles();
+          showStatus(el.generateStatus, "Saved all " + saved + " titles to DB — open Saved titles tab.");
+        }).catch(function (err) {
+          showStatus(el.generateStatus, err.message || "Save failed", true);
+        });
       });
 
       el.btnGenerate.addEventListener("click", function () { runGenerate({}); });
@@ -1335,12 +1483,15 @@
         if (!title) return;
         persistSavedTitles(loadSavedTitles().filter(function (t) {
           return normalizeTitleKey(t.title) !== normalizeTitleKey(title);
-        }));
-        el.titlesTitle.value = "";
-        el.titlesMeta.value = "";
-        state.selectedSavedTitleIdx = -1;
-        renderSavedTitles();
-        showStatus(el.titlesGenerateStatus, "Title deleted.");
+        })).then(function () {
+          el.titlesTitle.value = "";
+          el.titlesMeta.value = "";
+          state.selectedSavedTitleIdx = -1;
+          renderSavedTitles();
+          showStatus(el.titlesGenerateStatus, "Title deleted from DB.");
+        }).catch(function (err) {
+          showStatus(el.titlesGenerateStatus, err.message || "Delete failed", true);
+        });
       });
 
       el.btnCopyAnalysis.addEventListener("click", function () {
@@ -1400,10 +1551,13 @@
           showStatus(el.editorStatus, "Title and content required.", true);
           return;
         }
-        var saved = saveGeneratedPost(post);
-        fillEditor(saved);
-        renderSavedPosts();
-        showStatus(el.editorStatus, "Post saved.");
+        saveGeneratedPost(post).then(function (saved) {
+          fillEditor(saved || post);
+          renderSavedPosts();
+          showStatus(el.editorStatus, "Post saved to DB.");
+        }).catch(function (err) {
+          showStatus(el.editorStatus, err.message || "Save failed", true);
+        });
       });
 
       if (el.btnPreviewPost) {
@@ -1483,10 +1637,14 @@
       el.btnDeletePost.addEventListener("click", function () {
         if (!state.postId) { showStatus(el.editorStatus, "Nothing saved to delete.", true); return; }
         if (!confirm("Delete this saved post?")) return;
-        persistSavedPosts(loadSavedPosts().filter(function (p) { return p.id !== state.postId; }));
-        state.postId = null;
-        renderSavedPosts();
-        showStatus(el.editorStatus, "Saved post deleted.");
+        var id = state.postId;
+        persistSavedPosts(loadSavedPosts().filter(function (p) { return p.id !== id; })).then(function () {
+          state.postId = null;
+          renderSavedPosts();
+          showStatus(el.editorStatus, "Saved post deleted from DB.");
+        }).catch(function (err) {
+          showStatus(el.editorStatus, err.message || "Delete failed", true);
+        });
       });
 
       el.seed.addEventListener("keydown", function (e) {
