@@ -156,6 +156,70 @@
     .img-thumbs img {
       width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer;
     }
+    .thumb-box {
+      margin-top: 0.9rem; border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem;
+      background: #fff;
+    }
+    .thumb-preview {
+      width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--bg); display: block;
+    }
+    .thumb-empty {
+      display: flex; align-items: center; justify-content: center; min-height: 140px;
+      border: 1.5px dashed var(--line); border-radius: 10px; color: var(--muted); font-size: 0.9rem;
+      background: var(--bg);
+    }
+    .kw-input-hint { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
+    .preview-backdrop {
+      position: fixed; inset: 0; background: rgba(26, 31, 24, 0.55); z-index: 80;
+      display: flex; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem;
+      overflow: auto;
+    }
+    .preview-backdrop.hidden { display: none; }
+    .preview-modal {
+      width: min(820px, 100%); background: #fffdf8; border-radius: 16px; border: 1px solid var(--line);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.25); margin-bottom: 2rem; overflow: hidden;
+    }
+    .preview-top {
+      display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+      padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--line); background: var(--bg);
+      position: sticky; top: 0; z-index: 2;
+    }
+    .preview-top h3 { margin: 0; font-family: var(--display); font-size: 1.05rem; }
+    .preview-article { padding: 0 0 2rem; }
+    .preview-hero { width: 100%; max-height: 360px; object-fit: cover; display: block; background: #ddd; }
+    .preview-body { padding: 1.4rem 1.5rem 0; }
+    .preview-body h1 {
+      font-family: var(--display); font-size: clamp(1.6rem, 3vw, 2.15rem); letter-spacing: -0.03em;
+      margin: 0 0 0.65rem; line-height: 1.15;
+    }
+    .preview-meta { color: var(--muted); font-size: 0.95rem; line-height: 1.5; margin: 0 0 1rem; }
+    .preview-kws { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1.25rem; }
+    .preview-kws span {
+      font-size: 0.75rem; font-weight: 600; color: var(--accent-2); background: var(--accent-soft);
+      border: 1px solid rgba(31,107,74,0.2); border-radius: 999px; padding: 0.28rem 0.65rem;
+    }
+    .preview-content { font-size: 1.02rem; line-height: 1.7; color: var(--ink); }
+    .preview-content h1, .preview-content h2, .preview-content h3 {
+      font-family: var(--display); letter-spacing: -0.02em; margin: 1.4rem 0 0.55rem; line-height: 1.25;
+    }
+    .preview-content h1 { font-size: 1.55rem; }
+    .preview-content h2 { font-size: 1.28rem; }
+    .preview-content h3 { font-size: 1.1rem; }
+    .preview-content p { margin: 0.65rem 0; }
+    .preview-content ul, .preview-content ol { margin: 0.55rem 0; padding-left: 1.25rem; }
+    .preview-content li { margin: 0.25rem 0; }
+    .preview-content img {
+      max-width: 100%; border-radius: 10px; margin: 0.75rem 0; border: 1px solid var(--line);
+    }
+    .preview-content a { color: var(--accent); }
+    .preview-structure {
+      margin: 0 1.5rem 1rem; padding: 0.85rem 1rem; background: var(--bg);
+      border: 1px solid var(--line); border-radius: 12px;
+    }
+    .preview-structure h4 { margin: 0 0 0.45rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .preview-structure ol { margin: 0; padding-left: 1.15rem; font-size: 0.9rem; color: var(--muted); }
+    .preview-structure li { margin: 0.2rem 0; }
   </style>
 </head>
 <body>
@@ -180,7 +244,7 @@
     <div class="top">
       <p class="badge">Ukryty panel · tylko URL</p>
       <h1 class="brand">WSAD <span>Blog SEO</span></h1>
-      <p class="sub">Generate SEO titles &amp; optimized blog posts in English (max 2000 words). Every post features <strong>Cardiom</strong> — pulse via camera or face-based vitals.</p>
+      <p class="sub">Generate SEO titles &amp; optimized blog posts in English (max 2000 words). Style follows professional longform guides (hook → takeaways → deep sections → FAQ). Live web research reduces hallucinations. Every post features <strong>Cardiom</strong>.</p>
     </div>
 
     <nav class="tabs" id="main-tabs" aria-label="WSAD sections">
@@ -298,7 +362,25 @@
           <div>
             <label for="editor-meta">Meta description</label>
             <textarea id="editor-meta" rows="5"></textarea>
+            <label for="editor-keywords" style="margin-top:0.7rem">Keywords (comma-separated)</label>
+            <textarea id="editor-keywords" rows="3" placeholder="e.g. heart rate, camera pulse, Cardiom"></textarea>
+            <p class="kw-input-hint">SEO keywords for the post — filled from generation, editable anytime.</p>
           </div>
+        </div>
+
+        <div class="thumb-box">
+          <label>Blog thumbnail</label>
+          <div id="thumb-empty" class="thumb-empty">No thumbnail yet — generate with Titan or upload your own</div>
+          <img id="thumb-preview" class="thumb-preview hidden" alt="">
+          <label for="editor-thumb-alt" style="margin-top:0.75rem">Image alt text</label>
+          <input id="editor-thumb-alt" type="text" placeholder="Descriptive alt for SEO / accessibility">
+          <div class="btns" style="margin-top:0.65rem">
+            <button type="button" class="primary" id="btn-gen-thumb">Generate thumbnail (Titan)</button>
+            <button type="button" id="btn-upload-thumb">Upload thumbnail</button>
+            <button type="button" class="ghost" id="btn-clear-thumb">Clear</button>
+            <input type="file" id="thumb-file" accept="image/jpeg,image/png,image/webp" hidden>
+          </div>
+          <div class="progress" id="thumb-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
         </div>
 
         <label style="margin-top:0.9rem">Content (Markdown)</label>
@@ -318,6 +400,7 @@
         <div class="img-thumbs" id="editor-thumbs"></div>
 
         <div class="btns">
+          <button type="button" class="primary" id="btn-preview-post">Preview post</button>
           <button type="button" class="primary" id="btn-save-editor">Save post</button>
           <button type="button" id="btn-copy-md">Copy Markdown</button>
           <button type="button" id="btn-copy-html">Copy as HTML</button>
@@ -326,13 +409,23 @@
         </div>
         <div class="status" id="editor-status"></div>
 
-        <label style="margin-top:1rem">Preview</label>
+        <label style="margin-top:1rem">Markdown source</label>
         <pre class="editor-preview" id="editor-preview"></pre>
       </section>
     </div>
   </div>
 
-  <script src="../auth-client.js?v=wsad4"></script>
+  <div class="preview-backdrop hidden" id="preview-modal" role="dialog" aria-modal="true" aria-labelledby="preview-heading">
+    <div class="preview-modal">
+      <div class="preview-top">
+        <h3 id="preview-heading">Post preview — structure A→Z</h3>
+        <button type="button" id="btn-close-preview">Close</button>
+      </div>
+      <article class="preview-article" id="preview-article"></article>
+    </div>
+  </div>
+
+  <script src="../auth-client.js?v=wsad5"></script>
   <script>
     (function () {
       "use strict";
@@ -348,7 +441,8 @@
         selectedSavedTitleIdx: -1,
         post: null,
         postId: null,
-        images: []
+        images: [],
+        thumbnail: null
       };
 
       var el = {};
@@ -361,9 +455,12 @@
         "saved-titles","titles-seed","titles-title","titles-meta","btn-generate-from-title",
         "btn-open-editor-blank","btn-delete-title","titles-generate-progress","titles-generate-status",
         "saved-posts","count-titles","count-posts",
-        "post-stats","editor-title","editor-slug","editor-seed","editor-meta","editor-md","editor-preview",
-        "editor-file","editor-drop","editor-thumbs","editor-status",
-        "btn-upload-image","btn-save-editor","btn-copy-md","btn-copy-html","btn-download-md","btn-delete-post"
+        "post-stats","editor-title","editor-slug","editor-seed","editor-meta","editor-keywords",
+        "editor-md","editor-preview","editor-file","editor-drop","editor-thumbs","editor-status",
+        "thumb-empty","thumb-preview","editor-thumb-alt","btn-gen-thumb","btn-upload-thumb",
+        "btn-clear-thumb","thumb-file","thumb-progress",
+        "btn-upload-image","btn-preview-post","btn-save-editor","btn-copy-md","btn-copy-html",
+        "btn-download-md","btn-delete-post","preview-modal","preview-article","btn-close-preview"
       ].forEach(function (id) {
         var key = id.replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); });
         el[key] = document.getElementById(id);
@@ -398,6 +495,17 @@
       el.btnCopyHtml = el.btnCopyHtml;
       el.btnDownloadMd = el.btnDownloadMd;
       el.btnDeletePost = el.btnDeletePost;
+      el.btnPreviewPost = el.btnPreviewPost;
+      el.btnGenThumb = el.btnGenThumb;
+      el.btnUploadThumb = el.btnUploadThumb;
+      el.btnClearThumb = el.btnClearThumb;
+      el.thumbEmpty = el.thumbEmpty;
+      el.thumbPreview = el.thumbPreview;
+      el.editorThumbAlt = el.editorThumbAlt;
+      el.editorKeywords = el.editorKeywords;
+      el.previewModal = el.previewModal;
+      el.previewArticle = el.previewArticle;
+      el.btnClosePreview = el.btnClosePreview;
 
       function showStatus(node, msg, isErr) {
         if (!node) return;
@@ -517,20 +625,96 @@
         return added;
       }
 
+      function mdInline(text) {
+        return escapeHtml(text)
+          .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2">')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>");
+      }
+
       function mdToSimpleHtml(md) {
-        return String(md || "").split(/\n\n+/).map(function (block) {
-          var t = block.trim();
-          if (!t) return "";
-          if (/^#\s+/.test(t)) return "<h1>" + escapeHtml(t.replace(/^#\s+/, "")) + "</h1>";
-          if (/^##\s+/.test(t)) return "<h2>" + escapeHtml(t.replace(/^##\s+/, "")) + "</h2>";
-          if (/^###\s+/.test(t)) return "<h3>" + escapeHtml(t.replace(/^###\s+/, "")) + "</h3>";
-          if (/^[-*]\s/m.test(t)) {
-            return "<ul>" + t.split(/\n/).filter(Boolean).map(function (line) {
-              return "<li>" + escapeHtml(line.replace(/^[-*]\s+/, "")) + "</li>";
-            }).join("") + "</ul>";
+        var lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
+        var html = [];
+        var i = 0;
+        while (i < lines.length) {
+          var line = lines[i];
+          if (!String(line).trim()) { i += 1; continue; }
+          if (/^###\s+/.test(line)) { html.push("<h3>" + mdInline(line.replace(/^###\s+/, "")) + "</h3>"); i += 1; continue; }
+          if (/^##\s+/.test(line)) { html.push("<h2>" + mdInline(line.replace(/^##\s+/, "")) + "</h2>"); i += 1; continue; }
+          if (/^#\s+/.test(line)) { html.push("<h1>" + mdInline(line.replace(/^#\s+/, "")) + "</h1>"); i += 1; continue; }
+          if (/^[-*]\s+/.test(line)) {
+            var ul = [];
+            while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
+              ul.push("<li>" + mdInline(lines[i].replace(/^[-*]\s+/, "")) + "</li>");
+              i += 1;
+            }
+            html.push("<ul>" + ul.join("") + "</ul>");
+            continue;
           }
-          return "<p>" + escapeHtml(t).replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2">') + "</p>";
-        }).join("\n");
+          if (/^\d+\.\s+/.test(line)) {
+            var ol = [];
+            while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
+              ol.push("<li>" + mdInline(lines[i].replace(/^\d+\.\s+/, "")) + "</li>");
+              i += 1;
+            }
+            html.push("<ol>" + ol.join("") + "</ol>");
+            continue;
+          }
+          var para = [line];
+          i += 1;
+          while (i < lines.length && String(lines[i]).trim() && !/^#{1,3}\s+/.test(lines[i]) && !/^[-*]\s+/.test(lines[i]) && !/^\d+\.\s+/.test(lines[i])) {
+            para.push(lines[i]);
+            i += 1;
+          }
+          html.push("<p>" + mdInline(para.join(" ")) + "</p>");
+        }
+        return html.join("\n");
+      }
+
+      function extractHeadings(md) {
+        return String(md || "").split(/\n/).map(function (line) {
+          var m = line.match(/^(#{1,3})\s+(.+)$/);
+          if (!m) return null;
+          return { level: m[1].length, text: m[2].trim() };
+        }).filter(Boolean);
+      }
+
+      function parseKeywordsText(text) {
+        return String(text || "").split(/[,;\n]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+      }
+
+      function keywordsToText(list) {
+        if (!list || !list.length) return "";
+        return list.map(function (k) {
+          return typeof k === "string" ? k : (k && (k.term || k.keyword)) || "";
+        }).filter(Boolean).join(", ");
+      }
+
+      function mediaUrl(path) {
+        if (!path) return "";
+        if (/^https?:\/\//i.test(path) || path.indexOf("data:") === 0) return path;
+        var base = (window.AuthClient ? AuthClient.getApiBase() : "").replace(/\/$/, "");
+        return (base ? base + "/" : "/") + String(path).replace(/^\//, "");
+      }
+
+      function setThumbnailUI(thumb) {
+        state.thumbnail = thumb || null;
+        var has = !!(thumb && (thumb.url || thumb.path));
+        if (el.thumbEmpty) el.thumbEmpty.classList.toggle("hidden", has);
+        if (el.thumbPreview) {
+          el.thumbPreview.classList.toggle("hidden", !has);
+          if (has) {
+            el.thumbPreview.src = mediaUrl(thumb.url || thumb.path);
+            el.thumbPreview.alt = thumb.alt || (el.editorThumbAlt && el.editorThumbAlt.value) || "";
+          } else {
+            el.thumbPreview.removeAttribute("src");
+          }
+        }
+        if (el.editorThumbAlt) {
+          el.editorThumbAlt.value = (thumb && thumb.alt) || el.editorThumbAlt.value || "";
+        }
       }
 
       function api(path, body) {
@@ -604,6 +788,24 @@
         updateCounts();
       }
 
+      function formatCostUsd(cost) {
+        if (!cost || cost.totalUsd == null) return "";
+        var n = Number(cost.totalUsd);
+        if (!isFinite(n)) return "";
+        return n < 0.01 ? ("$" + n.toFixed(4)) : ("$" + n.toFixed(3));
+      }
+
+      function costStatHtml(cost, label) {
+        if (!cost || cost.totalUsd == null) return "";
+        var text = formatCostUsd(cost);
+        var tip = (cost.family || "Bedrock") +
+          " · in " + (cost.inputTokens || 0) + " / out " + (cost.outputTokens || 0) + " tok" +
+          " · $" + (cost.rates && cost.rates.inputPerMUsd) + "/$" + (cost.rates && cost.rates.outputPerMUsd) + " per 1M" +
+          (cost.note ? " — " + cost.note : "");
+        return '<span class="stat" title="' + escapeHtml(tip) + '">' + escapeHtml(label || "Est. cost") +
+          ": <b>" + escapeHtml(text) + "</b></span>";
+      }
+
       function fillEditor(post) {
         state.post = post;
         state.postId = post.id || null;
@@ -612,12 +814,28 @@
         el.editorSlug.value = post.slug || slugify(post.title || "");
         el.editorSeed.value = post.seed || "";
         el.editorMeta.value = post.metaDescription || "";
+        if (el.editorKeywords) {
+          el.editorKeywords.value = keywordsToText(post.keywords || post.keywordsUsed || []);
+        }
         el.editorMd.value = post.contentMd || post.content || "";
+        setThumbnailUI(post.thumbnail || null);
+        if (el.editorThumbAlt && post.thumbnail && post.thumbnail.alt) {
+          el.editorThumbAlt.value = post.thumbnail.alt;
+        } else if (el.editorThumbAlt && !post.thumbnail) {
+          el.editorThumbAlt.value = "";
+        }
         var chars = post.charCount || countChars(el.editorMd.value);
         var words = post.wordCount || (el.editorMd.value.trim() ? el.editorMd.value.trim().split(/\s+/).length : 0);
         el.postStats.innerHTML =
           '<span class="stat">Chars: <b>' + chars + "</b></span>" +
           '<span class="stat">Words: <b>' + words + "</b></span>" +
+          costStatHtml(post.cost) +
+          (post.thumbnail && post.thumbnail.cost ? costStatHtml(post.thumbnail.cost, "Thumb") : "") +
+          (post.research && post.research.sourceCount
+            ? '<span class="stat" title="' + escapeHtml(((post.research.sources || []).map(function (s) {
+                return (s.source || "") + ": " + (s.title || "");
+              }).join(" · ")) || "Live research") + '">Research: <b>' + post.research.sourceCount + " sources</b></span>"
+            : "") +
           (state.postId ? '<span class="stat">Saved: <b>yes</b></span>' : '<span class="stat">Saved: <b>draft</b></span>');
         renderThumbs();
         syncEditorPreview();
@@ -626,19 +844,102 @@
       function collectEditorPost() {
         var title = el.editorTitle.value.trim();
         var contentMd = el.editorMd.value;
+        var prev = state.post || {};
+        var keywords = parseKeywordsText(el.editorKeywords && el.editorKeywords.value);
+        var thumb = state.thumbnail ? Object.assign({}, state.thumbnail) : null;
+        if (thumb && el.editorThumbAlt) thumb.alt = el.editorThumbAlt.value.trim();
         return {
           id: state.postId || ("post-" + Date.now()),
           title: title,
           slug: el.editorSlug.value.trim() || slugify(title),
           seed: el.editorSeed.value.trim(),
           metaDescription: el.editorMeta.value.trim(),
+          keywords: keywords,
+          keywordsUsed: keywords,
           contentMd: contentMd,
           charCount: countChars(contentMd),
           wordCount: contentMd.trim() ? contentMd.trim().split(/\s+/).length : 0,
           images: state.images || [],
+          thumbnail: thumb,
+          research: prev.research || null,
           language: LANG,
+          cost: prev.cost || null,
+          usage: prev.usage || null,
+          modelId: prev.modelId || null,
           savedAt: new Date().toISOString()
         };
+      }
+
+      function openPostPreview() {
+        var post = collectEditorPost();
+        var headings = extractHeadings(post.contentMd);
+        var thumbUrl = post.thumbnail && (post.thumbnail.url || post.thumbnail.path)
+          ? mediaUrl(post.thumbnail.url || post.thumbnail.path)
+          : "";
+        var thumbAlt = (post.thumbnail && post.thumbnail.alt) || post.title || "Blog thumbnail";
+        var structure = headings.length
+          ? '<div class="preview-structure"><h4>Structure A→Z</h4><ol>' +
+            headings.map(function (h) {
+              return "<li style=\"margin-left:" + ((h.level - 1) * 0.75) + "rem\">" + escapeHtml(h.text) + "</li>";
+            }).join("") + "</ol></div>"
+          : "";
+        var kws = (post.keywords || []).map(function (k) {
+          return "<span>" + escapeHtml(k) + "</span>";
+        }).join("");
+        var research = (state.post && state.post.research) || post.research;
+        var researchHtml = (research && research.sources && research.sources.length)
+          ? '<div class="preview-structure"><h4>Research sources used</h4><ol>' +
+            research.sources.map(function (s) {
+              return "<li>" + escapeHtml((s.source || "web") + ": " + (s.title || s.url || "")) + "</li>";
+            }).join("") + "</ol></div>"
+          : "";
+        var contentHtml = mdToSimpleHtml(post.contentMd);
+        el.previewArticle.innerHTML =
+          (thumbUrl
+            ? '<img class="preview-hero" src="' + escapeHtml(thumbUrl) + '" alt="' + escapeHtml(thumbAlt) + '">'
+            : '<div class="thumb-empty" style="border-radius:0;min-height:160px">No thumbnail</div>') +
+          '<div class="preview-body">' +
+            "<h1>" + escapeHtml(post.title || "Untitled") + "</h1>" +
+            (post.metaDescription ? '<p class="preview-meta">' + escapeHtml(post.metaDescription) + "</p>" : "") +
+            (kws ? '<div class="preview-kws">' + kws + "</div>" : "") +
+            structure +
+            researchHtml +
+            '<div class="preview-content">' + contentHtml + "</div>" +
+          "</div>";
+        el.previewModal.classList.remove("hidden");
+      }
+
+      function closePostPreview() {
+        if (el.previewModal) el.previewModal.classList.add("hidden");
+      }
+
+      function requestThumbnail() {
+        var title = el.editorTitle.value.trim();
+        var seed = el.editorSeed.value.trim() || title;
+        if (!title && !seed) {
+          showStatus(el.editorStatus, "Title or seed required for thumbnail.", true);
+          return Promise.reject(new Error("Missing title/seed"));
+        }
+        setBusy(el.thumbProgress, true, el.btnGenThumb);
+        showStatus(el.editorStatus, "Generating thumbnail with Titan Image…");
+        return api("/api/wsad/thumbnail", {
+          title: title,
+          seed: seed,
+          keywords: parseKeywordsText(el.editorKeywords && el.editorKeywords.value)
+        }).then(function (data) {
+          var thumb = data.thumbnail || data;
+          thumb.url = mediaUrl(thumb.path || thumb.url);
+          if (el.editorThumbAlt && thumb.alt) el.editorThumbAlt.value = thumb.alt;
+          setThumbnailUI(thumb);
+          if (state.post) state.post.thumbnail = thumb;
+          showStatus(el.editorStatus, "Thumbnail ready" + (thumb.cost ? " · est. $" + thumb.cost.totalUsdDisplay : "") + ".");
+          return thumb;
+        }).catch(function (err) {
+          showStatus(el.editorStatus, err.message || "Thumbnail generation failed", true);
+          throw err;
+        }).finally(function () {
+          setBusy(el.thumbProgress, false, el.btnGenThumb);
+        });
       }
 
       function saveGeneratedPost(post) {
@@ -680,14 +981,17 @@
       function renderThumbs() {
         if (!el.editorThumbs) return;
         el.editorThumbs.innerHTML = (state.images || []).map(function (img, idx) {
-          return '<img src="' + escapeHtml(img.url || img.path || "") + '" alt="" data-img="' + idx + '" title="Insert into markdown">';
+          return '<img src="' + escapeHtml(img.url || mediaUrl(img.path) || "") +
+            '" alt="' + escapeHtml(img.alt || "") +
+            '" data-img="' + idx + '" title="Insert into markdown">';
         }).join("");
         el.editorThumbs.querySelectorAll("[data-img]").forEach(function (img) {
           img.addEventListener("click", function () {
             var item = state.images[parseInt(img.getAttribute("data-img"), 10)];
             if (!item) return;
-            var url = item.url || item.path || "";
-            insertAtCursor(el.editorMd, "\n![image](", ")\n", url);
+            var url = item.path || item.url || "";
+            var alt = item.alt || "Article image";
+            insertAtCursor(el.editorMd, "\n![", "](" + url + ")\n", alt);
           });
         });
       }
@@ -719,16 +1023,15 @@
       function handleUploadedImage(result) {
         var path = result.path || result.url || "";
         if (!path) throw new Error("Upload returned no path");
-        var url = path;
-        if (url.indexOf("http") !== 0 && window.AuthClient) {
-          var base = AuthClient.getApiBase().replace(/\/$/, "");
-          url = base + "/" + path.replace(/^\//, "");
-        }
+        var url = mediaUrl(path);
+        var alt = (el.editorTitle && el.editorTitle.value.trim())
+          ? (el.editorTitle.value.trim().slice(0, 80) + " — article image")
+          : "Article image";
         state.images = state.images || [];
-        state.images.unshift({ path: path, url: url });
-        insertAtCursor(el.editorMd, "\n![image](", ")\n", path);
+        state.images.unshift({ path: path, url: url, alt: alt });
+        insertAtCursor(el.editorMd, "\n![", "](" + path + ")\n", alt);
         renderThumbs();
-        showStatus(el.editorStatus, "Image uploaded and inserted.");
+        showStatus(el.editorStatus, "Image uploaded and inserted with alt.");
       }
 
       function renderSavedTitles() {
@@ -773,7 +1076,9 @@
           return '<button type="button" class="title-option' + (state.postId === item.id ? " active" : "") + '" data-saved-post="' + idx + '">' +
             escapeHtml(item.title || "Untitled") +
             "<small>" + escapeHtml((item.seed || "") + (when ? " · " + when : "") +
-              (item.wordCount ? " · " + item.wordCount + " words" : (item.charCount ? " · " + item.charCount + " chars" : ""))) + "</small></button>";
+              (item.wordCount ? " · " + item.wordCount + " words" : (item.charCount ? " · " + item.charCount + " chars" : "")) +
+              (item.cost && item.cost.totalUsd != null ? " · ~" + formatCostUsd(item.cost) : "")
+            ) + "</small></button>";
         }).join("");
         el.savedPosts.querySelectorAll("[data-saved-post]").forEach(function (btn) {
           btn.addEventListener("click", function () {
@@ -808,9 +1113,11 @@
             tries += 1;
             apiGet("/api/wsad/generate/" + encodeURIComponent(jobId)).then(function (data) {
               if (data.status === "running") {
-                var step = data.step === "bedrock" ? "Bedrock pisze artykuł…" : "Start generowania…";
-                showStatus(statusEl, "W tle: " + step + " (" + tries + ")");
-                if (tries > 120) return reject(new Error("Timeout generowania (4 min) — spróbuj ponownie"));
+                var stepLabel = "Start generowania…";
+                if (data.step === "research") stepLabel = "Szukam aktualnych danych (Wikipedia / news / web)…";
+                else if (data.step === "bedrock") stepLabel = "Bedrock pisze artykuł w stylu longform…";
+                showStatus(statusEl, "W tle: " + stepLabel + " (" + tries + ")");
+                if (tries > 150) return reject(new Error("Timeout generowania (5 min) — spróbuj ponownie"));
                 setTimeout(tick, 2000);
                 return;
               }
@@ -861,11 +1168,33 @@
           post.seed = post.seed || seed;
           post.metaDescription = post.metaDescription || meta;
           post.title = post.title || title;
+          post.keywords = post.keywords || post.keywordsUsed ||
+            ((analysis.keywords || []).map(function (k) { return k.term; }).filter(Boolean));
+          post.keywordsUsed = post.keywords;
           var saved = saveGeneratedPost(post);
           fillEditor(saved || post);
           renderSavedPosts();
-          showStatus(statusEl, "Post ready and saved" + (data.warning ? " (fallback: " + data.warning + ")" : "") + ".");
+          var researchHint = post.research && post.research.sourceCount
+            ? " · research " + post.research.sourceCount + " sources"
+            : "";
+          var costHint = post.cost && post.cost.totalUsd != null
+            ? " · est. " + formatCostUsd(post.cost) + " (" + (post.cost.inputTokens || 0) + " in / " + (post.cost.outputTokens || 0) + " out tok)"
+            : "";
+          showStatus(statusEl, "Post ready and saved" + researchHint + costHint + (data.warning ? " (fallback: " + data.warning + ")" : "") + ". Generating thumbnail…");
           switchTab("editor");
+          return requestThumbnail().then(function (thumb) {
+            var current = collectEditorPost();
+            current.thumbnail = thumb;
+            current.research = post.research || current.research || null;
+            var again = saveGeneratedPost(current);
+            fillEditor(again || current);
+            renderSavedPosts();
+            showStatus(statusEl, "Post + thumbnail ready" + researchHint + costHint +
+              (thumb && thumb.cost ? " · thumb ~$" + thumb.cost.totalUsdDisplay : "") +
+              (data.warning ? " (fallback text: " + data.warning + ")" : "") + ".");
+          }).catch(function () {
+            showStatus(statusEl, "Post saved" + researchHint + costHint + " — thumbnail failed (use Generate thumbnail in editor).");
+          });
         }).catch(function (err) {
           var msg = err.message || "Generation failed";
           if (err.status === 504 || /504|timeout|gateway/i.test(msg)) {
@@ -1076,6 +1405,66 @@
         renderSavedPosts();
         showStatus(el.editorStatus, "Post saved.");
       });
+
+      if (el.btnPreviewPost) {
+        el.btnPreviewPost.addEventListener("click", openPostPreview);
+      }
+      if (el.btnClosePreview) {
+        el.btnClosePreview.addEventListener("click", closePostPreview);
+      }
+      if (el.previewModal) {
+        el.previewModal.addEventListener("click", function (e) {
+          if (e.target === el.previewModal) closePostPreview();
+        });
+      }
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closePostPreview();
+      });
+
+      if (el.btnGenThumb) {
+        el.btnGenThumb.addEventListener("click", function () { requestThumbnail(); });
+      }
+      if (el.btnUploadThumb) {
+        el.btnUploadThumb.addEventListener("click", function () { el.thumbFile.click(); });
+      }
+      if (el.thumbFile) {
+        el.thumbFile.addEventListener("change", function () {
+          var file = el.thumbFile.files && el.thumbFile.files[0];
+          if (!file) return;
+          showStatus(el.editorStatus, "Uploading thumbnail…");
+          uploadImageFile(file).then(function (result) {
+            var path = result.path || result.url || "";
+            var thumb = {
+              path: path,
+              url: mediaUrl(path),
+              alt: (el.editorThumbAlt && el.editorThumbAlt.value.trim()) ||
+                ((el.editorTitle.value.trim() || "Blog") + " — blog thumbnail")
+            };
+            if (el.editorThumbAlt && !el.editorThumbAlt.value.trim()) {
+              el.editorThumbAlt.value = thumb.alt;
+            }
+            setThumbnailUI(thumb);
+            showStatus(el.editorStatus, "Thumbnail uploaded.");
+          }).catch(function (err) {
+            showStatus(el.editorStatus, err.message || "Upload failed", true);
+          }).finally(function () { el.thumbFile.value = ""; });
+        });
+      }
+      if (el.btnClearThumb) {
+        el.btnClearThumb.addEventListener("click", function () {
+          setThumbnailUI(null);
+          if (el.editorThumbAlt) el.editorThumbAlt.value = "";
+          showStatus(el.editorStatus, "Thumbnail cleared.");
+        });
+      }
+      if (el.editorThumbAlt) {
+        el.editorThumbAlt.addEventListener("input", function () {
+          if (state.thumbnail) state.thumbnail.alt = el.editorThumbAlt.value.trim();
+          if (el.thumbPreview && !el.thumbPreview.classList.contains("hidden")) {
+            el.thumbPreview.alt = el.editorThumbAlt.value.trim();
+          }
+        });
+      }
 
       el.btnCopyMd.addEventListener("click", function () {
         copyText(el.editorMd.value || "").then(function () { showStatus(el.editorStatus, "Markdown copied."); });

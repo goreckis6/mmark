@@ -61,6 +61,12 @@ loadEnvFile();
 
 const AWS_REGION = process.env.AWS_REGION || "eu-central-1";
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "eu.anthropic.claude-opus-4-8";
+const BEDROCK_IMAGE_MODEL_ID =
+  process.env.BEDROCK_IMAGE_MODEL_ID || "amazon.titan-image-generator-v2:0";
+const BEDROCK_IMAGE_REGION = process.env.BEDROCK_IMAGE_REGION || AWS_REGION;
+
+let bedrockImageClient = null;
+let bedrockImageInitFailed = false;
 
 let bedrockClient = null;
 let bedrockInitFailed = false;
@@ -77,6 +83,112 @@ async function getBedrockClient() {
     console.warn("Bedrock client init skipped:", err.message);
     return null;
   }
+}
+
+async function getBedrockImageClient() {
+  if (bedrockImageClient) return bedrockImageClient;
+  if (bedrockImageInitFailed) return null;
+  try {
+    const { BedrockRuntimeClient } = await import("@aws-sdk/client-bedrock-runtime");
+    bedrockImageClient = new BedrockRuntimeClient({ region: BEDROCK_IMAGE_REGION });
+    return bedrockImageClient;
+  } catch (err) {
+    bedrockImageInitFailed = true;
+    console.warn("Bedrock image client init skipped:", err.message);
+    return null;
+  }
+}
+
+function buildThumbnailPrompt({ title, seed, keywords }) {
+  const kws = (keywords || []).filter(Boolean).slice(0, 5).join(", ");
+  const topic = String(seed || title || "health wellness").trim();
+  return (
+    "Editorial blog hero thumbnail, clean modern lifestyle photography style, " +
+    "soft natural lighting, shallow depth of field, no text, no watermark, no logos, " +
+    "no UI screenshots. Theme: " + topic +
+    (title ? ". Article angle: " + String(title).slice(0, 120) : "") +
+    (kws ? ". Related concepts: " + kws : "") +
+    ". Tasteful, trustworthy, magazine cover mood. 16:9 composition."
+  ).slice(0, 512);
+}
+
+function buildThumbnailAlt({ title, seed, keywords }) {
+  const primary = String(title || seed || "Blog topic").trim();
+  const extra = (keywords || []).filter(Boolean).slice(0, 2).join(", ");
+  const alt = extra
+    ? primary + " — " + extra + " blog thumbnail"
+    : primary + " — blog thumbnail illustration";
+  return alt.slice(0, 160);
+}
+
+async function generateWsadThumbnail({ title, seed, keywords, prompt }) {
+  const client = await getBedrockImageClient();
+  if (!client) throw new Error("Bedrock image niedostępny — sprawdź AWS credentials i region");
+
+  const { InvokeModelCommand } = await import("@aws-sdk/client-bedrock-runtime");
+  const modelId = BEDROCK_IMAGE_MODEL_ID;
+  const textPrompt = String(prompt || buildThumbnailPrompt({ title, seed, keywords })).slice(0, 512);
+
+  async function invokeWithSize(width, height) {
+    const body = JSON.stringify({
+      taskType: "TEXT_IMAGE",
+      textToImageParams: {
+        text: textPrompt,
+        negativeText: "text, watermark, logo, blurry, low quality, deformed hands, collage, screenshot"
+      },
+      imageGenerationConfig: {
+        numberOfImages: 1,
+        quality: "standard",
+        cfgScale: 8,
+        height: height,
+        width: width
+      }
+    });
+    const response = await client.send(new InvokeModelCommand({
+      modelId,
+      contentType: "application/json",
+      accept: "application/json",
+      body
+    }));
+    const parsed = JSON.parse(new TextDecoder().decode(response.body));
+    if (parsed.error) throw new Error(String(parsed.error));
+    const b64 = parsed.images && parsed.images[0];
+    if (!b64) throw new Error("Brak obrazu w odpowiedzi Titan");
+    return b64;
+  }
+
+  let b64;
+  try {
+    b64 = await invokeWithSize(1280, 768);
+  } catch (err) {
+    console.warn("WSAD thumbnail 1280x768 failed, retry 1024x1024:", err.message);
+    b64 = await invokeWithSize(1024, 1024);
+  }
+
+  const slug = slugifyPl(title || seed || "thumbnail") || "thumbnail";
+  const saved = saveUploadedImage({
+    filename: "thumb-" + slug + ".png",
+    data: b64
+  });
+  const alt = buildThumbnailAlt({ title, seed, keywords });
+  const cost = {
+    modelId: modelId,
+    family: "Amazon Titan Image Generator v2",
+    totalUsd: 0.008,
+    totalUsdDisplay: "0.008",
+    currency: "USD",
+    note: "Estimate for standard Titan image generation on Bedrock (" + BEDROCK_IMAGE_REGION + ")."
+  };
+
+  return {
+    path: saved.path,
+    filename: saved.filename,
+    url: saved.path,
+    alt: alt,
+    prompt: textPrompt,
+    cost: cost,
+    modelId: modelId
+  };
 }
 
 function ensureMediaDir() {
@@ -135,20 +247,111 @@ function isAnthropicModel(modelId) {
   return modelId.includes("anthropic.");
 }
 
-function parseBedrockText(modelId, rawBody) {
+function parseBedrockBody(modelId, rawBody) {
   const parsed = JSON.parse(new TextDecoder().decode(rawBody));
+  let text = "";
   if (isAnthropicModel(modelId)) {
-    return (parsed.content && parsed.content[0] && parsed.content[0].text) || "";
-  }
-  if (modelId.startsWith("amazon.nova")) {
+    text = (parsed.content && parsed.content[0] && parsed.content[0].text) || "";
+  } else if (modelId.startsWith("amazon.nova")) {
     const msg = parsed.output && parsed.output.message;
-    if (msg && msg.content && msg.content[0]) return msg.content[0].text || "";
+    if (msg && msg.content && msg.content[0]) text = msg.content[0].text || "";
+  } else if (parsed.results && parsed.results[0] && parsed.results[0].outputText) {
+    text = parsed.results[0].outputText;
+  } else if (parsed.generation) {
+    text = parsed.generation;
+  } else {
+    text = parsed.outputText || parsed.completion || "";
   }
-  if (parsed.results && parsed.results[0] && parsed.results[0].outputText) {
-    return parsed.results[0].outputText;
+
+  const usageRaw = parsed.usage || {};
+  const inputTokens = Number(
+    usageRaw.input_tokens || usageRaw.inputTokens || usageRaw.prompt_tokens || 0
+  ) || 0;
+  const outputTokens = Number(
+    usageRaw.output_tokens || usageRaw.outputTokens || usageRaw.completion_tokens || 0
+  ) || 0;
+
+  return {
+    text: String(text || "").trim(),
+    usage: {
+      inputTokens: inputTokens,
+      outputTokens: outputTokens,
+      totalTokens: inputTokens + outputTokens
+    },
+    raw: parsed
+  };
+}
+
+/** Stawki USD / 1M tokenów — Claude Opus 4.x na Bedrock (global). Regional (eu./us.) ≈ +10%. */
+function getBedrockPricing(modelId) {
+  const id = String(modelId || BEDROCK_MODEL_ID || "").toLowerCase();
+  let inputPerM = 5;
+  let outputPerM = 25;
+  let family = "Claude Opus (default Bedrock rates)";
+
+  if (id.includes("haiku")) {
+    inputPerM = 1;
+    outputPerM = 5;
+    family = "Claude Haiku";
+  } else if (id.includes("sonnet")) {
+    inputPerM = 3;
+    outputPerM = 15;
+    family = "Claude Sonnet";
+  } else if (id.includes("opus")) {
+    inputPerM = 5;
+    outputPerM = 25;
+    family = id.includes("opus-4-8") || id.includes("opus-4.8")
+      ? "Claude Opus 4.8"
+      : id.includes("opus-4-5") || id.includes("opus-4.5")
+        ? "Claude Opus 4.5"
+        : "Claude Opus";
   }
-  if (parsed.generation) return parsed.generation;
-  return parsed.outputText || parsed.completion || "";
+
+  const regional = /^(eu|us|ap|me|ca|sa|af)\./.test(id) || id.includes(".eu.") || id.startsWith("eu.");
+  const regionalMultiplier = regional ? 1.1 : 1;
+  return {
+    family: family,
+    modelId: modelId || BEDROCK_MODEL_ID,
+    inputPerMUsd: inputPerM * regionalMultiplier,
+    outputPerMUsd: outputPerM * regionalMultiplier,
+    regional: regional,
+    note: regional
+      ? "Regional Bedrock endpoint (~+10% vs global). Rates are estimates — check AWS Bedrock pricing."
+      : "Global Bedrock rates (estimate). Verify on AWS Bedrock pricing page."
+  };
+}
+
+function estimateBedrockCost(usage, modelId) {
+  const pricing = getBedrockPricing(modelId);
+  const inputTokens = Number((usage && usage.inputTokens) || 0);
+  const outputTokens = Number((usage && usage.outputTokens) || 0);
+  const inputUsd = (inputTokens / 1e6) * pricing.inputPerMUsd;
+  const outputUsd = (outputTokens / 1e6) * pricing.outputPerMUsd;
+  const totalUsd = inputUsd + outputUsd;
+  return {
+    modelId: pricing.modelId,
+    family: pricing.family,
+    regional: pricing.regional,
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    totalTokens: inputTokens + outputTokens,
+    inputUsd: Number(inputUsd.toFixed(6)),
+    outputUsd: Number(outputUsd.toFixed(6)),
+    totalUsd: Number(totalUsd.toFixed(6)),
+    totalUsdDisplay: totalUsd < 0.01 ? totalUsd.toFixed(4) : totalUsd.toFixed(3),
+    rates: {
+      inputPerMUsd: pricing.inputPerMUsd,
+      outputPerMUsd: pricing.outputPerMUsd
+    },
+    note: pricing.note,
+    currency: "USD"
+  };
+}
+
+function estimateTokensFromText(text) {
+  // Rough fallback when Bedrock usage missing: ~4 chars / token for English
+  const s = String(text || "");
+  return Math.max(1, Math.ceil(s.length / 4));
 }
 
 async function invokeBedrock({ system, prompt, maxTokens }) {
@@ -196,7 +399,24 @@ async function invokeBedrock({ system, prompt, maxTokens }) {
   });
 
   const response = await client.send(command);
-  return parseBedrockText(modelId, response.body).trim();
+  const parsed = parseBedrockBody(modelId, response.body);
+  let usage = parsed.usage;
+  if (!usage.inputTokens && !usage.outputTokens) {
+    const inEst = estimateTokensFromText((system || "") + "\n" + (prompt || ""));
+    const outEst = estimateTokensFromText(parsed.text);
+    usage = {
+      inputTokens: inEst,
+      outputTokens: outEst,
+      totalTokens: inEst + outEst,
+      estimated: true
+    };
+  }
+  return {
+    text: parsed.text,
+    usage: usage,
+    cost: estimateBedrockCost(usage, modelId),
+    modelId: modelId
+  };
 }
 
 async function translateText({ text, sourceLang, targetLang }) {
@@ -206,7 +426,8 @@ async function translateText({ text, sourceLang, targetLang }) {
     "You are a professional translator for IT and cloud industry content. " +
     "Return ONLY the translated text, without quotes or commentary.";
   const prompt = "Translate from " + src + " to " + tgt + ":\n\n" + text;
-  return invokeBedrock({ system, prompt, maxTokens: 4096 });
+  const result = await invokeBedrock({ system, prompt, maxTokens: 4096 });
+  return result.text;
 }
 
 function extractJsonObject(text) {
@@ -473,35 +694,52 @@ function fallbackWsadPost({ seed, title, metaDescription, analysis, language }) 
 
   if (lang !== "pl") {
     const body =
-      "# " + t + "\n\n" +
-      (metaDescription || "") + "\n\n" +
-      "This article gives a practical overview of **" + s + "**: what it is, how to approach it in 2026, and which takeaways actually help decision-making.\n\n" +
-      "## Table of contents\n\n" +
-      "1. What " + s + " is\n" +
-      "2. How " + s + " works in practice\n" +
-      "3. Common mistakes\n" +
-      "4. Key takeaways\n\n" +
-      "## Key takeaways\n\n" +
-      "- Match search intent: people looking for \"" + s + "\" usually want a definition plus actionable tips.\n" +
-      "- Build topical coverage with related queries (" + (kws.slice(1, 4).join(", ") || "long-tail phrases") + ").\n" +
-      "- Mix low/medium/high KD keywords instead of chasing only the hardest head term.\n" +
-      "- Be concrete: examples, checklists, and clear takeaways improve ranking potential.\n" +
-      "- Try **Cardiom** to measure pulse with a camera or face-based vitals estimation.\n\n" +
-      "## What " + s + " is\n\n" +
+      "You're dealing with **" + s + "** and the usual advice feels scattered. This guide cuts through the noise with a practical structure you can use today.\n\n" +
+      "Below you'll get a clear definition, the decision framework that matters in 2026, step-by-step actions, and answers to the questions people actually search for — including how **Cardiom** can support related self-checks.\n\n" +
+      "## Key Takeaways\n\n" +
+      "- Clarify what \"" + s + "\" really means for your day-to-day decisions.\n" +
+      "- Use a low/medium/high KD keyword mix (" + (kws.slice(0, 4).join(", ") || s) + ") without stuffing.\n" +
+      "- Follow a short checklist instead of vague tips.\n" +
+      "- Prefer structured takeaways and FAQ sections for AI Overviews.\n" +
+      "- Try **Cardiom** when heart-rate or recovery context is relevant.\n\n" +
+      "## Table of Contents\n\n" +
+      "- What " + s + " is and why it matters\n" +
+      "- How " + s + " works in practice\n" +
+      "- 5 steps to get started\n" +
+      "- Common mistakes to avoid\n" +
+      "- Measuring pulse with Cardiom\n" +
+      "- Frequently Asked Questions\n\n" +
+      "## What " + s + " is and why it matters\n\n" +
       s.charAt(0).toUpperCase() + s.slice(1) +
-      " is a topic worth defining early, then expanding with context and use cases. Strong SEO writing combines natural language with related entities instead of stuffing exact-match phrases.\n\n" +
+      " is easiest to understand when you start from the reader's problem, then define the concept in plain language. Strong SEO writing combines natural language with related entities instead of exact-match stuffing.\n\n" +
+      "### The problem most guides skip\n\n" +
+      "People searching for \"" + s + "\" usually want a definition plus actionable next steps — not a glossary dump. Lead with intent, then expand with examples.\n\n" +
       "## How " + s + " works in practice\n\n" +
-      "Start from the reader's problem, then explain the mechanism and examples. Weave in related phrases (" +
+      "Start from the reader's constraint, explain the mechanism, then give a concrete example. Weave related phrases (" +
       (kws.join(", ") || s) +
-      ") while staying readable. In 2026 SEO, intent fit, E-E-A-T signals, structured takeaways, and AI Overview-friendly formatting all matter.\n\n" +
-      "## Measure pulse with Cardiom\n\n" +
-      "**Cardiom** lets you check heart rate using your phone camera, and also offers an innovative face-based system that estimates pulse from vital-sign signals — useful for quick self-checks without a wearable.\n\n" +
-      "## Common mistakes\n\n" +
+      ") while staying readable.\n\n" +
+      "## 5 steps to get started\n\n" +
+      "1. Define the outcome you want from \"" + s + "\".\n" +
+      "2. Map the related questions people ask next.\n" +
+      "3. Build a short checklist you can reuse weekly.\n" +
+      "4. Track one measurable signal (time saved, consistency, recovery, etc.).\n" +
+      "5. Iterate — keep only what you actually use.\n\n" +
+      "## Common mistakes to avoid\n\n" +
       "1. Targeting only high-KD terms with no long-tail support.\n" +
-      "2. Skipping a table of contents and key takeaways.\n" +
+      "2. Skipping key takeaways and FAQ.\n" +
       "3. Vague advice with no concrete steps.\n" +
       "4. Keyword stuffing that hurts clarity.\n\n" +
-      "Bottom line: a well-optimized article about **" + s + "** balances readability, keyword mix, and structure — and tools like **Cardiom** help readers turn advice into action.";
+      "## Measuring pulse with Cardiom\n\n" +
+      "**Cardiom** lets you check heart rate using your phone camera, and also offers an innovative face-based system that estimates pulse from vital-sign signals — useful for quick self-checks without a wearable.\n\n" +
+      "## Reclaim clarity on " + s + "\n\n" +
+      "A well-structured guide about **" + s + "** balances readability, keyword mix, and depth. Use the checklist above, keep your notes searchable, and bring Cardiom in when vitals context helps.\n\n" +
+      "## Frequently Asked Questions\n\n" +
+      "### What is the fastest way to start with " + s + "?\n\n" +
+      "Start with one clear outcome, then follow a five-step checklist instead of collecting endless tips.\n\n" +
+      "### Do I need expensive tools?\n\n" +
+      "Not at first. Focus on process; add tools like **Cardiom** only when they remove friction.\n\n" +
+      "### How is this different from generic advice?\n\n" +
+      "This structure prioritizes intent match, scannable takeaways, and practical steps over filler.";
 
     return {
       title: t,
@@ -582,8 +820,8 @@ async function wsadAnalyzeWithAi(seed, language, excludeTitles) {
     "  \"seoNotes\": string\n" +
     "}\n" +
     "Requirements: 8-12 keywords (KD mix), AT LEAST 10 unique SEO-optimized titles for CTR in 2026, outline 5-7 H2s, meta ~150-160 chars. Every title must be distinct from each other and from excluded titles. Prefer fresh keyword angles.";
-  const text = await invokeBedrock({ system, prompt, maxTokens: 4500 });
-  const parsed = extractJsonObject(text);
+  const result = await invokeBedrock({ system, prompt, maxTokens: 4500 });
+  const parsed = extractJsonObject(result.text);
   if (!parsed.keywords || !parsed.keywords.length) {
     parsed.keywords = fallbackWsadAnalysis(seed, lang).keywords;
   }
@@ -638,8 +876,8 @@ async function wsadMoreTitleWithAi(seed, excludeTitles, language, analysis, excl
     "  \"keywords\": [{\"term\": string, \"kd\": \"low\"|\"medium\"|\"high\", \"reason\": string}]\n" +
     "}\n" +
     "Title must be unique, CTR-oriented, SEO-optimized, and ideally lean on a NEW keyword angle.";
-  const text = await invokeBedrock({ system, prompt, maxTokens: 1200 });
-  const parsed = extractJsonObject(text);
+  const result = await invokeBedrock({ system, prompt, maxTokens: 1200 });
+  const parsed = extractJsonObject(result.text);
   const title = String(parsed.title || "").trim();
   if (!title) throw new Error("Empty title from model");
   if (excluded.some(function (t) { return normalizeTitleKey(t) === normalizeTitleKey(title); })) {
@@ -676,42 +914,349 @@ const WSAD_CARDIOM_BRIEF =
   "relevant Cardiom mention or soft CTA (not spammy). Prefer a dedicated short H2/H3 when it fits, " +
   "plus one mention in key takeaways or closing CTA.";
 
+/**
+ * Style reference: professional consumer SEO blogs like
+ * https://yumishare.com/blog/how-to-create-a-digital-family-cookbook-2026-guide/
+ * Structure, depth, and tone — NOT the product/topic itself.
+ */
+const WSAD_BLOG_STYLE_GUIDE =
+  "STYLE TEMPLATE (match this depth & polish; do NOT copy its product or wording):\n" +
+  "Reference pattern: YumiShare-style longform SEO guide.\n\n" +
+  "1) OPENING HOOK (2 short paragraphs):\n" +
+  "   - Start with a vivid, relatable scene or pain point the reader recognizes.\n" +
+  "   - Second paragraph: empathy + promise of what this guide delivers + soft roadmap.\n" +
+  "2) ## Key Takeaways — 5 concrete bullets (actionable, not fluff); weave primary keyword naturally.\n" +
+  "3) ## Table of Contents — 5–7 H2 titles as a bullet list matching the real sections below.\n" +
+  "4) BODY DEPTH (the important part):\n" +
+  "   - Several H2 sections that truly DEVELOP the topic (problem → explanation → practical value).\n" +
+  "   - Under major H2s, use H3s for sub-problems, comparisons, steps, or myths.\n" +
+  "   - Include at least one numbered/step-by-step H2 (e.g. 5 steps…).\n" +
+  "   - Use concrete examples, checklists, and 'why it matters' — avoid shallow one-paragraph H2s.\n" +
+  "   - Conversational but professional; address the reader as 'you'; short–medium paragraphs.\n" +
+  "5) PRODUCT SECTION: one H2 (or H3) that positions Cardiom as a practical solution — useful, not salesy.\n" +
+  "6) CLOSING H2: summarize transformation + soft CTA (Cardiom where natural).\n" +
+  "7) ## Frequently Asked Questions — 5–8 Q&As with full 2–4 sentence answers (PAA-style).\n" +
+  "Tone: calm authority, specific language, no keyword stuffing, no fake stats, no filler.";
+
+function stripHtml(html) {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 9000);
+  try {
+    const res = await fetch(url, Object.assign({}, options || {}, { signal: ctrl.signal }));
+    const text = await res.text();
+    return { ok: res.ok, status: res.status, text: text, headers: res.headers };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function researchWikipedia(query) {
+  const items = [];
+  try {
+    const searchUrl =
+      "https://en.wikipedia.org/w/api.php?action=opensearch&limit=3&namespace=0&format=json&search=" +
+      encodeURIComponent(query);
+    const searchRes = await fetchWithTimeout(searchUrl, {
+      headers: { Accept: "application/json", "User-Agent": "ContentSystemWSAD/1.0" }
+    }, 8000);
+    if (!searchRes.ok) return items;
+    const data = JSON.parse(searchRes.text);
+    const titles = (data && data[1]) || [];
+    for (const title of titles.slice(0, 2)) {
+      const sumUrl =
+        "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(title);
+      const sumRes = await fetchWithTimeout(sumUrl, {
+        headers: { Accept: "application/json", "User-Agent": "ContentSystemWSAD/1.0" }
+      }, 8000);
+      if (!sumRes.ok) continue;
+      const sum = JSON.parse(sumRes.text);
+      if (sum && sum.extract) {
+        items.push({
+          source: "Wikipedia",
+          title: sum.title || title,
+          url: (sum.content_urls && sum.content_urls.desktop && sum.content_urls.desktop.page) || "",
+          snippet: String(sum.extract).slice(0, 700)
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("WSAD wiki research:", err.message);
+  }
+  return items;
+}
+
+async function researchDuckDuckGo(query) {
+  const items = [];
+  try {
+    const url =
+      "https://api.duckduckgo.com/?format=json&no_html=1&skip_disambig=1&q=" +
+      encodeURIComponent(query);
+    const res = await fetchWithTimeout(url, {
+      headers: { Accept: "application/json", "User-Agent": "ContentSystemWSAD/1.0" }
+    }, 8000);
+    if (!res.ok) return items;
+    const data = JSON.parse(res.text);
+    if (data.AbstractText) {
+      items.push({
+        source: "DuckDuckGo",
+        title: data.Heading || query,
+        url: data.AbstractURL || "",
+        snippet: String(data.AbstractText).slice(0, 700)
+      });
+    }
+    (data.RelatedTopics || []).slice(0, 5).forEach(function (topic) {
+      if (topic && topic.Text) {
+        items.push({
+          source: "DuckDuckGo",
+          title: (topic.FirstURL || "").replace(/^https?:\/\//, "").slice(0, 80),
+          url: topic.FirstURL || "",
+          snippet: String(topic.Text).slice(0, 400)
+        });
+      } else if (topic && topic.Topics) {
+        topic.Topics.slice(0, 2).forEach(function (t) {
+          if (!t || !t.Text) return;
+          items.push({
+            source: "DuckDuckGo",
+            title: (t.FirstURL || "").replace(/^https?:\/\//, "").slice(0, 80),
+            url: t.FirstURL || "",
+            snippet: String(t.Text).slice(0, 400)
+          });
+        });
+      }
+    });
+  } catch (err) {
+    console.warn("WSAD DDG research:", err.message);
+  }
+  return items;
+}
+
+async function researchGoogleNews(query) {
+  const items = [];
+  try {
+    const url =
+      "https://news.google.com/rss/search?q=" +
+      encodeURIComponent(query + " when:365d") +
+      "&hl=en-US&gl=US&ceid=US:en";
+    const res = await fetchWithTimeout(url, {
+      headers: {
+        Accept: "application/rss+xml, application/xml, text/xml, */*",
+        "User-Agent": "Mozilla/5.0 (compatible; ContentSystem/1.0)"
+      }
+    }, 9000);
+    if (!res.ok) return items;
+    const xml = res.text;
+    const blocks = xml.match(/<item>[\s\S]*?<\/item>/gi) || [];
+    blocks.slice(0, 6).forEach(function (block) {
+      const title = stripHtml((block.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/i) ||
+        block.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "");
+      const link = stripHtml((block.match(/<link>([\s\S]*?)<\/link>/i) || [])[1] || "");
+      const desc = stripHtml((block.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/i) ||
+        block.match(/<description>([\s\S]*?)<\/description>/i) || [])[1] || "");
+      const pub = stripHtml((block.match(/<pubDate>([\s\S]*?)<\/pubDate>/i) || [])[1] || "");
+      if (!title) return;
+      items.push({
+        source: "Google News",
+        title: title,
+        url: link,
+        snippet: (pub ? ("[" + pub + "] ") : "") + desc.slice(0, 420)
+      });
+    });
+  } catch (err) {
+    console.warn("WSAD news research:", err.message);
+  }
+  return items;
+}
+
+async function researchBrave(query) {
+  const key = process.env.BRAVE_SEARCH_API_KEY || "";
+  if (!key) return [];
+  const items = [];
+  try {
+    const url = "https://api.search.brave.com/res/v1/web/search?q=" + encodeURIComponent(query) + "&count=6";
+    const res = await fetchWithTimeout(url, {
+      headers: {
+        Accept: "application/json",
+        "X-Subscription-Token": key,
+        "User-Agent": "ContentSystemWSAD/1.0"
+      }
+    }, 9000);
+    if (!res.ok) return items;
+    const data = JSON.parse(res.text);
+    ((data.web && data.web.results) || []).slice(0, 6).forEach(function (r) {
+      items.push({
+        source: "Brave Search",
+        title: r.title || "",
+        url: r.url || "",
+        snippet: String(r.description || "").slice(0, 500)
+      });
+    });
+  } catch (err) {
+    console.warn("WSAD Brave research:", err.message);
+  }
+  return items;
+}
+
+async function researchSerper(query) {
+  const key = process.env.SERPER_API_KEY || "";
+  if (!key) return [];
+  const items = [];
+  try {
+    const res = await fetchWithTimeout("https://google.serper.dev/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-KEY": key,
+        "User-Agent": "ContentSystemWSAD/1.0"
+      },
+      body: JSON.stringify({ q: query, num: 6 })
+    }, 9000);
+    if (!res.ok) return items;
+    const data = JSON.parse(res.text);
+    (data.organic || []).slice(0, 6).forEach(function (r) {
+      items.push({
+        source: "Serper/Google",
+        title: r.title || "",
+        url: r.link || "",
+        snippet: String(r.snippet || "").slice(0, 500)
+      });
+    });
+  } catch (err) {
+    console.warn("WSAD Serper research:", err.message);
+  }
+  return items;
+}
+
+function formatResearchPack(items) {
+  if (!items || !items.length) {
+    return "RESEARCH PACK: (empty — no live sources returned. Stay general; do NOT invent stats, studies, dates, or product claims.)";
+  }
+  const lines = [
+    "RESEARCH PACK (current web data — treat as the ONLY factual source for specific claims):",
+    "Rules: Use these notes for grounding. Do NOT invent percentages, study names, prices, or news.",
+    "If a claim is not supported here, write qualitatively or omit numbers.",
+    ""
+  ];
+  items.slice(0, 14).forEach(function (item, idx) {
+    lines.push(
+      (idx + 1) + ". [" + (item.source || "web") + "] " + (item.title || "") +
+      (item.url ? " — " + item.url : "") + "\n   " + (item.snippet || "")
+    );
+  });
+  return lines.join("\n").slice(0, 9000);
+}
+
+async function researchTopicForWsad({ seed, title, keywords }) {
+  const primary = String(title || seed || "").trim();
+  const kw = (keywords || []).filter(Boolean).slice(0, 4).join(" ");
+  const query = (primary + " " + kw).trim().slice(0, 160) || String(seed || "health").trim();
+  const newsQuery = (seed || primary).trim().slice(0, 100);
+
+  const settled = await Promise.allSettled([
+    researchBrave(query),
+    researchSerper(query),
+    researchWikipedia(seed || primary),
+    researchDuckDuckGo(query),
+    researchGoogleNews(newsQuery)
+  ]);
+
+  const merged = [];
+  const seen = new Set();
+  settled.forEach(function (result) {
+    if (result.status !== "fulfilled" || !Array.isArray(result.value)) return;
+    result.value.forEach(function (item) {
+      const key = normalizeTitleKey((item.title || "") + " " + (item.url || ""));
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      merged.push(item);
+    });
+  });
+
+  return {
+    query: query,
+    items: merged,
+    packText: formatResearchPack(merged),
+    fetchedAt: new Date().toISOString()
+  };
+}
+
 async function wsadGenerateWithAi(payload) {
   const seed = payload.seed;
   const title = payload.title;
   const meta = payload.metaDescription || "";
   const analysis = payload.analysis || {};
-  const targetWords = Math.min(2000, Math.max(900, Number(payload.targetWords) || Number(payload.targetChars) || 2000));
+  const targetWords = Math.min(2000, Math.max(1100, Number(payload.targetWords) || Number(payload.targetChars) || 2000));
   const lang = (payload.language || "en").toLowerCase();
+  const keywordList = (analysis.keywords || []).map(function (k) { return k.term; }).filter(Boolean);
   const kws = (analysis.keywords || []).map(function (k) { return k.term + " [" + k.kd + "]"; }).join("; ");
+  const onProgress = typeof payload.onProgress === "function" ? payload.onProgress : null;
+
+  if (onProgress) onProgress("research");
+  let research;
+  try {
+    research = await researchTopicForWsad({
+      seed: seed,
+      title: title,
+      keywords: keywordList
+    });
+  } catch (err) {
+    console.warn("WSAD research failed:", err.message);
+    research = {
+      query: title || seed,
+      items: [],
+      packText: formatResearchPack([]),
+      fetchedAt: new Date().toISOString(),
+      warning: err.message
+    };
+  }
+
+  if (onProgress) onProgress("bedrock");
   const system =
-    "You are an expert SEO blog writer for 2026 (Google + AI Overviews). " +
-    "Every article you write must be a complete, publish-ready, SEO-optimized blog post. " +
-    "Write naturally in " + (lang === "pl" ? "Polish" : "English") +
-    ", without keyword stuffing, with strong semantic coverage (entities, synonyms, PAA), " +
-    "clear H2/H3 hierarchy, scannable sections, and practical value. " +
-    "You must naturally feature the product Cardiom in every article. Return ONLY JSON.";
+    "You are an expert SEO editorial writer for 2026 (Google + AI Overviews). " +
+    "Write publish-ready longform guides with the depth and polish of top consumer SaaS blogs " +
+    "(structure like a YumiShare-style guide: hook → takeaways → TOC → deep H2/H3 development → steps → FAQ → CTA). " +
+    "Write in " + (lang === "pl" ? "Polish" : "English") + ". " +
+    "ANTI-HALLUCINATION: Never invent statistics, studies, prices, dates, quotas, rankings, or news. " +
+    "Only use specific factual claims that appear in the provided RESEARCH PACK. " +
+    "If the pack is thin, stay practical and qualitative — still deliver depth via frameworks, checklists, and examples. " +
+    "Feature Cardiom naturally per the product brief. Return ONLY JSON.";
+
   const prompt =
-    "Generate ONE fully optimized blog post.\n" +
+    "Generate ONE fully optimized blog post in the required editorial style.\n\n" +
     "Language: " + lang + "\n" +
     "Seed: " + seed + "\n" +
     "Title: " + title + "\n" +
-    "Meta: " + meta + "\n" +
-    "Keywords (use a natural mix of low/medium/high KD): " + kws + "\n" +
-    "Outline: " + JSON.stringify(analysis.outline || []) + "\n" +
-    "HARD LIMIT: maximum " + targetWords + " words in contentMd (aim 1200–1800 words; never exceed " + targetWords + ").\n" +
-    "Be complete but efficient — prefer dense, useful prose over filler so generation finishes reliably.\n" +
-    "Count words carefully. Do NOT stop at character length — this is a WORDS limit.\n\n" +
+    "Meta (target ~150–160 chars): " + meta + "\n" +
+    "Keywords (natural mix of low/medium/high KD — do not stuff): " + kws + "\n" +
+    "Suggested outline (adapt if research suggests better structure): " + JSON.stringify(analysis.outline || []) + "\n" +
+    "HARD LIMIT: maximum " + targetWords + " words in contentMd (aim 1400–1900; never exceed " + targetWords + ").\n" +
+    "Prefer dense, useful prose. Count WORDS carefully.\n\n" +
+    WSAD_BLOG_STYLE_GUIDE + "\n\n" +
     WSAD_CARDIOM_BRIEF + "\n\n" +
-    "contentMd Markdown structure (required):\n" +
-    "1) Strong intro answering search intent early\n" +
-    "2) ## Table of contents\n" +
-    "3) ## Key takeaways (4-6 bullets; include Cardiom where relevant)\n" +
-    "4) Multiple H2/H3 sections expanding the topic with keywords, examples, and actionable advice\n" +
-    "5) A natural section on measuring pulse with camera / face vitals via Cardiom (or weave Cardiom into a related section)\n" +
-    "6) FAQ section (3-5 questions) when useful\n" +
-    "7) Closing summary + soft CTA mentioning Cardiom\n\n" +
-    "SEO quality bar: intent match, E-E-A-T signals, readable paragraphs, no fluff, no keyword stuffing.\n\n" +
+    research.packText + "\n\n" +
+    "contentMd Markdown structure (required order):\n" +
+    "1) No H1 in body (title is separate) — start with 2 hook paragraphs\n" +
+    "2) ## Key Takeaways\n" +
+    "3) ## Table of Contents\n" +
+    "4) Deep H2/H3 sections developing the topic (problem, pillars, how-to, myths, comparisons as relevant)\n" +
+    "5) A practical Cardiom section (H2 or H3) woven into the topic\n" +
+    "6) Closing transformation H2 + soft CTA\n" +
+    "7) ## Frequently Asked Questions (5–8 items as ### Question then answer paragraphs)\n\n" +
+    "Also return keywordsUsed (8–12 phrases) suitable for tagging the post.\n\n" +
     "JSON schema:\n" +
     "{\n" +
     "  \"title\": string,\n" +
@@ -722,12 +1267,33 @@ async function wsadGenerateWithAi(payload) {
     "  \"wordCount\": number,\n" +
     "  \"keywordsUsed\": [string]\n" +
     "}";
-  const text = await invokeBedrock({ system, prompt, maxTokens: 6144 });
-  const parsed = extractJsonObject(text);
+
+  const result = await invokeBedrock({ system, prompt, maxTokens: 8192 });
+  const parsed = extractJsonObject(result.text);
   if (!parsed.contentMd) throw new Error("Missing contentMd in model response");
   parsed.slug = parsed.slug || slugifyPl(parsed.title || title);
   parsed.charCount = parsed.charCount || countVisibleChars(parsed.contentMd);
   parsed.wordCount = parsed.wordCount || parsed.contentMd.trim().split(/\s+/).filter(Boolean).length;
+  if (!parsed.keywordsUsed || !parsed.keywordsUsed.length) {
+    parsed.keywordsUsed = keywordList.slice(0, 10);
+  }
+  parsed.keywords = parsed.keywords || parsed.keywordsUsed;
+  parsed.usage = result.usage;
+  parsed.cost = result.cost;
+  parsed.modelId = result.modelId;
+  parsed.research = {
+    query: research.query,
+    fetchedAt: research.fetchedAt,
+    sourceCount: (research.items || []).length,
+    sources: (research.items || []).slice(0, 8).map(function (item) {
+      return {
+        source: item.source,
+        title: item.title,
+        url: item.url
+      };
+    }),
+    warning: research.warning || null
+  };
   return parsed;
 }
 
@@ -967,7 +1533,13 @@ export function createApp() {
         prompt,
         maxTokens: req.body.maxTokens || 4096
       });
-      sendJson(req, res, 200, { text: result, provider: "bedrock" });
+      sendJson(req, res, 200, {
+        text: result.text,
+        provider: "bedrock",
+        usage: result.usage,
+        cost: result.cost,
+        modelId: result.modelId
+      });
     } catch (err) {
       sendJson(req, res, 500, { error: err.message || "Server error" });
     }
@@ -1036,6 +1608,36 @@ export function createApp() {
     }
   });
 
+  app.post("/api/wsad/thumbnail", async function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    const title = String((req.body && req.body.title) || "").trim();
+    const seed = String((req.body && req.body.seed) || "").trim();
+    if (!title && !seed) {
+      return sendJson(req, res, 400, { error: "Podaj title lub seed" });
+    }
+    const keywords = Array.isArray(req.body && req.body.keywords)
+      ? req.body.keywords.map(function (k) {
+          return typeof k === "string" ? k : (k && (k.term || k.keyword)) || "";
+        }).map(function (s) { return String(s || "").trim(); }).filter(Boolean)
+      : String((req.body && req.body.keywordsText) || "")
+        .split(/[,;\n]+/)
+        .map(function (s) { return s.trim(); })
+        .filter(Boolean);
+    try {
+      const thumb = await generateWsadThumbnail({
+        title: title,
+        seed: seed,
+        keywords: keywords,
+        prompt: String((req.body && req.body.prompt) || "").trim() || undefined
+      });
+      sendJson(req, res, 200, { thumbnail: thumb, provider: "bedrock-titan" });
+    } catch (err) {
+      console.warn("WSAD thumbnail error:", err.message);
+      sendJson(req, res, 500, { error: err.message || "Nie udało się wygenerować thumbnaila" });
+    }
+  });
+
   app.post("/api/wsad/generate", async function (req, res) {
     const auth = requireAuth(req, res);
     if (!auth) return;
@@ -1067,8 +1669,17 @@ export function createApp() {
 
     setImmediate(async function () {
       try {
-        wsadJobs.set(jobId, Object.assign({}, wsadJobs.get(jobId), { step: "bedrock" }));
-        const post = await wsadGenerateWithAi(payload);
+        const post = await wsadGenerateWithAi(Object.assign({}, payload, {
+          onProgress: function (step) {
+            const cur = wsadJobs.get(jobId) || {};
+            wsadJobs.set(jobId, Object.assign({}, cur, {
+              status: "running",
+              step: step,
+              createdAt: cur.createdAt || Date.now(),
+              userId: auth.user.id
+            }));
+          }
+        }));
         wsadJobs.set(jobId, {
           status: "done",
           step: "done",
