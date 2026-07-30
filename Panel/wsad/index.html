@@ -364,6 +364,7 @@
           <div class="btns" style="margin-top:0.55rem">
             <button type="button" id="btn-more-title">Give me one more</button>
             <button type="button" class="primary" id="btn-save-title">Save title</button>
+            <button type="button" id="btn-save-all-titles">Save all titles</button>
           </div>
           <label style="margin-top:0.9rem">Selected / custom title</label>
           <input id="custom-title" type="text" placeholder="Edit or write your title">
@@ -432,6 +433,7 @@
         btnCopyAnalysis: document.getElementById("btn-copy-analysis"),
         btnMoreTitle: document.getElementById("btn-more-title"),
         btnSaveTitle: document.getElementById("btn-save-title"),
+        btnSaveAllTitles: document.getElementById("btn-save-all-titles"),
         generateProgress: document.getElementById("generate-progress"),
         generateStatus: document.getElementById("generate-status"),
         postPanel: document.getElementById("post-panel"),
@@ -539,7 +541,14 @@
       }
 
       function persistSavedTitles(list) {
-        localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 100)));
+        localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 200)));
+      }
+
+      function upsertSavedTitle(list, item) {
+        var key = normalizeTitleKey(item.title);
+        list = list.filter(function (x) { return normalizeTitleKey(x.title) !== key; });
+        list.unshift(item);
+        return list;
       }
 
       function renderSavedTitles() {
@@ -779,10 +788,7 @@
           showStatus(el.generateStatus, "Select or type a title first.", true);
           return;
         }
-        var list = loadSavedTitles();
-        var key = normalizeTitleKey(title);
-        list = list.filter(function (item) { return normalizeTitleKey(item.title) !== key; });
-        list.unshift({
+        var list = upsertSavedTitle(loadSavedTitles(), {
           title: title,
           seed: el.seed.value.trim(),
           meta: el.metaDesc.value.trim(),
@@ -791,6 +797,33 @@
         persistSavedTitles(list);
         renderSavedTitles();
         showStatus(el.generateStatus, "Title saved for blog.");
+      });
+
+      el.btnSaveAllTitles.addEventListener("click", function () {
+        var titles = (state.analysis && state.analysis.titles) || [];
+        if (!titles.length) {
+          showStatus(el.generateStatus, "No titles to save — run analysis first.", true);
+          return;
+        }
+        var seed = el.seed.value.trim();
+        var defaultMeta = el.metaDesc.value.trim();
+        var list = loadSavedTitles();
+        var saved = 0;
+        titles.forEach(function (t) {
+          var title = titleText(t).trim();
+          if (!title) return;
+          list = upsertSavedTitle(list, {
+            title: title,
+            seed: seed,
+            meta: (t && t.metaDescription) || defaultMeta,
+            rationale: (t && t.rationale) || "",
+            savedAt: new Date().toISOString()
+          });
+          saved += 1;
+        });
+        persistSavedTitles(list);
+        renderSavedTitles();
+        showStatus(el.generateStatus, "Saved all " + saved + " titles for blog.");
       });
 
       el.btnGenerate.addEventListener("click", function () {
