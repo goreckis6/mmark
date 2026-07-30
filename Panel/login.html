@@ -153,21 +153,21 @@
         <p>Zaloguj się, aby wejść do panelu</p>
       </div>
     </div>
-    <form id="login-form">
+    <form id="login-form" method="post" action="/auth/login" autocomplete="on">
       <div class="field">
         <label for="username">Login</label>
-        <input type="text" id="username" autocomplete="username" required>
+        <input type="text" id="username" name="username" autocomplete="username" required>
       </div>
       <div class="field">
         <label for="password">Hasło</label>
-        <input type="password" id="password" autocomplete="current-password" required>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
       </div>
       <button type="submit" class="login-btn" id="login-btn">Zaloguj się</button>
       <div class="login-error" id="login-error"></div>
     </form>
   </div>
 
-  <script src="auth-client.js?v=7"></script>
+  <script src="auth-client.js?v=8"></script>
   <script>
     (function () {
       var form = document.getElementById("login-form");

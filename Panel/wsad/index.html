@@ -310,14 +310,16 @@
   <div class="wrap" id="auth-gate" hidden>
     <div class="card login-box">
       <h2>Logowanie</h2>
-      <p class="hint">Panel WSAD wymaga sesji Content System (Bedrock).</p>
-      <label for="login-user">Login</label>
-      <input id="login-user" type="text" autocomplete="username">
-      <label for="login-pass" style="margin-top:0.7rem">Hasło</label>
-      <input id="login-pass" type="password" autocomplete="current-password">
-      <div class="btns">
-        <button type="button" class="primary" id="login-btn">Zaloguj</button>
-      </div>
+      <p class="hint">Panel WSAD wymaga sesji Content System (Bedrock). Przeglądarka może zapamiętać login i hasło.</p>
+      <form id="login-form" method="post" action="/auth/login" autocomplete="on">
+        <label for="login-user">Login</label>
+        <input id="login-user" name="username" type="text" autocomplete="username" required>
+        <label for="login-pass" style="margin-top:0.7rem">Hasło</label>
+        <input id="login-pass" name="password" type="password" autocomplete="current-password" required>
+        <div class="btns">
+          <button type="submit" class="primary" id="login-btn">Zaloguj</button>
+        </div>
+      </form>
       <div class="status err" id="login-status"></div>
     </div>
   </div>
@@ -327,48 +329,54 @@
       <div>
         <p class="badge">Ukryty panel · tylko URL</p>
         <h1 class="brand">WSAD <span>Blog SEO</span></h1>
-        <p class="sub">Podaj hasło → analiza tytułów, opisów i mixu KD (low / medium / high) → drugi krok generuje post z intro, spisem treści, key takeaways i rozwinięciem pod ranking 2026.</p>
+        <p class="sub">Enter a seed keyword → get 10+ English SEO titles with Low/Medium/High KD mix → pick one (or generate one more) → generate a ~2000-character blog post with intro, TOC, and key takeaways.</p>
       </div>
     </div>
 
     <section class="card">
-      <h2>1. Hasło wyjściowe</h2>
+      <h2>1. Seed keyword</h2>
       <div class="row">
         <div>
-          <label for="seed">Słowo kluczowe / temat</label>
-          <input id="seed" type="text" placeholder="np. mrówki, hosting WordPress, dieta ketogeniczna" autocomplete="off">
+          <label for="seed">Keyword / topic (English output)</label>
+          <input id="seed" type="text" placeholder="e.g. ants, WordPress hosting, keto diet" autocomplete="off">
         </div>
-        <button type="button" class="primary" id="btn-analyze">Analizuj SEO</button>
+        <button type="button" class="primary" id="btn-analyze">Analyze SEO</button>
       </div>
-      <p class="hint">Analiza szacuje trudność słów kluczowych (KD), proponuje tytuły i meta opisy oraz zarys struktury pod intencję wyszukiwania.</p>
+      <p class="hint">Analysis estimates KD, proposes at least 10 optimized English titles + meta, and a structure for search intent.</p>
       <div class="progress" id="analyze-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
       <div class="status" id="analyze-status"></div>
     </section>
 
     <section class="card hidden" id="analysis-panel">
-      <h2>2. Wynik analizy</h2>
+      <h2>2. Analysis result</h2>
       <div class="grid-2">
         <div>
-          <label>Intencja wyszukiwania</label>
+          <label>Search intent</label>
           <p class="hint" id="intent" style="margin-top:0"></p>
-          <label style="margin-top:0.9rem">Słowa kluczowe (mix KD)</label>
+          <label style="margin-top:0.9rem">Keywords (KD mix)</label>
           <div class="kw-grid" id="kw-grid"></div>
+          <label style="margin-top:0.9rem">Saved blog titles</label>
+          <div class="title-list" id="saved-titles"></div>
         </div>
         <div>
-          <label>Proponowane tytuły — wybierz jeden</label>
+          <label>Optimized titles (pick one) — <span id="title-count">0</span></label>
           <div class="title-list" id="title-list"></div>
-          <label style="margin-top:0.9rem">Lub własny tytuł</label>
-          <input id="custom-title" type="text" placeholder="Wpisz / popraw tytuł">
+          <div class="btns" style="margin-top:0.55rem">
+            <button type="button" id="btn-more-title">Give me one more</button>
+            <button type="button" class="primary" id="btn-save-title">Save title</button>
+          </div>
+          <label style="margin-top:0.9rem">Selected / custom title</label>
+          <input id="custom-title" type="text" placeholder="Edit or write your title">
           <label style="margin-top:0.9rem">Meta description</label>
           <textarea id="meta-desc" rows="3"></textarea>
         </div>
       </div>
-      <label style="margin-top:0.9rem">Szkic struktury (H2)</label>
+      <label style="margin-top:0.9rem">Outline (H2)</label>
       <ol class="outline" id="outline"></ol>
       <p class="hint" id="seo-notes"></p>
       <div class="btns">
-        <button type="button" class="primary" id="btn-generate">Generuj post (~2000 znaków)</button>
-        <button type="button" class="ghost" id="btn-copy-analysis">Kopiuj analizę JSON</button>
+        <button type="button" class="primary" id="btn-generate">Generate post (~2000 chars, EN)</button>
+        <button type="button" class="ghost" id="btn-copy-analysis">Copy analysis JSON</button>
       </div>
       <div class="progress" id="generate-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
       <div class="status" id="generate-status"></div>
@@ -389,7 +397,7 @@
     </section>
   </div>
 
-  <script src="../auth-client.js?v=wsad1"></script>
+  <script src="../auth-client.js?v=wsad2"></script>
   <script>
     (function () {
       "use strict";
@@ -399,6 +407,9 @@
         selectedTitle: "",
         post: null
       };
+
+      var LANG = "en";
+      var SAVED_KEY = "wsad-saved-blog-titles";
 
       var el = {
         authGate: document.getElementById("auth-gate"),
@@ -411,12 +422,16 @@
         intent: document.getElementById("intent"),
         kwGrid: document.getElementById("kw-grid"),
         titleList: document.getElementById("title-list"),
+        titleCount: document.getElementById("title-count"),
+        savedTitles: document.getElementById("saved-titles"),
         customTitle: document.getElementById("custom-title"),
         metaDesc: document.getElementById("meta-desc"),
         outline: document.getElementById("outline"),
         seoNotes: document.getElementById("seo-notes"),
         btnGenerate: document.getElementById("btn-generate"),
         btnCopyAnalysis: document.getElementById("btn-copy-analysis"),
+        btnMoreTitle: document.getElementById("btn-more-title"),
+        btnSaveTitle: document.getElementById("btn-save-title"),
         generateProgress: document.getElementById("generate-progress"),
         generateStatus: document.getElementById("generate-status"),
         postPanel: document.getElementById("post-panel"),
@@ -426,6 +441,7 @@
         btnCopyMd: document.getElementById("btn-copy-md"),
         btnCopyHtml: document.getElementById("btn-copy-html"),
         btnDownloadMd: document.getElementById("btn-download-md"),
+        loginForm: document.getElementById("login-form"),
         loginUser: document.getElementById("login-user"),
         loginPass: document.getElementById("login-pass"),
         loginBtn: document.getElementById("login-btn"),
@@ -495,6 +511,65 @@
         return String(text || "").replace(/\s+/g, " ").trim().length;
       }
 
+      function titleText(t) {
+        return typeof t === "string" ? t : ((t && t.title) || "");
+      }
+
+      function normalizeTitleKey(title) {
+        return String(title || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      }
+
+      function getCurrentTitles() {
+        return ((state.analysis && state.analysis.titles) || []).map(titleText).filter(Boolean);
+      }
+
+      function loadSavedTitles() {
+        try {
+          var raw = localStorage.getItem(SAVED_KEY);
+          var list = raw ? JSON.parse(raw) : [];
+          return Array.isArray(list) ? list : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function persistSavedTitles(list) {
+        localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 100)));
+      }
+
+      function renderSavedTitles() {
+        if (!el.savedTitles) return;
+        var list = loadSavedTitles();
+        if (!list.length) {
+          el.savedTitles.innerHTML = '<p class="hint" style="margin:0">No saved titles yet.</p>';
+          return;
+        }
+        el.savedTitles.innerHTML = list.map(function (item, idx) {
+          return (
+            '<button type="button" class="title-option" data-saved="' + idx + '">' +
+              escapeHtml(item.title || "") +
+              '<small>' + escapeHtml((item.seed || "") + (item.meta ? " · " + item.meta : "")) + "</small>" +
+            "</button>"
+          );
+        }).join("");
+        el.savedTitles.querySelectorAll("[data-saved]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var item = list[parseInt(btn.getAttribute("data-saved"), 10)];
+            if (!item) return;
+            state.selectedTitle = item.title || "";
+            el.customTitle.value = state.selectedTitle;
+            if (item.meta) el.metaDesc.value = item.meta;
+            if (item.seed && !el.seed.value.trim()) el.seed.value = item.seed;
+            showStatus(el.generateStatus, "Loaded saved title.");
+          });
+        });
+      }
+
       function mdToSimpleHtml(md) {
         return String(md || "")
           .split(/\n\n+/)
@@ -515,6 +590,43 @@
           .join("\n");
       }
 
+      function bindTitleClicks() {
+        var titles = (state.analysis && state.analysis.titles) || [];
+        el.titleList.querySelectorAll(".title-option").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            el.titleList.querySelectorAll(".title-option").forEach(function (b) { b.classList.remove("active"); });
+            btn.classList.add("active");
+            var idx = parseInt(btn.getAttribute("data-idx"), 10);
+            var t = titles[idx];
+            state.selectedTitle = titleText(t);
+            el.customTitle.value = state.selectedTitle;
+            if (t && t.metaDescription) el.metaDesc.value = t.metaDescription;
+          });
+        });
+        if (el.titleCount) el.titleCount.textContent = String(titles.length);
+      }
+
+      function renderTitleList(selectLast) {
+        var titles = (state.analysis && state.analysis.titles) || [];
+        var activeIdx = selectLast ? titles.length - 1 : 0;
+        el.titleList.innerHTML = titles.map(function (t, idx) {
+          var title = titleText(t);
+          var desc = typeof t === "string" ? "" : (t.rationale || t.metaHint || "");
+          return (
+            '<button type="button" class="title-option' + (idx === activeIdx ? " active" : "") + '" data-idx="' + idx + '">' +
+              escapeHtml(title) +
+              (desc ? "<small>" + escapeHtml(desc) + "</small>" : "") +
+            "</button>"
+          );
+        }).join("");
+        if (titles[activeIdx]) {
+          state.selectedTitle = titleText(titles[activeIdx]);
+          el.customTitle.value = state.selectedTitle;
+          if (titles[activeIdx].metaDescription) el.metaDesc.value = titles[activeIdx].metaDescription;
+        }
+        bindTitleClicks();
+      }
+
       function renderAnalysis(data) {
         state.analysis = data;
         el.analysisPanel.classList.remove("hidden");
@@ -531,39 +643,13 @@
           );
         }).join("");
 
-        var titles = data.titles || [];
-        el.titleList.innerHTML = titles.map(function (t, idx) {
-          var title = typeof t === "string" ? t : (t.title || "");
-          var desc = typeof t === "string" ? "" : (t.rationale || t.metaHint || "");
-          return (
-            '<button type="button" class="title-option' + (idx === 0 ? " active" : "") + '" data-idx="' + idx + '">' +
-              escapeHtml(title) +
-              (desc ? "<small>" + escapeHtml(desc) + "</small>" : "") +
-            "</button>"
-          );
-        }).join("");
-
-        state.selectedTitle = titles[0]
-          ? (typeof titles[0] === "string" ? titles[0] : titles[0].title)
-          : "";
-        el.customTitle.value = state.selectedTitle || "";
         el.metaDesc.value = data.metaDescription || (data.metaDescriptions && data.metaDescriptions[0]) || "";
-
         el.outline.innerHTML = (data.outline || []).map(function (item) {
           return "<li>" + escapeHtml(item) + "</li>";
         }).join("");
 
-        el.titleList.querySelectorAll(".title-option").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            el.titleList.querySelectorAll(".title-option").forEach(function (b) { b.classList.remove("active"); });
-            btn.classList.add("active");
-            var idx = parseInt(btn.getAttribute("data-idx"), 10);
-            var t = titles[idx];
-            state.selectedTitle = typeof t === "string" ? t : (t.title || "");
-            el.customTitle.value = state.selectedTitle;
-            if (t && t.metaDescription) el.metaDesc.value = t.metaDescription;
-          });
-        });
+        renderTitleList(false);
+        renderSavedTitles();
       }
 
       function renderPost(post) {
@@ -575,9 +661,9 @@
         var chars = post.charCount || countChars(md);
         var words = post.wordCount || (md.trim() ? md.trim().split(/\s+/).length : 0);
         el.postStats.innerHTML =
-          '<span class="stat">Znaki: <b>' + chars + "</b></span>" +
-          '<span class="stat">Słowa: <b>' + words + "</b></span>" +
-          '<span class="stat">Tytuł: <b>' + escapeHtml(post.title || el.customTitle.value) + "</b></span>";
+          '<span class="stat">Chars: <b>' + chars + "</b></span>" +
+          '<span class="stat">Words: <b>' + words + "</b></span>" +
+          '<span class="stat">Title: <b>' + escapeHtml(post.title || el.customTitle.value) + "</b></span>";
       }
 
       function api(path, body) {
@@ -602,6 +688,7 @@
       function bootApp() {
         el.authGate.hidden = true;
         el.app.hidden = false;
+        renderSavedTitles();
       }
 
       function showLogin(msg) {
@@ -610,64 +697,129 @@
         showStatus(el.loginStatus, msg || "", !!msg);
       }
 
-      el.loginBtn.addEventListener("click", function () {
-        if (!window.AuthClient) return;
-        AuthClient.login(el.loginUser.value.trim(), el.loginPass.value).then(function () {
-          bootApp();
-        }).catch(function (err) {
-          showStatus(el.loginStatus, err.message || "Błąd logowania", true);
+      if (el.loginForm) {
+        el.loginForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          if (!window.AuthClient) return;
+          AuthClient.login(el.loginUser.value.trim(), el.loginPass.value).then(function () {
+            bootApp();
+          }).catch(function (err) {
+            showStatus(el.loginStatus, err.message || "Login failed", true);
+          });
         });
-      });
+      }
 
       el.btnAnalyze.addEventListener("click", function () {
         var seed = el.seed.value.trim();
         if (!seed) {
-          showStatus(el.analyzeStatus, "Podaj hasło / temat.", true);
+          showStatus(el.analyzeStatus, "Enter a seed keyword.", true);
           return;
         }
         setBusy(el.analyzeProgress, true, el.btnAnalyze);
-        showStatus(el.analyzeStatus, "Analizuję SEO i KD…");
-        api("/api/wsad/analyze", { seed: seed, language: "pl" })
+        showStatus(el.analyzeStatus, "Analyzing SEO + KD (English)…");
+        api("/api/wsad/analyze", { seed: seed, language: LANG })
           .then(function (data) {
             renderAnalysis(data.analysis || data);
-            showStatus(el.analyzeStatus, "Analiza gotowa — wybierz tytuł i generuj post.");
+            var n = ((state.analysis && state.analysis.titles) || []).length;
+            showStatus(el.analyzeStatus, "Done — " + n + " titles ready. Pick one or click Give me one more.");
             el.analysisPanel.scrollIntoView({ behavior: "smooth", block: "start" });
           })
           .catch(function (err) {
-            showStatus(el.analyzeStatus, err.message || "Błąd analizy", true);
+            showStatus(el.analyzeStatus, err.message || "Analysis failed", true);
           })
           .finally(function () {
             setBusy(el.analyzeProgress, false, el.btnAnalyze);
           });
       });
 
+      el.btnMoreTitle.addEventListener("click", function () {
+        var seed = el.seed.value.trim();
+        if (!seed || !state.analysis) {
+          showStatus(el.generateStatus, "Run analysis first.", true);
+          return;
+        }
+        var existing = getCurrentTitles();
+        setBusy(null, true, el.btnMoreTitle);
+        showStatus(el.generateStatus, "Generating one more unique title…");
+        api("/api/wsad/title-more", {
+          seed: seed,
+          language: LANG,
+          excludeTitles: existing,
+          analysis: state.analysis
+        })
+          .then(function (data) {
+            var t = data.title || data;
+            var title = titleText(t);
+            if (!title) throw new Error("Empty title");
+            var dup = existing.some(function (x) {
+              return normalizeTitleKey(x) === normalizeTitleKey(title);
+            });
+            if (dup) throw new Error("Duplicate title returned — try again");
+            state.analysis.titles = state.analysis.titles || [];
+            state.analysis.titles.push({
+              title: title,
+              rationale: t.rationale || "Extra unique title",
+              metaDescription: t.metaDescription || ""
+            });
+            if (t.metaDescription) el.metaDesc.value = t.metaDescription;
+            renderTitleList(true);
+            showStatus(el.generateStatus, "Added a new unique title (" + state.analysis.titles.length + " total).");
+          })
+          .catch(function (err) {
+            showStatus(el.generateStatus, err.message || "Could not add title", true);
+          })
+          .finally(function () {
+            setBusy(null, false, el.btnMoreTitle);
+          });
+      });
+
+      el.btnSaveTitle.addEventListener("click", function () {
+        var title = (el.customTitle.value || state.selectedTitle || "").trim();
+        if (!title) {
+          showStatus(el.generateStatus, "Select or type a title first.", true);
+          return;
+        }
+        var list = loadSavedTitles();
+        var key = normalizeTitleKey(title);
+        list = list.filter(function (item) { return normalizeTitleKey(item.title) !== key; });
+        list.unshift({
+          title: title,
+          seed: el.seed.value.trim(),
+          meta: el.metaDesc.value.trim(),
+          savedAt: new Date().toISOString()
+        });
+        persistSavedTitles(list);
+        renderSavedTitles();
+        showStatus(el.generateStatus, "Title saved for blog.");
+      });
+
       el.btnGenerate.addEventListener("click", function () {
         if (!state.analysis) {
-          showStatus(el.generateStatus, "Najpierw zrób analizę.", true);
+          showStatus(el.generateStatus, "Run analysis first.", true);
           return;
         }
         var title = (el.customTitle.value || state.selectedTitle || "").trim();
         if (!title) {
-          showStatus(el.generateStatus, "Wybierz lub wpisz tytuł.", true);
+          showStatus(el.generateStatus, "Pick or type a title.", true);
           return;
         }
         setBusy(el.generateProgress, true, el.btnGenerate);
-        showStatus(el.generateStatus, "Generuję post SEO (~2000 znaków)…");
+        showStatus(el.generateStatus, "Generating English SEO post (~2000 chars)…");
         api("/api/wsad/generate", {
           seed: el.seed.value.trim(),
           title: title,
           metaDescription: el.metaDesc.value.trim(),
           analysis: state.analysis,
           targetChars: 2000,
-          language: "pl"
+          language: LANG
         })
           .then(function (data) {
             renderPost(data.post || data);
-            showStatus(el.generateStatus, "Post gotowy.");
+            showStatus(el.generateStatus, "Post ready.");
             el.postPanel.scrollIntoView({ behavior: "smooth", block: "start" });
           })
           .catch(function (err) {
-            showStatus(el.generateStatus, err.message || "Błąd generowania", true);
+            showStatus(el.generateStatus, err.message || "Generation failed", true);
           })
           .finally(function () {
             setBusy(el.generateProgress, false, el.btnGenerate);
@@ -677,21 +829,21 @@
       el.btnCopyAnalysis.addEventListener("click", function () {
         if (!state.analysis) return;
         copyText(JSON.stringify(state.analysis, null, 2)).then(function () {
-          showStatus(el.generateStatus, "Skopiowano analizę JSON.");
+          showStatus(el.generateStatus, "Analysis JSON copied.");
         });
       });
 
       el.btnCopyMd.addEventListener("click", function () {
         if (!state.post) return;
         copyText(state.post.contentMd || "").then(function () {
-          showStatus(el.generateStatus, "Skopiowano Markdown.");
+          showStatus(el.generateStatus, "Markdown copied.");
         });
       });
 
       el.btnCopyHtml.addEventListener("click", function () {
         if (!state.post) return;
         copyText(mdToSimpleHtml(state.post.contentMd || "")).then(function () {
-          showStatus(el.generateStatus, "Skopiowano HTML.");
+          showStatus(el.generateStatus, "HTML copied.");
         });
       });
 
@@ -717,7 +869,7 @@
         AuthClient.checkHealth().then(function (h) {
           if (!h.reachable || !h.auth) {
             bootApp();
-            showStatus(el.analyzeStatus, "API / auth niedostępne — zaloguj się na serwerze Node z Bedrock, inaczej endpointy WSAD nie zadziałają.", true);
+            showStatus(el.analyzeStatus, "API/auth unavailable — log in on the Node server with Bedrock for WSAD endpoints.", true);
             return;
           }
           if (!AuthClient.getToken()) {
@@ -725,7 +877,7 @@
             return;
           }
           AuthClient.requireAuth({ redirect: false }).then(bootApp).catch(function () {
-            showLogin("Sesja wygasła — zaloguj się ponownie.");
+            showLogin("Session expired — log in again.");
           });
         });
       }

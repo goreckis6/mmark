@@ -3013,14 +3013,14 @@
           <p id="auth-gate-subtitle">Sprawdzanie sesji…</p>
         </div>
       </div>
-      <form id="auth-gate-form" hidden>
+      <form id="auth-gate-form" method="post" action="/auth/login" autocomplete="on" hidden>
         <div class="auth-field">
           <label for="auth-username">Login</label>
-          <input type="text" id="auth-username" autocomplete="username" required>
+          <input type="text" id="auth-username" name="username" autocomplete="username" required>
         </div>
         <div class="auth-field">
           <label for="auth-password">Hasło</label>
-          <input type="password" id="auth-password" autocomplete="current-password" required>
+          <input type="password" id="auth-password" name="password" autocomplete="current-password" required>
         </div>
         <button type="submit" class="auth-submit" id="auth-submit">Zaloguj się</button>
         <div class="auth-error" id="auth-error"></div>
