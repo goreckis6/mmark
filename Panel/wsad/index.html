@@ -27,7 +27,6 @@
       --font: "Source Sans 3", system-ui, sans-serif;
       --display: "Fraunces", Georgia, serif;
     }
-
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; }
     body {
@@ -38,271 +37,124 @@
         radial-gradient(900px 400px at 100% 0%, rgba(154, 107, 22, 0.1), transparent 55%),
         linear-gradient(180deg, var(--bg), var(--bg-2));
     }
-
-    .wrap {
-      width: min(1120px, calc(100% - 2rem));
-      margin: 0 auto;
-      padding: 1.5rem 0 3.5rem;
-    }
-
-    .top {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      align-items: flex-end;
-      margin-bottom: 1.25rem;
-      flex-wrap: wrap;
-    }
-
-    .brand {
-      font-family: var(--display);
-      font-size: clamp(1.8rem, 3vw, 2.4rem);
-      letter-spacing: -0.03em;
-      margin: 0;
-      line-height: 1.1;
-    }
-
+    .wrap { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 1.5rem 0 3.5rem; }
+    .top { margin-bottom: 1rem; }
+    .brand { font-family: var(--display); font-size: clamp(1.8rem, 3vw, 2.4rem); letter-spacing: -0.03em; margin: 0; line-height: 1.1; }
     .brand span { color: var(--accent); }
-    .sub { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.95rem; max-width: 42rem; }
-
+    .sub { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.95rem; max-width: 46rem; }
     .badge {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--accent-2);
-      background: var(--accent-soft);
-      border: 1px solid rgba(31, 107, 74, 0.25);
-      border-radius: 999px;
-      padding: 0.4rem 0.75rem;
-      font-weight: 600;
+      display: inline-block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--accent-2); background: var(--accent-soft); border: 1px solid rgba(31, 107, 74, 0.25);
+      border-radius: 999px; padding: 0.4rem 0.75rem; font-weight: 600; margin-bottom: 0.5rem;
     }
-
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 1.1rem;
+      padding: 0.35rem; background: rgba(255,253,248,0.7); border: 1px solid var(--line); border-radius: 12px;
+    }
+    .tab {
+      appearance: none; border: 1px solid transparent; background: transparent; color: var(--muted);
+      border-radius: 9px; padding: 0.55rem 0.9rem; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .tab:hover { color: var(--ink); background: #fff; }
+    .tab.active { color: #fff; background: var(--accent); border-color: transparent; }
+    .tab-count {
+      display: inline-block; min-width: 1.25rem; margin-left: 0.3rem; padding: 0.05rem 0.35rem;
+      border-radius: 999px; background: rgba(255,255,255,0.22); font-size: 0.75rem;
+    }
+    .tab:not(.active) .tab-count { background: var(--accent-soft); color: var(--accent-2); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
     .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 1.15rem 1.25rem;
-      margin-bottom: 1rem;
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 1.15rem 1.25rem; margin-bottom: 1rem;
     }
-
-    .card h2 {
-      font-family: var(--display);
-      font-size: 1.25rem;
-      margin: 0 0 0.75rem;
-      letter-spacing: -0.02em;
-    }
-
-    label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--muted);
-      margin: 0 0 0.35rem;
-    }
-
+    .card h2 { font-family: var(--display); font-size: 1.25rem; margin: 0 0 0.75rem; letter-spacing: -0.02em; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin: 0 0 0.35rem; }
     input[type="text"], textarea, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--ink);
-      border-radius: 10px;
-      padding: 0.7rem 0.85rem;
-      font: inherit;
+      width: 100%; border: 1px solid var(--line); background: #fff; color: var(--ink);
+      border-radius: 10px; padding: 0.7rem 0.85rem; font: inherit;
     }
-
     textarea { min-height: 120px; resize: vertical; }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1.4fr auto;
-      gap: 0.75rem;
-      align-items: end;
-    }
-
-    @media (max-width: 720px) {
-      .row { grid-template-columns: 1fr; }
-    }
-
+    .row { display: grid; grid-template-columns: 1.4fr auto; gap: 0.75rem; align-items: end; }
+    @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
     .btns { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.9rem; }
-
     button {
-      appearance: none;
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--ink);
-      border-radius: 10px;
-      padding: 0.65rem 1rem;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
+      appearance: none; border: 1px solid var(--line); background: #fff; color: var(--ink);
+      border-radius: 10px; padding: 0.65rem 1rem; font: inherit; font-weight: 600; cursor: pointer;
     }
-
     button:hover { border-color: var(--accent); }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
-    button.primary {
-      background: var(--accent);
-      border-color: transparent;
-      color: #fff;
-    }
+    button.primary { background: var(--accent); border-color: transparent; color: #fff; }
     button.primary:hover { background: var(--accent-2); }
     button.ghost { background: transparent; }
-
-    .hint {
-      margin: 0.65rem 0 0;
-      color: var(--muted);
-      font-size: 0.85rem;
-      line-height: 1.45;
-    }
-
+    button.danger { color: var(--high); border-color: rgba(163,59,43,0.35); }
+    .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.45; }
     .status {
-      display: none;
-      margin-top: 0.85rem;
-      padding: 0.75rem 0.9rem;
-      border-radius: 10px;
-      background: var(--accent-soft);
-      border: 1px solid rgba(31, 107, 74, 0.2);
-      color: var(--accent-2);
-      font-size: 0.9rem;
+      display: none; margin-top: 0.85rem; padding: 0.75rem 0.9rem; border-radius: 10px;
+      background: var(--accent-soft); border: 1px solid rgba(31, 107, 74, 0.2); color: var(--accent-2); font-size: 0.9rem;
     }
     .status.show { display: block; }
-    .status.err {
-      background: rgba(163, 59, 43, 0.08);
-      border-color: rgba(163, 59, 43, 0.25);
-      color: var(--high);
-    }
-
-    .progress {
-      display: none;
-      margin-top: 0.75rem;
-    }
+    .status.err { background: rgba(163, 59, 43, 0.08); border-color: rgba(163, 59, 43, 0.25); color: var(--high); }
+    .progress { display: none; margin-top: 0.75rem; }
     .progress.show { display: block; }
-    .progress-track {
-      height: 6px;
-      background: var(--bg-2);
-      border-radius: 999px;
-      overflow: hidden;
-    }
+    .progress-track { height: 6px; background: var(--bg-2); border-radius: 999px; overflow: hidden; }
     .progress-bar {
-      height: 100%;
-      width: 18%;
-      background: linear-gradient(90deg, var(--accent), #3d9a6e);
-      border-radius: 999px;
-      animation: pulse 1.2s ease-in-out infinite;
+      height: 100%; width: 18%; background: linear-gradient(90deg, var(--accent), #3d9a6e);
+      border-radius: 999px; animation: pulse 1.2s ease-in-out infinite;
     }
-    @keyframes pulse {
-      0% { width: 12%; }
-      50% { width: 72%; }
-      100% { width: 28%; }
-    }
-
+    @keyframes pulse { 0% { width: 12%; } 50% { width: 72%; } 100% { width: 28%; } }
     .kd {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      border-radius: 999px;
-      padding: 0.18rem 0.5rem;
-      border: 1px solid transparent;
+      display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; border-radius: 999px; padding: 0.18rem 0.5rem; border: 1px solid transparent;
     }
     .kd-low { color: var(--low); background: rgba(31, 107, 74, 0.1); border-color: rgba(31, 107, 74, 0.2); }
     .kd-medium { color: var(--mid); background: rgba(154, 107, 22, 0.12); border-color: rgba(154, 107, 22, 0.25); }
     .kd-high { color: var(--high); background: rgba(163, 59, 43, 0.1); border-color: rgba(163, 59, 43, 0.22); }
-
-    .kw-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 0.55rem;
-    }
-
+    .kw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.55rem; }
     .kw-chip {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 0.65rem 0.75rem;
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
+      border: 1px solid var(--line); border-radius: 12px; padding: 0.65rem 0.75rem; background: #fff;
+      display: flex; flex-direction: column; gap: 0.35rem;
     }
-
     .kw-chip strong { font-size: 0.95rem; line-height: 1.25; }
     .kw-meta { color: var(--muted); font-size: 0.78rem; }
-
-    .title-list { display: flex; flex-direction: column; gap: 0.55rem; }
+    .title-list { display: flex; flex-direction: column; gap: 0.55rem; max-height: 420px; overflow: auto; }
     .title-option {
-      width: 100%;
-      text-align: left;
-      padding: 0.85rem 1rem;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: #fff;
+      width: 100%; text-align: left; padding: 0.85rem 1rem; border-radius: 12px;
+      border: 1px solid var(--line); background: #fff;
     }
-    .title-option.active,
-    .title-option:hover {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
-    .title-option small {
-      display: block;
-      margin-top: 0.35rem;
-      color: var(--muted);
-      font-weight: 500;
-      line-height: 1.4;
-    }
-
-    .outline {
-      margin: 0;
-      padding-left: 1.1rem;
-      color: var(--ink);
-    }
+    .title-option.active, .title-option:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .title-option small { display: block; margin-top: 0.35rem; color: var(--muted); font-weight: 500; line-height: 1.4; }
+    .outline { margin: 0; padding-left: 1.1rem; }
     .outline li { margin: 0.25rem 0; }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    @media (max-width: 900px) {
-      .grid-2 { grid-template-columns: 1fr; }
-    }
-
-    .preview {
-      white-space: pre-wrap;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.84rem;
-      line-height: 1.55;
-      background: #1a1f18;
-      color: #e8efe6;
-      border-radius: 12px;
-      padding: 1rem;
-      max-height: 520px;
-      overflow: auto;
-    }
-
-    .stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin: 0.75rem 0;
-    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    .stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
     .stat {
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0.35rem 0.7rem;
-      font-size: 0.8rem;
-      color: var(--muted);
+      background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+      padding: 0.35rem 0.7rem; font-size: 0.8rem; color: var(--muted);
     }
     .stat b { color: var(--ink); }
-
     .hidden { display: none !important; }
-
-    .login-box {
-      max-width: 420px;
-      margin: 3rem auto;
+    .login-box { max-width: 420px; margin: 3rem auto; }
+    .editor-toolbar {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0.65rem;
+      padding: 0.45rem; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    }
+    .editor-toolbar button { padding: 0.4rem 0.65rem; font-size: 0.85rem; }
+    #editor-md { min-height: 360px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88rem; line-height: 1.55; }
+    .editor-preview {
+      white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.84rem; line-height: 1.55; background: #1a1f18; color: #e8efe6;
+      border-radius: 12px; padding: 1rem; max-height: 360px; overflow: auto;
+    }
+    .dropzone {
+      border: 1.5px dashed var(--line); border-radius: 12px; padding: 0.9rem; text-align: center;
+      color: var(--muted); background: #fff; cursor: pointer; margin-top: 0.55rem;
+    }
+    .dropzone.drag { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-2); }
+    .img-thumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.65rem; }
+    .img-thumbs img {
+      width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer;
     }
   </style>
 </head>
@@ -326,140 +178,226 @@
 
   <div class="wrap" id="app" hidden>
     <div class="top">
-      <div>
-        <p class="badge">Ukryty panel · tylko URL</p>
-        <h1 class="brand">WSAD <span>Blog SEO</span></h1>
-        <p class="sub">Enter a seed keyword → get 10+ English SEO titles with Low/Medium/High KD mix → pick one (or generate one more) → generate a ~2000-character blog post with intro, TOC, and key takeaways.</p>
-      </div>
+      <p class="badge">Ukryty panel · tylko URL</p>
+      <h1 class="brand">WSAD <span>Blog SEO</span></h1>
+      <p class="sub">Generate SEO titles &amp; posts in English, save titles/posts, then edit with a simple markdown editor and image inserts.</p>
     </div>
 
-    <section class="card" id="saved-posts-card">
-      <h2>Saved blog posts</h2>
-      <p class="hint" style="margin-top:0">Generated posts are saved automatically here so you can reopen them later.</p>
-      <div class="title-list" id="saved-posts"></div>
-    </section>
+    <nav class="tabs" id="main-tabs" aria-label="WSAD sections">
+      <button type="button" class="tab active" data-tab="generate">Generate</button>
+      <button type="button" class="tab" data-tab="titles">Saved titles <span class="tab-count" id="count-titles">0</span></button>
+      <button type="button" class="tab" data-tab="posts">Saved posts <span class="tab-count" id="count-posts">0</span></button>
+      <button type="button" class="tab" data-tab="editor">Editor</button>
+    </nav>
 
-    <section class="card">
-      <h2>1. Seed keyword</h2>
-      <div class="row">
-        <div>
-          <label for="seed">Keyword / topic (English output)</label>
-          <input id="seed" type="text" placeholder="e.g. ants, WordPress hosting, keto diet" autocomplete="off">
-        </div>
-        <button type="button" class="primary" id="btn-analyze">Analyze SEO</button>
-      </div>
-      <p class="hint">Analysis estimates KD, proposes at least 10 optimized English titles + meta, and a structure for search intent.</p>
-      <div class="progress" id="analyze-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
-      <div class="status" id="analyze-status"></div>
-    </section>
-
-    <section class="card hidden" id="analysis-panel">
-      <h2>2. Analysis result</h2>
-      <div class="grid-2">
-        <div>
-          <label>Search intent</label>
-          <p class="hint" id="intent" style="margin-top:0"></p>
-          <label style="margin-top:0.9rem">Keywords (KD mix)</label>
-          <div class="kw-grid" id="kw-grid"></div>
-          <label style="margin-top:0.9rem">Saved blog titles</label>
-          <div class="title-list" id="saved-titles"></div>
-        </div>
-        <div>
-          <label>Optimized titles (pick one) — <span id="title-count">0</span></label>
-          <div class="title-list" id="title-list"></div>
-          <div class="btns" style="margin-top:0.55rem">
-            <button type="button" id="btn-more-title">Give me one more</button>
-            <button type="button" class="primary" id="btn-save-title">Save title</button>
-            <button type="button" id="btn-save-all-titles">Save all titles</button>
+    <!-- GENERATE -->
+    <div class="tab-panel active" id="tab-generate">
+      <section class="card">
+        <h2>1. Seed keyword</h2>
+        <div class="row">
+          <div>
+            <label for="seed">Keyword / topic (English output)</label>
+            <input id="seed" type="text" placeholder="e.g. ants, WordPress hosting, keto diet" autocomplete="off">
           </div>
-          <label style="margin-top:0.9rem">Selected / custom title</label>
-          <input id="custom-title" type="text" placeholder="Edit or write your title">
-          <label style="margin-top:0.9rem">Meta description</label>
-          <textarea id="meta-desc" rows="3"></textarea>
+          <button type="button" class="primary" id="btn-analyze">Analyze SEO</button>
         </div>
-      </div>
-      <label style="margin-top:0.9rem">Outline (H2)</label>
-      <ol class="outline" id="outline"></ol>
-      <p class="hint" id="seo-notes"></p>
-      <div class="btns">
-        <button type="button" class="primary" id="btn-generate">Generate post (~2000 chars, EN)</button>
-        <button type="button" class="ghost" id="btn-copy-analysis">Copy analysis JSON</button>
-      </div>
-      <div class="progress" id="generate-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
-      <div class="status" id="generate-status"></div>
-    </section>
+        <p class="hint">Analysis estimates KD, proposes 10+ optimized English titles + meta, and a structure for search intent.</p>
+        <div class="progress" id="analyze-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
+        <div class="status" id="analyze-status"></div>
+      </section>
 
-    <section class="card hidden" id="post-panel">
-      <h2>3. Generated post</h2>
-      <div class="stats" id="post-stats"></div>
-      <label>Slug</label>
-      <input id="post-slug" type="text" readonly>
-      <label style="margin-top:0.7rem">Markdown</label>
-      <pre class="preview" id="post-md"></pre>
-      <div class="btns">
-        <button type="button" class="primary" id="btn-copy-md">Copy Markdown</button>
-        <button type="button" id="btn-copy-html">Copy as HTML</button>
-        <button type="button" class="ghost" id="btn-download-md">Download .md</button>
-        <button type="button" id="btn-delete-post" class="ghost">Delete saved post</button>
-      </div>
-    </section>
+      <section class="card hidden" id="analysis-panel">
+        <h2>2. Analysis result</h2>
+        <div class="grid-2">
+          <div>
+            <label>Search intent</label>
+            <p class="hint" id="intent" style="margin-top:0"></p>
+            <label style="margin-top:0.9rem">Keywords (KD mix)</label>
+            <div class="kw-grid" id="kw-grid"></div>
+          </div>
+          <div>
+            <label>Optimized titles (pick one) — <span id="title-count">0</span></label>
+            <div class="title-list" id="title-list"></div>
+            <div class="btns" style="margin-top:0.55rem">
+              <button type="button" id="btn-more-title">Give me one more</button>
+              <button type="button" class="primary" id="btn-save-title">Save title</button>
+              <button type="button" id="btn-save-all-titles">Save all titles</button>
+            </div>
+            <label style="margin-top:0.9rem">Selected / custom title</label>
+            <input id="custom-title" type="text" placeholder="Edit or write your title">
+            <label style="margin-top:0.9rem">Meta description</label>
+            <textarea id="meta-desc" rows="3"></textarea>
+          </div>
+        </div>
+        <label style="margin-top:0.9rem">Outline (H2)</label>
+        <ol class="outline" id="outline"></ol>
+        <p class="hint" id="seo-notes"></p>
+        <div class="btns">
+          <button type="button" class="primary" id="btn-generate">Generate post (~2000 chars, EN)</button>
+          <button type="button" class="ghost" id="btn-copy-analysis">Copy analysis JSON</button>
+        </div>
+        <div class="progress" id="generate-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
+        <div class="status" id="generate-status"></div>
+      </section>
+    </div>
+
+    <!-- SAVED TITLES -->
+    <div class="tab-panel" id="tab-titles">
+      <section class="card">
+        <h2>Saved titles</h2>
+        <p class="hint" style="margin-top:0">All saved titles in one place. Select one and generate a blog post from here.</p>
+        <div class="grid-2">
+          <div>
+            <label>Titles library</label>
+            <div class="title-list" id="saved-titles"></div>
+            <div class="btns">
+              <button type="button" class="danger" id="btn-delete-title">Delete selected title</button>
+            </div>
+          </div>
+          <div>
+            <label for="titles-seed">Seed</label>
+            <input id="titles-seed" type="text" placeholder="seed keyword">
+            <label for="titles-title" style="margin-top:0.7rem">Title</label>
+            <input id="titles-title" type="text" placeholder="selected title">
+            <label for="titles-meta" style="margin-top:0.7rem">Meta description</label>
+            <textarea id="titles-meta" rows="4"></textarea>
+            <div class="btns">
+              <button type="button" class="primary" id="btn-generate-from-title">Generate post from title</button>
+              <button type="button" id="btn-open-editor-blank">Open in editor (blank body)</button>
+            </div>
+            <div class="progress" id="titles-generate-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
+            <div class="status" id="titles-generate-status"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- SAVED POSTS -->
+    <div class="tab-panel" id="tab-posts">
+      <section class="card">
+        <h2>Saved blog posts</h2>
+        <p class="hint" style="margin-top:0">Generated posts are saved automatically. Click one to open it in the Editor.</p>
+        <div class="title-list" id="saved-posts"></div>
+      </section>
+    </div>
+
+    <!-- EDITOR -->
+    <div class="tab-panel" id="tab-editor">
+      <section class="card">
+        <h2>Post editor</h2>
+        <div class="stats" id="post-stats"></div>
+        <div class="grid-2">
+          <div>
+            <label for="editor-title">Title</label>
+            <input id="editor-title" type="text">
+            <label for="editor-slug" style="margin-top:0.7rem">Slug</label>
+            <input id="editor-slug" type="text">
+            <label for="editor-seed" style="margin-top:0.7rem">Seed</label>
+            <input id="editor-seed" type="text">
+          </div>
+          <div>
+            <label for="editor-meta">Meta description</label>
+            <textarea id="editor-meta" rows="5"></textarea>
+          </div>
+        </div>
+
+        <label style="margin-top:0.9rem">Content (Markdown)</label>
+        <div class="editor-toolbar">
+          <button type="button" data-md="h2">H2</button>
+          <button type="button" data-md="h3">H3</button>
+          <button type="button" data-md="bold">Bold</button>
+          <button type="button" data-md="italic">Italic</button>
+          <button type="button" data-md="ul">List</button>
+          <button type="button" data-md="link">Link</button>
+          <button type="button" data-md="image">Image markdown</button>
+          <button type="button" id="btn-upload-image">Upload image</button>
+          <input type="file" id="editor-file" accept="image/jpeg,image/png,image/webp" hidden>
+        </div>
+        <textarea id="editor-md" placeholder="Write or paste markdown…"></textarea>
+        <div class="dropzone" id="editor-drop">Drop image here or use Upload image · JPG/PNG/WEBP</div>
+        <div class="img-thumbs" id="editor-thumbs"></div>
+
+        <div class="btns">
+          <button type="button" class="primary" id="btn-save-editor">Save post</button>
+          <button type="button" id="btn-copy-md">Copy Markdown</button>
+          <button type="button" id="btn-copy-html">Copy as HTML</button>
+          <button type="button" class="ghost" id="btn-download-md">Download .md</button>
+          <button type="button" class="danger" id="btn-delete-post">Delete saved post</button>
+        </div>
+        <div class="status" id="editor-status"></div>
+
+        <label style="margin-top:1rem">Preview</label>
+        <pre class="editor-preview" id="editor-preview"></pre>
+      </section>
+    </div>
   </div>
 
-  <script src="../auth-client.js?v=wsad2"></script>
+  <script src="../auth-client.js?v=wsad3"></script>
   <script>
     (function () {
       "use strict";
-
-      var state = {
-        analysis: null,
-        selectedTitle: "",
-        post: null,
-        postId: null
-      };
 
       var LANG = "en";
       var SAVED_KEY = "wsad-saved-blog-titles";
       var SAVED_POSTS_KEY = "wsad-saved-blog-posts";
 
-      var el = {
-        authGate: document.getElementById("auth-gate"),
-        app: document.getElementById("app"),
-        seed: document.getElementById("seed"),
-        btnAnalyze: document.getElementById("btn-analyze"),
-        analyzeProgress: document.getElementById("analyze-progress"),
-        analyzeStatus: document.getElementById("analyze-status"),
-        analysisPanel: document.getElementById("analysis-panel"),
-        intent: document.getElementById("intent"),
-        kwGrid: document.getElementById("kw-grid"),
-        titleList: document.getElementById("title-list"),
-        titleCount: document.getElementById("title-count"),
-        savedTitles: document.getElementById("saved-titles"),
-        savedPosts: document.getElementById("saved-posts"),
-        customTitle: document.getElementById("custom-title"),
-        metaDesc: document.getElementById("meta-desc"),
-        outline: document.getElementById("outline"),
-        seoNotes: document.getElementById("seo-notes"),
-        btnGenerate: document.getElementById("btn-generate"),
-        btnCopyAnalysis: document.getElementById("btn-copy-analysis"),
-        btnMoreTitle: document.getElementById("btn-more-title"),
-        btnSaveTitle: document.getElementById("btn-save-title"),
-        btnSaveAllTitles: document.getElementById("btn-save-all-titles"),
-        generateProgress: document.getElementById("generate-progress"),
-        generateStatus: document.getElementById("generate-status"),
-        postPanel: document.getElementById("post-panel"),
-        postStats: document.getElementById("post-stats"),
-        postSlug: document.getElementById("post-slug"),
-        postMd: document.getElementById("post-md"),
-        btnCopyMd: document.getElementById("btn-copy-md"),
-        btnCopyHtml: document.getElementById("btn-copy-html"),
-        btnDownloadMd: document.getElementById("btn-download-md"),
-        btnDeletePost: document.getElementById("btn-delete-post"),
-        loginForm: document.getElementById("login-form"),
-        loginUser: document.getElementById("login-user"),
-        loginPass: document.getElementById("login-pass"),
-        loginBtn: document.getElementById("login-btn"),
-        loginStatus: document.getElementById("login-status")
+      var state = {
+        tab: "generate",
+        analysis: null,
+        selectedTitle: "",
+        selectedSavedTitleIdx: -1,
+        post: null,
+        postId: null,
+        images: []
       };
+
+      var el = {};
+      [
+        "auth-gate","app","login-form","login-user","login-pass","login-btn","login-status",
+        "seed","btn-analyze","analyze-progress","analyze-status","analysis-panel","intent","kw-grid",
+        "title-list","title-count","custom-title","meta-desc","outline","seo-notes",
+        "btn-more-title","btn-save-title","btn-save-all-titles","btn-generate","btn-copy-analysis",
+        "generate-progress","generate-status",
+        "saved-titles","titles-seed","titles-title","titles-meta","btn-generate-from-title",
+        "btn-open-editor-blank","btn-delete-title","titles-generate-progress","titles-generate-status",
+        "saved-posts","count-titles","count-posts",
+        "post-stats","editor-title","editor-slug","editor-seed","editor-meta","editor-md","editor-preview",
+        "editor-file","editor-drop","editor-thumbs","editor-status",
+        "btn-upload-image","btn-save-editor","btn-copy-md","btn-copy-html","btn-download-md","btn-delete-post"
+      ].forEach(function (id) {
+        var key = id.replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); });
+        el[key] = document.getElementById(id);
+      });
+      // aliases matching previous names
+      el.authGate = el.authGate;
+      el.loginForm = el.loginForm;
+      el.loginUser = el.loginUser;
+      el.loginPass = el.loginPass;
+      el.loginStatus = el.loginStatus;
+      el.btnAnalyze = el.btnAnalyze;
+      el.analyzeProgress = el.analyzeProgress;
+      el.analyzeStatus = el.analyzeStatus;
+      el.analysisPanel = el.analysisPanel;
+      el.kwGrid = el.kwGrid;
+      el.titleList = el.titleList;
+      el.titleCount = el.titleCount;
+      el.customTitle = el.customTitle;
+      el.metaDesc = el.metaDesc;
+      el.seoNotes = el.seoNotes;
+      el.btnMoreTitle = el.btnMoreTitle;
+      el.btnSaveTitle = el.btnSaveTitle;
+      el.btnSaveAllTitles = el.btnSaveAllTitles;
+      el.btnGenerate = el.btnGenerate;
+      el.btnCopyAnalysis = el.btnCopyAnalysis;
+      el.generateProgress = el.generateProgress;
+      el.generateStatus = el.generateStatus;
+      el.savedTitles = el.savedTitles;
+      el.savedPosts = el.savedPosts;
+      el.postStats = el.postStats;
+      el.btnCopyMd = el.btnCopyMd;
+      el.btnCopyHtml = el.btnCopyHtml;
+      el.btnDownloadMd = el.btnDownloadMd;
+      el.btnDeletePost = el.btnDeletePost;
 
       function showStatus(node, msg, isErr) {
         if (!node) return;
@@ -475,76 +413,84 @@
 
       function kdClass(kd) {
         var k = String(kd || "").toLowerCase();
-        if (k === "low" || k === "niski" || k === "niska") return "kd-low";
-        if (k === "high" || k === "wysoki" || k === "wysoka") return "kd-high";
+        if (k === "low") return "kd-low";
+        if (k === "high") return "kd-high";
         return "kd-medium";
       }
-
       function kdLabel(kd) {
         var k = String(kd || "").toLowerCase();
-        if (k === "low" || k === "niski" || k === "niska") return "Low KD";
-        if (k === "high" || k === "wysoki" || k === "wysoka") return "High KD";
+        if (k === "low") return "Low KD";
+        if (k === "high") return "High KD";
         return "Medium KD";
       }
-
       function escapeHtml(str) {
-        return String(str || "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
+        return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
       }
-
       function copyText(text) {
-        return navigator.clipboard.writeText(text).then(function () {
-          return true;
-        }).catch(function () {
+        return navigator.clipboard.writeText(text).catch(function () {
           var ta = document.createElement("textarea");
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          ta.remove();
-          return true;
+          ta.value = text; document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); ta.remove();
         });
       }
-
       function slugify(text) {
-        return String(text || "")
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/ł/g, "l")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 80);
+        return String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/ł/g, "l").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
       }
-
-      function countChars(text) {
-        return String(text || "").replace(/\s+/g, " ").trim().length;
-      }
-
-      function titleText(t) {
-        return typeof t === "string" ? t : ((t && t.title) || "");
-      }
-
+      function countChars(text) { return String(text || "").replace(/\s+/g, " ").trim().length; }
+      function titleText(t) { return typeof t === "string" ? t : ((t && t.title) || ""); }
       function normalizeTitleKey(title) {
-        return String(title || "")
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, " ")
-          .trim();
+        return String(title || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, " ").trim();
       }
+
+      function switchTab(name) {
+        state.tab = name;
+        document.querySelectorAll(".tab").forEach(function (t) {
+          t.classList.toggle("active", t.getAttribute("data-tab") === name);
+        });
+        document.querySelectorAll(".tab-panel").forEach(function (p) {
+          p.classList.toggle("active", p.id === "tab-" + name);
+        });
+        if (name === "titles") renderSavedTitles();
+        if (name === "posts") renderSavedPosts();
+        if (name === "editor") syncEditorPreview();
+      }
+
+      document.getElementById("main-tabs").addEventListener("click", function (e) {
+        var btn = e.target.closest(".tab");
+        if (!btn) return;
+        switchTab(btn.getAttribute("data-tab"));
+      });
+
+      function updateCounts() {
+        if (el.countTitles) el.countTitles.textContent = String(loadSavedTitles().length);
+        if (el.countPosts) el.countPosts.textContent = String(loadSavedPosts().length);
+      }
+
+      function loadSavedTitles() {
+        try { var list = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); return Array.isArray(list) ? list : []; }
+        catch (e) { return []; }
+      }
+      function persistSavedTitles(list) { localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 200))); updateCounts(); }
+      function upsertSavedTitle(list, item) {
+        var key = normalizeTitleKey(item.title);
+        list = list.filter(function (x) { return normalizeTitleKey(x.title) !== key; });
+        list.unshift(item);
+        return list;
+      }
+      function loadSavedPosts() {
+        try { var list = JSON.parse(localStorage.getItem(SAVED_POSTS_KEY) || "[]"); return Array.isArray(list) ? list : []; }
+        catch (e) { return []; }
+      }
+      function persistSavedPosts(list) { localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify(list.slice(0, 80))); updateCounts(); }
 
       function getCurrentTitles() {
         return ((state.analysis && state.analysis.titles) || []).map(titleText).filter(Boolean);
       }
-
       function getSavedTitleTexts() {
         return loadSavedTitles().map(function (item) { return item.title || ""; }).filter(Boolean);
       }
-
       function getExcludeTitles() {
         var map = {};
         getCurrentTitles().concat(getSavedTitleTexts()).forEach(function (t) {
@@ -553,115 +499,63 @@
         });
         return Object.keys(map).map(function (k) { return map[k]; });
       }
-
       function getCurrentKeywords() {
-        return ((state.analysis && state.analysis.keywords) || [])
-          .map(function (kw) { return kw.term || ""; })
-          .filter(Boolean);
+        return ((state.analysis && state.analysis.keywords) || []).map(function (kw) { return kw.term || ""; }).filter(Boolean);
       }
-
       function mergeKeywords(newKeywords) {
         if (!state.analysis) return 0;
         state.analysis.keywords = state.analysis.keywords || [];
-        var existing = new Set(state.analysis.keywords.map(function (kw) {
-          return normalizeTitleKey(kw.term || "");
-        }));
+        var existing = new Set(state.analysis.keywords.map(function (kw) { return normalizeTitleKey(kw.term || ""); }));
         var added = 0;
         (newKeywords || []).forEach(function (kw) {
           var term = (kw && kw.term) || "";
           var key = normalizeTitleKey(term);
           if (!term || !key || existing.has(key)) return;
-          state.analysis.keywords.push({
-            term: term,
-            kd: kw.kd || "medium",
-            reason: kw.reason || "Fresh keyword angle"
-          });
-          existing.add(key);
-          added += 1;
+          state.analysis.keywords.push({ term: term, kd: kw.kd || "medium", reason: kw.reason || "Fresh keyword angle" });
+          existing.add(key); added += 1;
         });
         return added;
+      }
+
+      function mdToSimpleHtml(md) {
+        return String(md || "").split(/\n\n+/).map(function (block) {
+          var t = block.trim();
+          if (!t) return "";
+          if (/^#\s+/.test(t)) return "<h1>" + escapeHtml(t.replace(/^#\s+/, "")) + "</h1>";
+          if (/^##\s+/.test(t)) return "<h2>" + escapeHtml(t.replace(/^##\s+/, "")) + "</h2>";
+          if (/^###\s+/.test(t)) return "<h3>" + escapeHtml(t.replace(/^###\s+/, "")) + "</h3>";
+          if (/^[-*]\s/m.test(t)) {
+            return "<ul>" + t.split(/\n/).filter(Boolean).map(function (line) {
+              return "<li>" + escapeHtml(line.replace(/^[-*]\s+/, "")) + "</li>";
+            }).join("") + "</ul>";
+          }
+          return "<p>" + escapeHtml(t).replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2">') + "</p>";
+        }).join("\n");
+      }
+
+      function api(path, body) {
+        if (window.AuthClient && AuthClient.getToken()) {
+          return AuthClient.apiFetch(path, { method: "POST", body: JSON.stringify(body) });
+        }
+        return fetch((window.AuthClient ? AuthClient.getApiBase() : "") + path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(body)
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error((data && data.error) || ("HTTP " + res.status));
+            return data;
+          });
+        });
       }
 
       function renderKeywords() {
         if (!el.kwGrid || !state.analysis) return;
         el.kwGrid.innerHTML = (state.analysis.keywords || []).map(function (kw) {
-          return (
-            '<div class="kw-chip">' +
-              "<strong>" + escapeHtml(kw.term) + "</strong>" +
-              '<div><span class="kd ' + kdClass(kw.kd) + '">' + kdLabel(kw.kd) + "</span></div>" +
-              '<div class="kw-meta">' + escapeHtml(kw.reason || kw.intent || "") + "</div>" +
-            "</div>"
-          );
+          return '<div class="kw-chip"><strong>' + escapeHtml(kw.term) + '</strong>' +
+            '<div><span class="kd ' + kdClass(kw.kd) + '">' + kdLabel(kw.kd) + '</span></div>' +
+            '<div class="kw-meta">' + escapeHtml(kw.reason || "") + '</div></div>';
         }).join("");
-      }
-
-      function loadSavedTitles() {
-        try {
-          var raw = localStorage.getItem(SAVED_KEY);
-          var list = raw ? JSON.parse(raw) : [];
-          return Array.isArray(list) ? list : [];
-        } catch (e) {
-          return [];
-        }
-      }
-
-      function persistSavedTitles(list) {
-        localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 200)));
-      }
-
-      function upsertSavedTitle(list, item) {
-        var key = normalizeTitleKey(item.title);
-        list = list.filter(function (x) { return normalizeTitleKey(x.title) !== key; });
-        list.unshift(item);
-        return list;
-      }
-
-      function renderSavedTitles() {
-        if (!el.savedTitles) return;
-        var list = loadSavedTitles();
-        if (!list.length) {
-          el.savedTitles.innerHTML = '<p class="hint" style="margin:0">No saved titles yet.</p>';
-          return;
-        }
-        el.savedTitles.innerHTML = list.map(function (item, idx) {
-          return (
-            '<button type="button" class="title-option" data-saved="' + idx + '">' +
-              escapeHtml(item.title || "") +
-              '<small>' + escapeHtml((item.seed || "") + (item.meta ? " · " + item.meta : "")) + "</small>" +
-            "</button>"
-          );
-        }).join("");
-        el.savedTitles.querySelectorAll("[data-saved]").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            var item = list[parseInt(btn.getAttribute("data-saved"), 10)];
-            if (!item) return;
-            state.selectedTitle = item.title || "";
-            el.customTitle.value = state.selectedTitle;
-            if (item.meta) el.metaDesc.value = item.meta;
-            if (item.seed && !el.seed.value.trim()) el.seed.value = item.seed;
-            showStatus(el.generateStatus, "Loaded saved title.");
-          });
-        });
-      }
-
-      function mdToSimpleHtml(md) {
-        return String(md || "")
-          .split(/\n\n+/)
-          .map(function (block) {
-            var t = block.trim();
-            if (!t) return "";
-            if (/^#\s+/.test(t)) return "<h1>" + escapeHtml(t.replace(/^#\s+/, "")) + "</h1>";
-            if (/^##\s+/.test(t)) return "<h2>" + escapeHtml(t.replace(/^##\s+/, "")) + "</h2>";
-            if (/^###\s+/.test(t)) return "<h3>" + escapeHtml(t.replace(/^###\s+/, "")) + "</h3>";
-            if (/^[-*]\s/m.test(t)) {
-              var items = t.split(/\n/).filter(Boolean).map(function (line) {
-                return "<li>" + escapeHtml(line.replace(/^[-*]\s+/, "")) + "</li>";
-              }).join("");
-              return "<ul>" + items + "</ul>";
-            }
-            return "<p>" + escapeHtml(t) + "</p>";
-          })
-          .join("\n");
       }
 
       function bindTitleClicks() {
@@ -670,8 +564,7 @@
           btn.addEventListener("click", function () {
             el.titleList.querySelectorAll(".title-option").forEach(function (b) { b.classList.remove("active"); });
             btn.classList.add("active");
-            var idx = parseInt(btn.getAttribute("data-idx"), 10);
-            var t = titles[idx];
+            var t = titles[parseInt(btn.getAttribute("data-idx"), 10)];
             state.selectedTitle = titleText(t);
             el.customTitle.value = state.selectedTitle;
             if (t && t.metaDescription) el.metaDesc.value = t.metaDescription;
@@ -685,13 +578,9 @@
         var activeIdx = selectLast ? titles.length - 1 : 0;
         el.titleList.innerHTML = titles.map(function (t, idx) {
           var title = titleText(t);
-          var desc = typeof t === "string" ? "" : (t.rationale || t.metaHint || "");
-          return (
-            '<button type="button" class="title-option' + (idx === activeIdx ? " active" : "") + '" data-idx="' + idx + '">' +
-              escapeHtml(title) +
-              (desc ? "<small>" + escapeHtml(desc) + "</small>" : "") +
-            "</button>"
-          );
+          var desc = typeof t === "string" ? "" : (t.rationale || "");
+          return '<button type="button" class="title-option' + (idx === activeIdx ? " active" : "") + '" data-idx="' + idx + '">' +
+            escapeHtml(title) + (desc ? "<small>" + escapeHtml(desc) + "</small>" : "") + "</button>";
         }).join("");
         if (titles[activeIdx]) {
           state.selectedTitle = titleText(titles[activeIdx]);
@@ -706,138 +595,248 @@
         el.analysisPanel.classList.remove("hidden");
         el.intent.textContent = data.intent || "—";
         el.seoNotes.textContent = data.seoNotes || "";
-
         renderKeywords();
-
         el.metaDesc.value = data.metaDescription || (data.metaDescriptions && data.metaDescriptions[0]) || "";
         el.outline.innerHTML = (data.outline || []).map(function (item) {
           return "<li>" + escapeHtml(item) + "</li>";
         }).join("");
-
         renderTitleList(false);
-        renderSavedTitles();
+        updateCounts();
       }
 
-      function renderPost(post, opts) {
-        opts = opts || {};
+      function fillEditor(post) {
         state.post = post;
-        state.postId = post.id || state.postId || null;
-        el.postPanel.classList.remove("hidden");
-        var md = post.contentMd || post.content || "";
-        el.postMd.textContent = md;
-        el.postSlug.value = post.slug || slugify(post.title || el.customTitle.value);
-        if (post.title) {
-          state.selectedTitle = post.title;
-          el.customTitle.value = post.title;
-        }
-        if (post.metaDescription) el.metaDesc.value = post.metaDescription;
-        if (post.seed && !opts.keepSeed) el.seed.value = post.seed;
-        var chars = post.charCount || countChars(md);
-        var words = post.wordCount || (md.trim() ? md.trim().split(/\s+/).length : 0);
+        state.postId = post.id || null;
+        state.images = post.images || [];
+        el.editorTitle.value = post.title || "";
+        el.editorSlug.value = post.slug || slugify(post.title || "");
+        el.editorSeed.value = post.seed || "";
+        el.editorMeta.value = post.metaDescription || "";
+        el.editorMd.value = post.contentMd || post.content || "";
+        var chars = post.charCount || countChars(el.editorMd.value);
+        var words = post.wordCount || (el.editorMd.value.trim() ? el.editorMd.value.trim().split(/\s+/).length : 0);
         el.postStats.innerHTML =
           '<span class="stat">Chars: <b>' + chars + "</b></span>" +
           '<span class="stat">Words: <b>' + words + "</b></span>" +
-          '<span class="stat">Title: <b>' + escapeHtml(post.title || el.customTitle.value) + "</b></span>" +
-          (state.postId ? '<span class="stat">Saved: <b>yes</b></span>' : "");
+          (state.postId ? '<span class="stat">Saved: <b>yes</b></span>' : '<span class="stat">Saved: <b>draft</b></span>');
+        renderThumbs();
+        syncEditorPreview();
       }
 
-      function loadSavedPosts() {
-        try {
-          var raw = localStorage.getItem(SAVED_POSTS_KEY);
-          var list = raw ? JSON.parse(raw) : [];
-          return Array.isArray(list) ? list : [];
-        } catch (e) {
-          return [];
-        }
-      }
-
-      function persistSavedPosts(list) {
-        localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify(list.slice(0, 80)));
-      }
-
-      function saveGeneratedPost(post) {
-        var title = (post.title || el.customTitle.value || "").trim();
-        var contentMd = post.contentMd || post.content || "";
-        if (!title || !contentMd) return null;
-        var id = post.id || ("post-" + Date.now());
-        var item = {
-          id: id,
+      function collectEditorPost() {
+        var title = el.editorTitle.value.trim();
+        var contentMd = el.editorMd.value;
+        return {
+          id: state.postId || ("post-" + Date.now()),
           title: title,
-          slug: post.slug || slugify(title),
-          seed: post.seed || el.seed.value.trim(),
-          metaDescription: post.metaDescription || el.metaDesc.value.trim(),
+          slug: el.editorSlug.value.trim() || slugify(title),
+          seed: el.editorSeed.value.trim(),
+          metaDescription: el.editorMeta.value.trim(),
           contentMd: contentMd,
-          charCount: post.charCount || countChars(contentMd),
-          wordCount: post.wordCount || (contentMd.trim() ? contentMd.trim().split(/\s+/).length : 0),
-          keywordsUsed: post.keywordsUsed || [],
+          charCount: countChars(contentMd),
+          wordCount: contentMd.trim() ? contentMd.trim().split(/\s+/).length : 0,
+          images: state.images || [],
           language: LANG,
           savedAt: new Date().toISOString()
         };
+      }
+
+      function saveGeneratedPost(post) {
+        var item = Object.assign({}, post);
+        item.id = item.id || ("post-" + Date.now());
+        item.title = (item.title || "").trim();
+        item.contentMd = item.contentMd || item.content || "";
+        if (!item.title || !item.contentMd) return null;
+        item.slug = item.slug || slugify(item.title);
+        item.charCount = item.charCount || countChars(item.contentMd);
+        item.wordCount = item.wordCount || (item.contentMd.trim() ? item.contentMd.trim().split(/\s+/).length : 0);
+        item.savedAt = new Date().toISOString();
+        item.language = LANG;
         var list = loadSavedPosts().filter(function (p) {
-          return p.id !== id && normalizeTitleKey(p.title) !== normalizeTitleKey(title);
+          return p.id !== item.id && normalizeTitleKey(p.title) !== normalizeTitleKey(item.title);
         });
         list.unshift(item);
         persistSavedPosts(list);
-        state.postId = id;
+        state.postId = item.id;
         return item;
       }
 
+      function syncEditorPreview() {
+        if (el.editorPreview) el.editorPreview.textContent = el.editorMd.value || "";
+      }
+
+      function insertAtCursor(textarea, before, after, placeholder) {
+        var start = textarea.selectionStart;
+        var end = textarea.selectionEnd;
+        var selected = textarea.value.slice(start, end) || placeholder || "";
+        var next = textarea.value.slice(0, start) + before + selected + (after || "") + textarea.value.slice(end);
+        textarea.value = next;
+        var pos = start + before.length + selected.length;
+        textarea.focus();
+        textarea.setSelectionRange(pos, pos);
+        syncEditorPreview();
+      }
+
+      function renderThumbs() {
+        if (!el.editorThumbs) return;
+        el.editorThumbs.innerHTML = (state.images || []).map(function (img, idx) {
+          return '<img src="' + escapeHtml(img.url || img.path || "") + '" alt="" data-img="' + idx + '" title="Insert into markdown">';
+        }).join("");
+        el.editorThumbs.querySelectorAll("[data-img]").forEach(function (img) {
+          img.addEventListener("click", function () {
+            var item = state.images[parseInt(img.getAttribute("data-img"), 10)];
+            if (!item) return;
+            var url = item.url || item.path || "";
+            insertAtCursor(el.editorMd, "\n![image](", ")\n", url);
+          });
+        });
+      }
+
+      function uploadImageFile(file) {
+        if (!file) return Promise.reject(new Error("No file"));
+        if (!window.AuthClient || !AuthClient.getToken()) {
+          return Promise.reject(new Error("Login required for image upload"));
+        }
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function () {
+            var dataUrl = reader.result;
+            var base64 = String(dataUrl).split(",")[1] || "";
+            AuthClient.apiFetch("/upload/image", {
+              method: "POST",
+              body: JSON.stringify({
+                filename: file.name || "image.jpg",
+                data: base64,
+                mime: file.type || ""
+              })
+            }).then(resolve).catch(reject);
+          };
+          reader.onerror = function () { reject(new Error("Could not read file")); };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function handleUploadedImage(result) {
+        var path = result.path || result.url || "";
+        if (!path) throw new Error("Upload returned no path");
+        var url = path;
+        if (url.indexOf("http") !== 0 && window.AuthClient) {
+          var base = AuthClient.getApiBase().replace(/\/$/, "");
+          url = base + "/" + path.replace(/^\//, "");
+        }
+        state.images = state.images || [];
+        state.images.unshift({ path: path, url: url });
+        insertAtCursor(el.editorMd, "\n![image](", ")\n", path);
+        renderThumbs();
+        showStatus(el.editorStatus, "Image uploaded and inserted.");
+      }
+
+      function renderSavedTitles() {
+        var list = loadSavedTitles();
+        updateCounts();
+        if (!list.length) {
+          el.savedTitles.innerHTML = '<p class="hint" style="margin:0">No saved titles yet. Save some from Generate.</p>';
+          return;
+        }
+        el.savedTitles.innerHTML = list.map(function (item, idx) {
+          return '<button type="button" class="title-option' + (state.selectedSavedTitleIdx === idx ? " active" : "") + '" data-saved="' + idx + '">' +
+            escapeHtml(item.title || "") +
+            "<small>" + escapeHtml((item.seed || "") + (item.meta ? " · " + item.meta : "")) + "</small></button>";
+        }).join("");
+        el.savedTitles.querySelectorAll("[data-saved]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var idx = parseInt(btn.getAttribute("data-saved"), 10);
+            var item = list[idx];
+            if (!item) return;
+            state.selectedSavedTitleIdx = idx;
+            state.selectedTitle = item.title || "";
+            el.titlesTitle.value = item.title || "";
+            el.titlesSeed.value = item.seed || "";
+            el.titlesMeta.value = item.meta || "";
+            el.customTitle.value = item.title || "";
+            el.metaDesc.value = item.meta || "";
+            if (item.seed) el.seed.value = item.seed;
+            renderSavedTitles();
+          });
+        });
+      }
+
       function renderSavedPosts() {
-        if (!el.savedPosts) return;
         var list = loadSavedPosts();
+        updateCounts();
         if (!list.length) {
           el.savedPosts.innerHTML = '<p class="hint" style="margin:0">No saved posts yet — generate one and it will appear here.</p>';
           return;
         }
         el.savedPosts.innerHTML = list.map(function (item, idx) {
           var when = item.savedAt ? String(item.savedAt).slice(0, 16).replace("T", " ") : "";
-          return (
-            '<button type="button" class="title-option' + (state.postId === item.id ? " active" : "") + '" data-saved-post="' + idx + '">' +
-              escapeHtml(item.title || "Untitled") +
-              "<small>" + escapeHtml((item.seed || "") + (when ? " · " + when : "") +
-                (item.charCount ? " · " + item.charCount + " chars" : "")) + "</small>" +
-            "</button>"
-          );
+          return '<button type="button" class="title-option' + (state.postId === item.id ? " active" : "") + '" data-saved-post="' + idx + '">' +
+            escapeHtml(item.title || "Untitled") +
+            "<small>" + escapeHtml((item.seed || "") + (when ? " · " + when : "") +
+              (item.charCount ? " · " + item.charCount + " chars" : "")) + "</small></button>";
         }).join("");
         el.savedPosts.querySelectorAll("[data-saved-post]").forEach(function (btn) {
           btn.addEventListener("click", function () {
             var item = list[parseInt(btn.getAttribute("data-saved-post"), 10)];
             if (!item) return;
-            renderPost(item, { keepSeed: false });
-            el.analysisPanel.classList.remove("hidden");
-            showStatus(el.generateStatus, "Loaded saved post.");
-            el.postPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-            renderSavedPosts();
+            fillEditor(item);
+            switchTab("editor");
+            showStatus(el.editorStatus, "Loaded saved post into editor.");
           });
         });
       }
 
-      function api(path, body) {
-        if (window.AuthClient && AuthClient.getToken()) {
-          return AuthClient.apiFetch(path, {
-            method: "POST",
-            body: JSON.stringify(body)
-          });
+      function runGenerate(opts) {
+        opts = opts || {};
+        var seed = (opts.seed || el.seed.value || el.titlesSeed.value || "").trim();
+        var title = (opts.title || el.customTitle.value || state.selectedTitle || el.titlesTitle.value || "").trim();
+        var meta = (opts.meta || el.metaDesc.value || el.titlesMeta.value || "").trim();
+        var statusEl = opts.statusEl || el.generateStatus;
+        var progressEl = opts.progressEl || el.generateProgress;
+        var btn = opts.btn || el.btnGenerate;
+        if (!title) {
+          showStatus(statusEl, "Pick or type a title.", true);
+          return;
         }
-        return fetch((window.AuthClient ? AuthClient.getApiBase() : "") + path, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify(body)
-        }).then(function (res) {
-          return res.json().then(function (data) {
-            if (!res.ok) throw new Error((data && data.error) || ("HTTP " + res.status));
-            return data;
-          });
+        if (!seed) seed = title.split(/[:\-–—]/)[0].trim() || title;
+        setBusy(progressEl, true, btn);
+        showStatus(statusEl, "Generating English SEO post (~2000 chars)…");
+        var analysis = state.analysis || {
+          primaryKeyword: seed,
+          keywords: [{ term: seed, kd: "medium", reason: "Seed" }],
+          outline: ["Introduction", "What it is", "How it works", "Key takeaways"]
+        };
+        api("/api/wsad/generate", {
+          seed: seed,
+          title: title,
+          metaDescription: meta,
+          analysis: analysis,
+          targetChars: 2000,
+          language: LANG
+        }).then(function (data) {
+          var post = data.post || data;
+          post.seed = post.seed || seed;
+          post.metaDescription = post.metaDescription || meta;
+          post.title = post.title || title;
+          var saved = saveGeneratedPost(post);
+          fillEditor(saved || post);
+          renderSavedPosts();
+          showStatus(statusEl, "Post ready and saved.");
+          switchTab("editor");
+        }).catch(function (err) {
+          showStatus(statusEl, err.message || "Generation failed", true);
+        }).finally(function () {
+          setBusy(progressEl, false, btn);
         });
       }
 
       function bootApp() {
         el.authGate.hidden = true;
         el.app.hidden = false;
+        updateCounts();
         renderSavedTitles();
         renderSavedPosts();
       }
-
       function showLogin(msg) {
         el.app.hidden = true;
         el.authGate.hidden = false;
@@ -848,9 +847,7 @@
         el.loginForm.addEventListener("submit", function (e) {
           e.preventDefault();
           if (!window.AuthClient) return;
-          AuthClient.login(el.loginUser.value.trim(), el.loginPass.value).then(function () {
-            bootApp();
-          }).catch(function (err) {
+          AuthClient.login(el.loginUser.value.trim(), el.loginPass.value).then(bootApp).catch(function (err) {
             showStatus(el.loginStatus, err.message || "Login failed", true);
           });
         });
@@ -858,165 +855,116 @@
 
       el.btnAnalyze.addEventListener("click", function () {
         var seed = el.seed.value.trim();
-        if (!seed) {
-          showStatus(el.analyzeStatus, "Enter a seed keyword.", true);
-          return;
-        }
+        if (!seed) { showStatus(el.analyzeStatus, "Enter a seed keyword.", true); return; }
         setBusy(el.analyzeProgress, true, el.btnAnalyze);
         showStatus(el.analyzeStatus, "Analyzing SEO + KD (English)…");
-        api("/api/wsad/analyze", {
-          seed: seed,
-          language: LANG,
-          excludeTitles: getSavedTitleTexts()
-        })
+        api("/api/wsad/analyze", { seed: seed, language: LANG, excludeTitles: getSavedTitleTexts() })
           .then(function (data) {
             renderAnalysis(data.analysis || data);
             var n = ((state.analysis && state.analysis.titles) || []).length;
-            var skipped = getSavedTitleTexts().length;
-            showStatus(
-              el.analyzeStatus,
-              "Done — " + n + " new titles" + (skipped ? " (skipped " + skipped + " saved)" : "") + ". Pick one or click Give me one more."
-            );
+            showStatus(el.analyzeStatus, "Done — " + n + " titles ready.");
             el.analysisPanel.scrollIntoView({ behavior: "smooth", block: "start" });
           })
-          .catch(function (err) {
-            showStatus(el.analyzeStatus, err.message || "Analysis failed", true);
-          })
-          .finally(function () {
-            setBusy(el.analyzeProgress, false, el.btnAnalyze);
-          });
+          .catch(function (err) { showStatus(el.analyzeStatus, err.message || "Analysis failed", true); })
+          .finally(function () { setBusy(el.analyzeProgress, false, el.btnAnalyze); });
       });
 
       el.btnMoreTitle.addEventListener("click", function () {
         var seed = el.seed.value.trim();
-        if (!seed || !state.analysis) {
-          showStatus(el.generateStatus, "Run analysis first.", true);
-          return;
-        }
+        if (!seed || !state.analysis) { showStatus(el.generateStatus, "Run analysis first.", true); return; }
         var existing = getExcludeTitles();
-        var existingKw = getCurrentKeywords();
         setBusy(null, true, el.btnMoreTitle);
         showStatus(el.generateStatus, "Generating one more unique title + fresh keywords…");
         api("/api/wsad/title-more", {
-          seed: seed,
-          language: LANG,
-          excludeTitles: existing,
-          excludeKeywords: existingKw,
-          analysis: state.analysis
-        })
-          .then(function (data) {
-            var t = data.title || data;
-            var title = titleText(t);
-            if (!title) throw new Error("Empty title");
-            var dup = existing.some(function (x) {
-              return normalizeTitleKey(x) === normalizeTitleKey(title);
-            });
-            if (dup) throw new Error("Duplicate title returned — try again");
-            state.analysis.titles = state.analysis.titles || [];
-            state.analysis.titles.push({
-              title: title,
-              rationale: t.rationale || "Extra unique title",
-              metaDescription: t.metaDescription || ""
-            });
-            var kwAdded = mergeKeywords(t.keywords || []);
-            if (t.metaDescription) el.metaDesc.value = t.metaDescription;
-            renderKeywords();
-            renderTitleList(true);
-            showStatus(
-              el.generateStatus,
-              "Added unique title (" + state.analysis.titles.length + " total)" +
-                (kwAdded ? " + " + kwAdded + " new keyword" + (kwAdded === 1 ? "" : "s") : "") +
-                ". Checked against saved titles too."
-            );
-          })
-          .catch(function (err) {
-            showStatus(el.generateStatus, err.message || "Could not add title", true);
-          })
-          .finally(function () {
-            setBusy(null, false, el.btnMoreTitle);
+          seed: seed, language: LANG, excludeTitles: existing,
+          excludeKeywords: getCurrentKeywords(), analysis: state.analysis
+        }).then(function (data) {
+          var t = data.title || data;
+          var title = titleText(t);
+          if (!title) throw new Error("Empty title");
+          if (existing.some(function (x) { return normalizeTitleKey(x) === normalizeTitleKey(title); })) {
+            throw new Error("Duplicate title returned — try again");
+          }
+          state.analysis.titles = state.analysis.titles || [];
+          state.analysis.titles.push({
+            title: title, rationale: t.rationale || "Extra unique title", metaDescription: t.metaDescription || ""
           });
+          var kwAdded = mergeKeywords(t.keywords || []);
+          if (t.metaDescription) el.metaDesc.value = t.metaDescription;
+          renderKeywords();
+          renderTitleList(true);
+          showStatus(el.generateStatus, "Added unique title" + (kwAdded ? " + " + kwAdded + " keywords" : "") + ".");
+        }).catch(function (err) {
+          showStatus(el.generateStatus, err.message || "Could not add title", true);
+        }).finally(function () { setBusy(null, false, el.btnMoreTitle); });
       });
 
       el.btnSaveTitle.addEventListener("click", function () {
         var title = (el.customTitle.value || state.selectedTitle || "").trim();
-        if (!title) {
-          showStatus(el.generateStatus, "Select or type a title first.", true);
-          return;
-        }
-        var list = upsertSavedTitle(loadSavedTitles(), {
-          title: title,
-          seed: el.seed.value.trim(),
-          meta: el.metaDesc.value.trim(),
-          savedAt: new Date().toISOString()
-        });
-        persistSavedTitles(list);
+        if (!title) { showStatus(el.generateStatus, "Select or type a title first.", true); return; }
+        persistSavedTitles(upsertSavedTitle(loadSavedTitles(), {
+          title: title, seed: el.seed.value.trim(), meta: el.metaDesc.value.trim(), savedAt: new Date().toISOString()
+        }));
         renderSavedTitles();
-        showStatus(el.generateStatus, "Title saved for blog.");
+        showStatus(el.generateStatus, "Title saved — see Saved titles tab.");
       });
 
       el.btnSaveAllTitles.addEventListener("click", function () {
         var titles = (state.analysis && state.analysis.titles) || [];
-        if (!titles.length) {
-          showStatus(el.generateStatus, "No titles to save — run analysis first.", true);
-          return;
-        }
-        var seed = el.seed.value.trim();
-        var defaultMeta = el.metaDesc.value.trim();
+        if (!titles.length) { showStatus(el.generateStatus, "No titles to save.", true); return; }
         var list = loadSavedTitles();
         var saved = 0;
         titles.forEach(function (t) {
           var title = titleText(t).trim();
           if (!title) return;
           list = upsertSavedTitle(list, {
-            title: title,
-            seed: seed,
-            meta: (t && t.metaDescription) || defaultMeta,
-            rationale: (t && t.rationale) || "",
-            savedAt: new Date().toISOString()
+            title: title, seed: el.seed.value.trim(),
+            meta: (t && t.metaDescription) || el.metaDesc.value.trim(),
+            rationale: (t && t.rationale) || "", savedAt: new Date().toISOString()
           });
           saved += 1;
         });
         persistSavedTitles(list);
         renderSavedTitles();
-        showStatus(el.generateStatus, "Saved all " + saved + " titles for blog.");
+        showStatus(el.generateStatus, "Saved all " + saved + " titles — open Saved titles tab.");
       });
 
-      el.btnGenerate.addEventListener("click", function () {
-        if (!state.analysis) {
-          showStatus(el.generateStatus, "Run analysis first.", true);
-          return;
-        }
-        var title = (el.customTitle.value || state.selectedTitle || "").trim();
-        if (!title) {
-          showStatus(el.generateStatus, "Pick or type a title.", true);
-          return;
-        }
-        setBusy(el.generateProgress, true, el.btnGenerate);
-        showStatus(el.generateStatus, "Generating English SEO post (~2000 chars)…");
-        api("/api/wsad/generate", {
-          seed: el.seed.value.trim(),
+      el.btnGenerate.addEventListener("click", function () { runGenerate({}); });
+      el.btnGenerateFromTitle.addEventListener("click", function () {
+        runGenerate({
+          seed: el.titlesSeed.value.trim(),
+          title: el.titlesTitle.value.trim(),
+          meta: el.titlesMeta.value.trim(),
+          statusEl: el.titlesGenerateStatus,
+          progressEl: el.titlesGenerateProgress,
+          btn: el.btnGenerateFromTitle
+        });
+      });
+
+      el.btnOpenEditorBlank.addEventListener("click", function () {
+        var title = el.titlesTitle.value.trim();
+        if (!title) { showStatus(el.titlesGenerateStatus, "Select a title first.", true); return; }
+        fillEditor({
           title: title,
-          metaDescription: el.metaDesc.value.trim(),
-          analysis: state.analysis,
-          targetChars: 2000,
-          language: LANG
-        })
-          .then(function (data) {
-            var post = data.post || data;
-            post.seed = post.seed || el.seed.value.trim();
-            post.metaDescription = post.metaDescription || el.metaDesc.value.trim();
-            var saved = saveGeneratedPost(post);
-            renderPost(saved || post);
-            renderSavedPosts();
-            showStatus(el.generateStatus, "Post ready and saved — you can reopen it anytime from Saved blog posts.");
-            el.postPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-          })
-          .catch(function (err) {
-            showStatus(el.generateStatus, err.message || "Generation failed", true);
-          })
-          .finally(function () {
-            setBusy(el.generateProgress, false, el.btnGenerate);
-          });
+          slug: slugify(title),
+          seed: el.titlesSeed.value.trim(),
+          metaDescription: el.titlesMeta.value.trim(),
+          contentMd: "# " + title + "\n\n"
+        });
+        switchTab("editor");
+      });
+
+      el.btnDeleteTitle.addEventListener("click", function () {
+        var title = el.titlesTitle.value.trim();
+        if (!title) return;
+        persistSavedTitles(loadSavedTitles().filter(function (t) {
+          return normalizeTitleKey(t.title) !== normalizeTitleKey(title);
+        }));
+        el.titlesTitle.value = "";
+        el.titlesMeta.value = "";
+        state.selectedSavedTitleIdx = -1;
+        renderSavedTitles();
+        showStatus(el.titlesGenerateStatus, "Title deleted.");
       });
 
       el.btnCopyAnalysis.addEventListener("click", function () {
@@ -1026,63 +974,98 @@
         });
       });
 
+      document.querySelector(".editor-toolbar").addEventListener("click", function (e) {
+        var btn = e.target.closest("button[data-md]");
+        if (!btn) return;
+        var cmd = btn.getAttribute("data-md");
+        if (cmd === "h2") insertAtCursor(el.editorMd, "\n## ", "\n", "Heading");
+        if (cmd === "h3") insertAtCursor(el.editorMd, "\n### ", "\n", "Heading");
+        if (cmd === "bold") insertAtCursor(el.editorMd, "**", "**", "bold");
+        if (cmd === "italic") insertAtCursor(el.editorMd, "*", "*", "italic");
+        if (cmd === "ul") insertAtCursor(el.editorMd, "\n- ", "\n", "item");
+        if (cmd === "link") insertAtCursor(el.editorMd, "[", "](https://)", "text");
+        if (cmd === "image") insertAtCursor(el.editorMd, "![", "](media/posty/example.jpg)", "alt");
+      });
+
+      el.editorMd.addEventListener("input", syncEditorPreview);
+      el.btnUploadImage.addEventListener("click", function () { el.editorFile.click(); });
+      el.editorFile.addEventListener("change", function () {
+        var file = el.editorFile.files && el.editorFile.files[0];
+        if (!file) return;
+        showStatus(el.editorStatus, "Uploading image…");
+        uploadImageFile(file).then(handleUploadedImage).catch(function (err) {
+          showStatus(el.editorStatus, err.message || "Upload failed", true);
+        }).finally(function () { el.editorFile.value = ""; });
+      });
+
+      ["dragenter","dragover"].forEach(function (ev) {
+        el.editorDrop.addEventListener(ev, function (e) {
+          e.preventDefault(); el.editorDrop.classList.add("drag");
+        });
+      });
+      ["dragleave","drop"].forEach(function (ev) {
+        el.editorDrop.addEventListener(ev, function (e) {
+          e.preventDefault(); el.editorDrop.classList.remove("drag");
+        });
+      });
+      el.editorDrop.addEventListener("drop", function (e) {
+        var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!file) return;
+        showStatus(el.editorStatus, "Uploading image…");
+        uploadImageFile(file).then(handleUploadedImage).catch(function (err) {
+          showStatus(el.editorStatus, err.message || "Upload failed", true);
+        });
+      });
+      el.editorDrop.addEventListener("click", function () { el.editorFile.click(); });
+
+      el.btnSaveEditor.addEventListener("click", function () {
+        var post = collectEditorPost();
+        if (!post.title || !post.contentMd.trim()) {
+          showStatus(el.editorStatus, "Title and content required.", true);
+          return;
+        }
+        var saved = saveGeneratedPost(post);
+        fillEditor(saved);
+        renderSavedPosts();
+        showStatus(el.editorStatus, "Post saved.");
+      });
+
       el.btnCopyMd.addEventListener("click", function () {
-        if (!state.post) return;
-        copyText(state.post.contentMd || "").then(function () {
-          showStatus(el.generateStatus, "Markdown copied.");
-        });
+        copyText(el.editorMd.value || "").then(function () { showStatus(el.editorStatus, "Markdown copied."); });
       });
-
       el.btnCopyHtml.addEventListener("click", function () {
-        if (!state.post) return;
-        copyText(mdToSimpleHtml(state.post.contentMd || "")).then(function () {
-          showStatus(el.generateStatus, "HTML copied.");
-        });
+        copyText(mdToSimpleHtml(el.editorMd.value || "")).then(function () { showStatus(el.editorStatus, "HTML copied."); });
       });
-
       el.btnDownloadMd.addEventListener("click", function () {
-        if (!state.post) return;
-        var blob = new Blob([state.post.contentMd || ""], { type: "text/markdown;charset=utf-8" });
+        var blob = new Blob([el.editorMd.value || ""], { type: "text/markdown;charset=utf-8" });
         var a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = (el.postSlug.value || "post") + ".md";
+        a.download = (el.editorSlug.value || "post") + ".md";
         a.click();
         URL.revokeObjectURL(a.href);
       });
-
-      if (el.btnDeletePost) {
-        el.btnDeletePost.addEventListener("click", function () {
-          if (!state.postId) {
-            showStatus(el.generateStatus, "This post is not in saved list.", true);
-            return;
-          }
-          if (!confirm("Delete this saved post?")) return;
-          persistSavedPosts(loadSavedPosts().filter(function (p) { return p.id !== state.postId; }));
-          state.postId = null;
-          renderSavedPosts();
-          showStatus(el.generateStatus, "Saved post deleted.");
-        });
-      }
+      el.btnDeletePost.addEventListener("click", function () {
+        if (!state.postId) { showStatus(el.editorStatus, "Nothing saved to delete.", true); return; }
+        if (!confirm("Delete this saved post?")) return;
+        persistSavedPosts(loadSavedPosts().filter(function (p) { return p.id !== state.postId; }));
+        state.postId = null;
+        renderSavedPosts();
+        showStatus(el.editorStatus, "Saved post deleted.");
+      });
 
       el.seed.addEventListener("keydown", function (e) {
         if (e.key === "Enter") el.btnAnalyze.click();
       });
 
       function start() {
-        if (!window.AuthClient) {
-          bootApp();
-          return;
-        }
+        if (!window.AuthClient) { bootApp(); return; }
         AuthClient.checkHealth().then(function (h) {
           if (!h.reachable || !h.auth) {
             bootApp();
-            showStatus(el.analyzeStatus, "API/auth unavailable — log in on the Node server with Bedrock for WSAD endpoints.", true);
+            showStatus(el.analyzeStatus, "API/auth unavailable — log in on Node with Bedrock for full WSAD.", true);
             return;
           }
-          if (!AuthClient.getToken()) {
-            showLogin("");
-            return;
-          }
+          if (!AuthClient.getToken()) { showLogin(""); return; }
           AuthClient.requireAuth({ redirect: false }).then(bootApp).catch(function () {
             showLogin("Session expired — log in again.");
           });
