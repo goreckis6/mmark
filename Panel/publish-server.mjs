@@ -669,29 +669,33 @@ async function wsadGenerateWithAi(payload) {
   const title = payload.title;
   const meta = payload.metaDescription || "";
   const analysis = payload.analysis || {};
-  const target = Number(payload.targetChars) || 2000;
+  const targetWords = Math.min(2000, Math.max(800, Number(payload.targetWords) || Number(payload.targetChars) || 2000));
   const lang = (payload.language || "en").toLowerCase();
   const kws = (analysis.keywords || []).map(function (k) { return k.term + " [" + k.kd + "]"; }).join("; ");
   const system =
-    "You are an SEO copywriter for 2026. Write naturally in " +
-    (lang === "pl" ? "Polish" : "English") +
-    ", without keyword stuffing, with strong semantic coverage (entities, synonyms, PAA). " +
-    "Return ONLY JSON.";
+    "You are an expert SEO blog writer for 2026 (Google + AI Overviews). " +
+    "Every article you write must be a complete, publish-ready, SEO-optimized blog post. " +
+    "Write naturally in " + (lang === "pl" ? "Polish" : "English") +
+    ", without keyword stuffing, with strong semantic coverage (entities, synonyms, PAA), " +
+    "clear H2/H3 hierarchy, scannable sections, and practical value. Return ONLY JSON.";
   const prompt =
-    "Generate a blog post.\n" +
+    "Generate ONE fully optimized blog post.\n" +
     "Language: " + lang + "\n" +
     "Seed: " + seed + "\n" +
     "Title: " + title + "\n" +
     "Meta: " + meta + "\n" +
-    "Keywords (use a mix): " + kws + "\n" +
+    "Keywords (use a natural mix of low/medium/high KD): " + kws + "\n" +
     "Outline: " + JSON.stringify(analysis.outline || []) + "\n" +
-    "Target contentMd length: " + target + " characters (±15%).\n\n" +
-    "contentMd Markdown structure:\n" +
-    "1) Short intro answering search intent\n" +
+    "HARD LIMIT: maximum " + targetWords + " words in contentMd (aim 1600–" + targetWords + " words; never exceed " + targetWords + ").\n" +
+    "Count words carefully. Do NOT stop at character length — this is a WORDS limit.\n\n" +
+    "contentMd Markdown structure (required):\n" +
+    "1) Strong intro answering search intent early\n" +
     "2) ## Table of contents\n" +
-    "3) ## Key takeaways (3-5 bullets)\n" +
-    "4) Topic expansion in H2/H3 with keywords\n" +
-    "5) Closing CTA\n\n" +
+    "3) ## Key takeaways (4-6 bullets)\n" +
+    "4) Multiple H2/H3 sections expanding the topic with keywords, examples, and actionable advice\n" +
+    "5) FAQ section (3-5 questions) when useful\n" +
+    "6) Closing summary + soft CTA\n\n" +
+    "SEO quality bar: intent match, E-E-A-T signals, readable paragraphs, no fluff, no keyword stuffing.\n\n" +
     "JSON schema:\n" +
     "{\n" +
     "  \"title\": string,\n" +
@@ -702,12 +706,12 @@ async function wsadGenerateWithAi(payload) {
     "  \"wordCount\": number,\n" +
     "  \"keywordsUsed\": [string]\n" +
     "}";
-  const text = await invokeBedrock({ system, prompt, maxTokens: 5000 });
+  const text = await invokeBedrock({ system, prompt, maxTokens: 8192 });
   const parsed = extractJsonObject(text);
   if (!parsed.contentMd) throw new Error("Missing contentMd in model response");
   parsed.slug = parsed.slug || slugifyPl(parsed.title || title);
   parsed.charCount = parsed.charCount || countVisibleChars(parsed.contentMd);
-  parsed.wordCount = parsed.wordCount || parsed.contentMd.trim().split(/\s+/).length;
+  parsed.wordCount = parsed.wordCount || parsed.contentMd.trim().split(/\s+/).filter(Boolean).length;
   return parsed;
 }
 
@@ -1016,7 +1020,7 @@ export function createApp() {
       title,
       metaDescription: String((req.body && req.body.metaDescription) || "").trim(),
       analysis: (req.body && req.body.analysis) || fallbackWsadAnalysis(seed, language),
-      targetChars: Number(req.body && req.body.targetChars) || 2000,
+      targetWords: Number(req.body && (req.body.targetWords || req.body.targetChars)) || 2000,
       language
     };
     try {

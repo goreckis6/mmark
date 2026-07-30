@@ -180,7 +180,7 @@
     <div class="top">
       <p class="badge">Ukryty panel · tylko URL</p>
       <h1 class="brand">WSAD <span>Blog SEO</span></h1>
-      <p class="sub">Generate SEO titles &amp; posts in English, save titles/posts, then edit with a simple markdown editor and image inserts.</p>
+      <p class="sub">Generate SEO titles &amp; optimized blog posts in English (max 2000 words each), save titles/posts, then edit with markdown and image inserts.</p>
     </div>
 
     <nav class="tabs" id="main-tabs" aria-label="WSAD sections">
@@ -233,7 +233,7 @@
         <ol class="outline" id="outline"></ol>
         <p class="hint" id="seo-notes"></p>
         <div class="btns">
-          <button type="button" class="primary" id="btn-generate">Generate post (~2000 chars, EN)</button>
+          <button type="button" class="primary" id="btn-generate">Generate post (max 2000 words, EN)</button>
           <button type="button" class="ghost" id="btn-copy-analysis">Copy analysis JSON</button>
         </div>
         <div class="progress" id="generate-progress"><div class="progress-track"><div class="progress-bar"></div></div></div>
@@ -773,7 +773,7 @@
           return '<button type="button" class="title-option' + (state.postId === item.id ? " active" : "") + '" data-saved-post="' + idx + '">' +
             escapeHtml(item.title || "Untitled") +
             "<small>" + escapeHtml((item.seed || "") + (when ? " · " + when : "") +
-              (item.charCount ? " · " + item.charCount + " chars" : "")) + "</small></button>";
+              (item.wordCount ? " · " + item.wordCount + " words" : (item.charCount ? " · " + item.charCount + " chars" : ""))) + "</small></button>";
         }).join("");
         el.savedPosts.querySelectorAll("[data-saved-post]").forEach(function (btn) {
           btn.addEventListener("click", function () {
@@ -800,7 +800,7 @@
         }
         if (!seed) seed = title.split(/[:\-–—]/)[0].trim() || title;
         setBusy(progressEl, true, btn);
-        showStatus(statusEl, "Generating English SEO post (~2000 chars)…");
+        showStatus(statusEl, "Generating optimized English blog post (max 2000 words)…");
         var analysis = state.analysis || {
           primaryKeyword: seed,
           keywords: [{ term: seed, kd: "medium", reason: "Seed" }],
@@ -811,7 +811,7 @@
           title: title,
           metaDescription: meta,
           analysis: analysis,
-          targetChars: 2000,
+          targetWords: 2000,
           language: LANG
         }).then(function (data) {
           var post = data.post || data;
