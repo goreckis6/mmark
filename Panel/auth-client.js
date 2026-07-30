@@ -13,11 +13,22 @@
     return "";
   }
 
-  function getLoginUrl() {
-    return getAppBase() + "/login.html";
+  function getLoginUrl(nextPath) {
+    var base = getAppBase() + "/login.html";
+    if (nextPath && nextPath !== "/" && !/login\.html$/i.test(nextPath)) {
+      return base + "?next=" + encodeURIComponent(nextPath);
+    }
+    return base;
   }
 
   function getHomeUrl() {
+    try {
+      var params = new URLSearchParams(global.location.search || "");
+      var next = params.get("next");
+      if (next && next.charAt(0) === "/" && next.indexOf("//") === -1 && !/login\.html$/i.test(next)) {
+        return next;
+      }
+    } catch (e) { /* ignore */ }
     return getAppBase() + "/";
   }
 
@@ -108,7 +119,7 @@
         if (res.status === 401 && path !== "/auth/login") {
           clearSession();
           if (isServerMode() && !/login\.html$/i.test(global.location.pathname)) {
-            global.location.href = getLoginUrl();
+            global.location.href = getLoginUrl(global.location.pathname + (global.location.search || ""));
           }
         }
         if (!res.ok) {
@@ -147,7 +158,7 @@
     var redirect = options.redirect !== false;
     if (!getToken()) {
       if (redirect && isServerMode() && !/login\.html$/i.test(global.location.pathname)) {
-        global.location.href = getLoginUrl();
+        global.location.href = getLoginUrl(global.location.pathname + (global.location.search || ""));
       }
       return Promise.reject(new Error("redirect"));
     }
@@ -156,7 +167,7 @@
       return data.user;
     }).catch(function (err) {
       if (redirect && err.message !== "redirect" && isServerMode()) {
-        global.location.href = getLoginUrl();
+        global.location.href = getLoginUrl(global.location.pathname + (global.location.search || ""));
       }
       throw err;
     });

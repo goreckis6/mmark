@@ -209,6 +209,235 @@ async function translateText({ text, sourceLang, targetLang }) {
   return invokeBedrock({ system, prompt, maxTokens: 4096 });
 }
 
+function extractJsonObject(text) {
+  const raw = String(text || "").trim();
+  if (!raw) throw new Error("Pusta odpowiedź modelu");
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = (fenced ? fenced[1] : raw).trim();
+  try {
+    return JSON.parse(candidate);
+  } catch (e) {
+    const start = candidate.indexOf("{");
+    const end = candidate.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      return JSON.parse(candidate.slice(start, end + 1));
+    }
+    throw new Error("Nie udało się sparsować JSON z odpowiedzi AI");
+  }
+}
+
+function estimateKd(term) {
+  const t = String(term || "").trim().toLowerCase();
+  const words = t.split(/\s+/).filter(Boolean);
+  const commercial = /(najlepszy|cena|kup|sklep|ranking|porownanie|vs|opinie)/i.test(t);
+  if (words.length >= 4 || /(jak |co to |dlaczego |czy |poradnik|krok po kroku)/i.test(t)) {
+    return commercial ? "medium" : "low";
+  }
+  if (words.length === 1) return commercial ? "high" : "high";
+  if (words.length === 2) return commercial ? "high" : "medium";
+  return "medium";
+}
+
+function slugifyPl(text) {
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ł/g, "l")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function countVisibleChars(text) {
+  return String(text || "").replace(/\s+/g, " ").trim().length;
+}
+
+function fallbackWsadAnalysis(seed) {
+  const s = String(seed || "").trim();
+  const keywords = [
+    { term: s, kd: estimateKd(s), reason: "Hasło główne — zwykle wyższa konkurencja" },
+    { term: s + " — co to jest", kd: "low", reason: "Long-tail definicja, łatwiejsze wejście" },
+    { term: "jak " + s + " działa", kd: "low", reason: "Intencja informacyjna, niski KD" },
+    { term: s + " w praktyce", kd: "medium", reason: "Środek lejka, umiarkowana konkurencja" },
+    { term: "najczęstsze błędy " + s, kd: "low", reason: "Problem-aware long-tail" },
+    { term: s + " ranking", kd: "high", reason: "Komercyjne / porównawcze — wysoki KD" },
+    { term: s + " poradnik 2026", kd: "medium", reason: "Freshness + poradnik, medium KD" },
+    { term: "czy warto " + s, kd: "medium", reason: "Decyzyjne zapytanie" }
+  ];
+  return {
+    seed: s,
+    intent: "Informacyjna z elementami komercyjnymi — użytkownik chce zrozumieć temat \"" + s + "\" i dostać praktyczne wnioski.",
+    primaryKeyword: s,
+    keywords,
+    titles: [
+      {
+        title: s + ": kompletny poradnik na 2026 (praktycznie i bez ściemy)",
+        rationale: "Rok + obietnica praktyki, dobry CTR"
+      },
+      {
+        title: "Jak działa " + s + "? Wyjaśnienie, przykłady i kluczowe wnioski",
+        rationale: "Pytanie w tytule + featured snippet"
+      },
+      {
+        title: s + " — co warto wiedzieć, zanim zaczniesz",
+        rationale: "Beginner intent, niższy KD"
+      },
+      {
+        title: "Najczęstsze błędy przy: " + s + " (i jak ich uniknąć)",
+        rationale: "Problem-solution, wysoki engagement"
+      },
+      {
+        title: s + " w praktyce: checklista i kluczowe takeaways",
+        rationale: "Checklist + AI Overviews friendly"
+      }
+    ],
+    metaDescription:
+      "Sprawdź, czym jest " + s + ", jak działa w praktyce i jakie błędy omijać. Krótki przewodnik SEO 2026 z key takeaways.",
+    metaDescriptions: [
+      "Sprawdź, czym jest " + s + ", jak działa w praktyce i jakie błędy omijać. Krótki przewodnik SEO 2026 z key takeaways.",
+      s + " — definicja, przykłady i konkretne wnioski. Przewodnik zoptymalizowany pod intencję wyszukiwania."
+    ],
+    outline: [
+      "Wprowadzenie: dlaczego " + s + " ma znaczenie",
+      "Co to jest " + s + " (prosto i konkretnie)",
+      "Jak " + s + " działa w praktyce",
+      "Najczęstsze błędy i jak ich uniknąć",
+      "Key takeaways / checklista"
+    ],
+    seoNotes:
+      "Mix KD: 1× high (główne + ranking), 3× medium, 4× low long-tail. Struktura pod AI Overviews: definicja, lista wniosków, jasne H2. Unikaj keyword stuffingu — naturalne powtórzenia frazy głównej + synonimy/entity."
+  };
+}
+
+function fallbackWsadPost({ seed, title, metaDescription, analysis }) {
+  const s = seed || (analysis && analysis.primaryKeyword) || "temat";
+  const t = title || (s + " — poradnik");
+  const kws = ((analysis && analysis.keywords) || [])
+    .map(function (k) { return k.term; })
+    .filter(Boolean)
+    .slice(0, 6);
+  const body =
+    "# " + t + "\n\n" +
+    metaDescription + "\n\n" +
+    "W tym artykule zbieramy praktyczną wiedzę o **" + s + "**: czym jest, jak podejść do tematu w 2026 i które wnioski realnie pomagają w decyzjach.\n\n" +
+    "## Spis treści\n\n" +
+    "1. Czym jest " + s + "\n" +
+    "2. Jak " + s + " działa w praktyce\n" +
+    "3. Najczęstsze błędy\n" +
+    "4. Key takeaways\n\n" +
+    "## Key takeaways\n\n" +
+    "- Zrozum intencję: użytkownicy szukają \"" + s + "\" zwykle po definicję i praktyczne wskazówki.\n" +
+    "- Buduj autorytet tematyczny: odpowiadaj na pytania pokrewne (" + (kws.slice(1, 4).join(", ") || "long-tail") + ").\n" +
+    "- Mieszaj frazy low/medium/high KD zamiast celować tylko w najtrudniejsze hasło.\n" +
+    "- Pisz konkretnie: przykłady, checklisty i wnioski zwiększają szansę na wyróżnienie w wynikach.\n\n" +
+    "## Czym jest " + s + "\n\n" +
+    s.charAt(0).toUpperCase() + s.slice(1) +
+    " to temat, wokół którego warto zebrać definicję, kontekst i zastosowania. Dobry wpis łączy język naturalny z frazami kluczowymi, zamiast sztucznego upychania słów. W praktyce liczy się jasna odpowiedź w pierwszych akapitach oraz rozwinięcie pod pytania uzupełniające.\n\n" +
+    "## Jak " + s + " działa w praktyce\n\n" +
+    "Zacznij od problemu czytelnika, potem przejdź do mechanizmu i przykładów. Wpleć synonimy i frazy pokrewne (" +
+    (kws.join(", ") || s) +
+    "), ale utrzymuj czytelność. W SEO 2026 pomagają: dopasowanie do intencji, E-E-A-T, strukturyzowane wnioski oraz treści przyjazne AI Overviews.\n\n" +
+    "## Najczęstsze błędy\n\n" +
+    "1. Celowanie wyłącznie w high KD bez long-tail.\n" +
+    "2. Brak spisu treści i key takeaways.\n" +
+    "3. Ogólniki zamiast konkretów.\n" +
+    "4. Keyword stuffing kosztem sensu.\n\n" +
+    "Podsumowując: dobrze zoptymalizowany tekst o **" + s + "** łączy czytelność, mix KD i strukturę, która pomaga zarówno użytkownikowi, jak i wyszukiwarce.";
+
+  return {
+    title: t,
+    slug: slugifyPl(t),
+    metaDescription: metaDescription || "",
+    contentMd: body,
+    charCount: countVisibleChars(body),
+    wordCount: body.trim().split(/\s+/).length,
+    keywordsUsed: kws
+  };
+}
+
+async function wsadAnalyzeWithAi(seed, language) {
+  const system =
+    "Jesteś strategiem SEO 2026 (Google + AI Overviews). " +
+    "Oceniasz trudność słów kluczowych (KD) szacunkowo: low / medium / high. " +
+    "Zawsze robisz MIX: część low (long-tail), medium i high. " +
+    "Stosujesz: search intent, E-E-A-T, entity SEO, featured snippets, People Also Ask, naturalny język. " +
+    "Zwracasz WYŁĄCZNIE poprawny JSON bez komentarza.";
+  const prompt =
+    "Język: " + (language || "pl") + "\n" +
+    "Hasło seed: \"" + seed + "\"\n\n" +
+    "Zrób analizę pod wpis blogowy. Schema JSON:\n" +
+    "{\n" +
+    "  \"seed\": string,\n" +
+    "  \"intent\": string,\n" +
+    "  \"primaryKeyword\": string,\n" +
+    "  \"keywords\": [{\"term\": string, \"kd\": \"low\"|\"medium\"|\"high\", \"reason\": string}],\n" +
+    "  \"titles\": [{\"title\": string, \"rationale\": string}],\n" +
+    "  \"metaDescription\": string,\n" +
+    "  \"metaDescriptions\": [string],\n" +
+    "  \"outline\": [string],\n" +
+    "  \"seoNotes\": string\n" +
+    "}\n" +
+    "Wymagania: 7-10 keywords (mix KD), 5 titles pod CTR 2026, outline 5-7 H2, meta ~150-160 znaków.";
+  const text = await invokeBedrock({ system, prompt, maxTokens: 3500 });
+  const parsed = extractJsonObject(text);
+  if (!parsed.keywords || !parsed.keywords.length) {
+    parsed.keywords = fallbackWsadAnalysis(seed).keywords;
+  }
+  parsed.keywords = parsed.keywords.map(function (kw) {
+    return {
+      term: kw.term || kw.keyword || seed,
+      kd: String(kw.kd || estimateKd(kw.term || seed)).toLowerCase(),
+      reason: kw.reason || kw.intent || ""
+    };
+  });
+  return parsed;
+}
+
+async function wsadGenerateWithAi(payload) {
+  const seed = payload.seed;
+  const title = payload.title;
+  const meta = payload.metaDescription || "";
+  const analysis = payload.analysis || {};
+  const target = Number(payload.targetChars) || 2000;
+  const kws = (analysis.keywords || []).map(function (k) { return k.term + " [" + k.kd + "]"; }).join("; ");
+  const system =
+    "Jesteś copywriterem SEO 2026 po polsku. Piszesz naturalnie, bez keyword stuffingu, " +
+    "z dużą gęstością semantyczną (encje, synonimy, PAA). " +
+    "Zwracasz WYŁĄCZNIE JSON.";
+  const prompt =
+    "Wygeneruj wpis blogowy.\n" +
+    "Seed: " + seed + "\n" +
+    "Tytuł: " + title + "\n" +
+    "Meta: " + meta + "\n" +
+    "Keywords (użyj mixu): " + kws + "\n" +
+    "Outline: " + JSON.stringify(analysis.outline || []) + "\n" +
+    "Cel długości contentMd: " + target + " znaków (±15%), bez liczenia spacji wielokrotnych.\n\n" +
+    "Struktura contentMd (Markdown):\n" +
+    "1) Krótki wstęp (intro z odpowiedzią na intencję)\n" +
+    "2) ## Spis treści\n" +
+    "3) ## Key takeaways (3-5 bulletów)\n" +
+    "4) Rozwinięcie tematu w H2/H3 z frazami kluczowymi\n" +
+    "5) Zakończenie z CTA do dalszej lektury\n\n" +
+    "Schema JSON:\n" +
+    "{\n" +
+    "  \"title\": string,\n" +
+    "  \"slug\": string,\n" +
+    "  \"metaDescription\": string,\n" +
+    "  \"contentMd\": string,\n" +
+    "  \"charCount\": number,\n" +
+    "  \"wordCount\": number,\n" +
+    "  \"keywordsUsed\": [string]\n" +
+    "}";
+  const text = await invokeBedrock({ system, prompt, maxTokens: 5000 });
+  const parsed = extractJsonObject(text);
+  if (!parsed.contentMd) throw new Error("Brak contentMd w odpowiedzi");
+  parsed.slug = parsed.slug || slugifyPl(parsed.title || title);
+  parsed.charCount = parsed.charCount || countVisibleChars(parsed.contentMd);
+  parsed.wordCount = parsed.wordCount || parsed.contentMd.trim().split(/\s+/).length;
+  return parsed;
+}
+
 function safeStaticPath(urlPath) {
   const decoded = decodeURIComponent(urlPath.split("?")[0]);
   const rel = decoded === "/" ? "/index.html" : decoded;
@@ -437,9 +666,69 @@ export function createApp() {
     }
   });
 
+  // Ukryty panel SEO bloga — bez linków w UI; tylko bezpośredni URL /wsad
+  app.get(["/wsad", "/wsad/"], function (req, res) {
+    const filePath = path.join(__dirname, "wsad", "index.html");
+    if (!serveStatic(req, res, filePath)) {
+      sendJson(req, res, 404, { error: "WSAD not found" });
+    }
+  });
+
+  app.post("/api/wsad/analyze", async function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    const seed = String((req.body && req.body.seed) || "").trim();
+    if (!seed) return sendJson(req, res, 400, { error: "Podaj hasło (seed)" });
+    try {
+      const analysis = await wsadAnalyzeWithAi(seed, req.body.language || "pl");
+      sendJson(req, res, 200, { analysis, provider: "bedrock" });
+    } catch (err) {
+      console.warn("WSAD analyze fallback:", err.message);
+      sendJson(req, res, 200, {
+        analysis: fallbackWsadAnalysis(seed),
+        provider: "fallback",
+        warning: err.message || "Bedrock niedostępny — użyto analizy lokalnej"
+      });
+    }
+  });
+
+  app.post("/api/wsad/generate", async function (req, res) {
+    const auth = requireAuth(req, res);
+    if (!auth) return;
+    const seed = String((req.body && req.body.seed) || "").trim();
+    const title = String((req.body && req.body.title) || "").trim();
+    if (!seed || !title) {
+      return sendJson(req, res, 400, { error: "Wymagane: seed i title" });
+    }
+    const payload = {
+      seed,
+      title,
+      metaDescription: String((req.body && req.body.metaDescription) || "").trim(),
+      analysis: (req.body && req.body.analysis) || fallbackWsadAnalysis(seed),
+      targetChars: Number(req.body && req.body.targetChars) || 2000,
+      language: (req.body && req.body.language) || "pl"
+    };
+    try {
+      const post = await wsadGenerateWithAi(payload);
+      sendJson(req, res, 200, { post, provider: "bedrock" });
+    } catch (err) {
+      console.warn("WSAD generate fallback:", err.message);
+      sendJson(req, res, 200, {
+        post: fallbackWsadPost(payload),
+        provider: "fallback",
+        warning: err.message || "Bedrock niedostępny — użyto szablonu lokalnego"
+      });
+    }
+  });
+
   app.get("*", function (req, res) {
     let filePath = safeStaticPath(req.path);
     if (filePath && serveStatic(req, res, filePath)) return;
+    // katalog /wsad/ → index (gdy ktoś wejdzie głębiej bez pliku)
+    if (req.path === "/wsad" || req.path === "/wsad/") {
+      filePath = path.join(__dirname, "wsad", "index.html");
+      if (serveStatic(req, res, filePath)) return;
+    }
     if (req.path === "/" || !path.extname(req.path)) {
       filePath = safeStaticPath("/index.html");
       if (filePath && serveStatic(req, res, filePath)) return;
