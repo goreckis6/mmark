@@ -333,6 +333,12 @@
       </div>
     </div>
 
+    <section class="card" id="saved-posts-card">
+      <h2>Saved blog posts</h2>
+      <p class="hint" style="margin-top:0">Generated posts are saved automatically here so you can reopen them later.</p>
+      <div class="title-list" id="saved-posts"></div>
+    </section>
+
     <section class="card">
       <h2>1. Seed keyword</h2>
       <div class="row">
@@ -384,16 +390,17 @@
     </section>
 
     <section class="card hidden" id="post-panel">
-      <h2>3. Wygenerowany post</h2>
+      <h2>3. Generated post</h2>
       <div class="stats" id="post-stats"></div>
       <label>Slug</label>
       <input id="post-slug" type="text" readonly>
       <label style="margin-top:0.7rem">Markdown</label>
       <pre class="preview" id="post-md"></pre>
       <div class="btns">
-        <button type="button" class="primary" id="btn-copy-md">Kopiuj Markdown</button>
-        <button type="button" id="btn-copy-html">Kopiuj jako HTML</button>
-        <button type="button" class="ghost" id="btn-download-md">Pobierz .md</button>
+        <button type="button" class="primary" id="btn-copy-md">Copy Markdown</button>
+        <button type="button" id="btn-copy-html">Copy as HTML</button>
+        <button type="button" class="ghost" id="btn-download-md">Download .md</button>
+        <button type="button" id="btn-delete-post" class="ghost">Delete saved post</button>
       </div>
     </section>
   </div>
@@ -406,11 +413,13 @@
       var state = {
         analysis: null,
         selectedTitle: "",
-        post: null
+        post: null,
+        postId: null
       };
 
       var LANG = "en";
       var SAVED_KEY = "wsad-saved-blog-titles";
+      var SAVED_POSTS_KEY = "wsad-saved-blog-posts";
 
       var el = {
         authGate: document.getElementById("auth-gate"),
@@ -425,6 +434,7 @@
         titleList: document.getElementById("title-list"),
         titleCount: document.getElementById("title-count"),
         savedTitles: document.getElementById("saved-titles"),
+        savedPosts: document.getElementById("saved-posts"),
         customTitle: document.getElementById("custom-title"),
         metaDesc: document.getElementById("meta-desc"),
         outline: document.getElementById("outline"),
@@ -443,6 +453,7 @@
         btnCopyMd: document.getElementById("btn-copy-md"),
         btnCopyHtml: document.getElementById("btn-copy-html"),
         btnDownloadMd: document.getElementById("btn-download-md"),
+        btnDeletePost: document.getElementById("btn-delete-post"),
         loginForm: document.getElementById("login-form"),
         loginUser: document.getElementById("login-user"),
         loginPass: document.getElementById("login-pass"),
@@ -707,18 +718,98 @@
         renderSavedTitles();
       }
 
-      function renderPost(post) {
+      function renderPost(post, opts) {
+        opts = opts || {};
         state.post = post;
+        state.postId = post.id || state.postId || null;
         el.postPanel.classList.remove("hidden");
         var md = post.contentMd || post.content || "";
         el.postMd.textContent = md;
         el.postSlug.value = post.slug || slugify(post.title || el.customTitle.value);
+        if (post.title) {
+          state.selectedTitle = post.title;
+          el.customTitle.value = post.title;
+        }
+        if (post.metaDescription) el.metaDesc.value = post.metaDescription;
+        if (post.seed && !opts.keepSeed) el.seed.value = post.seed;
         var chars = post.charCount || countChars(md);
         var words = post.wordCount || (md.trim() ? md.trim().split(/\s+/).length : 0);
         el.postStats.innerHTML =
           '<span class="stat">Chars: <b>' + chars + "</b></span>" +
           '<span class="stat">Words: <b>' + words + "</b></span>" +
-          '<span class="stat">Title: <b>' + escapeHtml(post.title || el.customTitle.value) + "</b></span>";
+          '<span class="stat">Title: <b>' + escapeHtml(post.title || el.customTitle.value) + "</b></span>" +
+          (state.postId ? '<span class="stat">Saved: <b>yes</b></span>' : "");
+      }
+
+      function loadSavedPosts() {
+        try {
+          var raw = localStorage.getItem(SAVED_POSTS_KEY);
+          var list = raw ? JSON.parse(raw) : [];
+          return Array.isArray(list) ? list : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function persistSavedPosts(list) {
+        localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify(list.slice(0, 80)));
+      }
+
+      function saveGeneratedPost(post) {
+        var title = (post.title || el.customTitle.value || "").trim();
+        var contentMd = post.contentMd || post.content || "";
+        if (!title || !contentMd) return null;
+        var id = post.id || ("post-" + Date.now());
+        var item = {
+          id: id,
+          title: title,
+          slug: post.slug || slugify(title),
+          seed: post.seed || el.seed.value.trim(),
+          metaDescription: post.metaDescription || el.metaDesc.value.trim(),
+          contentMd: contentMd,
+          charCount: post.charCount || countChars(contentMd),
+          wordCount: post.wordCount || (contentMd.trim() ? contentMd.trim().split(/\s+/).length : 0),
+          keywordsUsed: post.keywordsUsed || [],
+          language: LANG,
+          savedAt: new Date().toISOString()
+        };
+        var list = loadSavedPosts().filter(function (p) {
+          return p.id !== id && normalizeTitleKey(p.title) !== normalizeTitleKey(title);
+        });
+        list.unshift(item);
+        persistSavedPosts(list);
+        state.postId = id;
+        return item;
+      }
+
+      function renderSavedPosts() {
+        if (!el.savedPosts) return;
+        var list = loadSavedPosts();
+        if (!list.length) {
+          el.savedPosts.innerHTML = '<p class="hint" style="margin:0">No saved posts yet — generate one and it will appear here.</p>';
+          return;
+        }
+        el.savedPosts.innerHTML = list.map(function (item, idx) {
+          var when = item.savedAt ? String(item.savedAt).slice(0, 16).replace("T", " ") : "";
+          return (
+            '<button type="button" class="title-option' + (state.postId === item.id ? " active" : "") + '" data-saved-post="' + idx + '">' +
+              escapeHtml(item.title || "Untitled") +
+              "<small>" + escapeHtml((item.seed || "") + (when ? " · " + when : "") +
+                (item.charCount ? " · " + item.charCount + " chars" : "")) + "</small>" +
+            "</button>"
+          );
+        }).join("");
+        el.savedPosts.querySelectorAll("[data-saved-post]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var item = list[parseInt(btn.getAttribute("data-saved-post"), 10)];
+            if (!item) return;
+            renderPost(item, { keepSeed: false });
+            el.analysisPanel.classList.remove("hidden");
+            showStatus(el.generateStatus, "Loaded saved post.");
+            el.postPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+            renderSavedPosts();
+          });
+        });
       }
 
       function api(path, body) {
@@ -744,6 +835,7 @@
         el.authGate.hidden = true;
         el.app.hidden = false;
         renderSavedTitles();
+        renderSavedPosts();
       }
 
       function showLogin(msg) {
@@ -910,8 +1002,13 @@
           language: LANG
         })
           .then(function (data) {
-            renderPost(data.post || data);
-            showStatus(el.generateStatus, "Post ready.");
+            var post = data.post || data;
+            post.seed = post.seed || el.seed.value.trim();
+            post.metaDescription = post.metaDescription || el.metaDesc.value.trim();
+            var saved = saveGeneratedPost(post);
+            renderPost(saved || post);
+            renderSavedPosts();
+            showStatus(el.generateStatus, "Post ready and saved — you can reopen it anytime from Saved blog posts.");
             el.postPanel.scrollIntoView({ behavior: "smooth", block: "start" });
           })
           .catch(function (err) {
@@ -952,6 +1049,20 @@
         a.click();
         URL.revokeObjectURL(a.href);
       });
+
+      if (el.btnDeletePost) {
+        el.btnDeletePost.addEventListener("click", function () {
+          if (!state.postId) {
+            showStatus(el.generateStatus, "This post is not in saved list.", true);
+            return;
+          }
+          if (!confirm("Delete this saved post?")) return;
+          persistSavedPosts(loadSavedPosts().filter(function (p) { return p.id !== state.postId; }));
+          state.postId = null;
+          renderSavedPosts();
+          showStatus(el.generateStatus, "Saved post deleted.");
+        });
+      }
 
       el.seed.addEventListener("keydown", function (e) {
         if (e.key === "Enter") el.btnAnalyze.click();
