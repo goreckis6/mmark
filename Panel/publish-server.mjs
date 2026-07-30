@@ -358,7 +358,57 @@ function normalizeTitleKey(title) {
     .trim();
 }
 
-function fallbackWsadExtraTitle(seed, excludeTitles, language) {
+function normalizeKeywordKey(term) {
+  return String(term || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function fallbackWsadExtraKeywords(seed, excludeKeywords, language) {
+  const s = String(seed || "").trim();
+  const lang = (language || "en").toLowerCase();
+  const pool = lang === "pl"
+    ? [
+        { term: s + " dla początkujących", kd: "low", reason: "Beginner long-tail" },
+        { term: s + " trendy 2026", kd: "medium", reason: "Freshness mid KD" },
+        { term: "koszt " + s, kd: "medium", reason: "Commercial mid-funnel" },
+        { term: s + " przykłady", kd: "low", reason: "Example intent" },
+        { term: "zalety i wady " + s, kd: "medium", reason: "Pros/cons intent" },
+        { term: s + " case study", kd: "low", reason: "Proof / experience" },
+        { term: "narzędzia do " + s, kd: "medium", reason: "Tools angle" },
+        { term: s + " checklista", kd: "low", reason: "Actionable format" }
+      ]
+    : [
+        { term: s + " for beginners", kd: "low", reason: "Beginner long-tail" },
+        { term: s + " trends 2026", kd: "medium", reason: "Freshness mid KD" },
+        { term: s + " cost", kd: "medium", reason: "Commercial mid-funnel" },
+        { term: s + " examples", kd: "low", reason: "Example intent" },
+        { term: s + " pros and cons", kd: "medium", reason: "Pros/cons intent" },
+        { term: s + " case study", kd: "low", reason: "Proof / experience" },
+        { term: "tools for " + s, kd: "medium", reason: "Tools angle" },
+        { term: s + " checklist", kd: "low", reason: "Actionable format" },
+        { term: "advanced " + s + " tips", kd: "medium", reason: "Advanced mid KD" },
+        { term: s + " strategy", kd: "high", reason: "Strategy head-ish term" }
+      ];
+  const excluded = new Set((excludeKeywords || []).map(normalizeKeywordKey));
+  const out = [];
+  for (let i = 0; i < pool.length && out.length < 3; i++) {
+    if (!excluded.has(normalizeKeywordKey(pool[i].term))) out.push(pool[i]);
+  }
+  if (!out.length) {
+    out.push({
+      term: s + " angle " + Date.now().toString().slice(-4),
+      kd: "low",
+      reason: "Fresh unique keyword fallback"
+    });
+  }
+  return out;
+}
+
+function fallbackWsadExtraTitle(seed, excludeTitles, language, excludeKeywords) {
   const s = String(seed || "").trim();
   const lang = (language || "en").toLowerCase();
   const pool = lang === "pl"
@@ -370,7 +420,9 @@ function fallbackWsadExtraTitle(seed, excludeTitles, language) {
         "Co eksperci mówią o " + s + " (i czego unikają)",
         s + " w realnych scenariuszach: case-style guide",
         "Mały przewodnik po " + s + " dla zajętych ludzi",
-        s + ": pytania, które warto zadać przed startem"
+        s + ": pytania, które warto zadać przed startem",
+        s + " — trendy, koszty i realne przykłady",
+        "Jak wybrać podejście do " + s + " bez chaosu"
       ]
     : [
         s + ": Facts, Myths & Practical Takeaways",
@@ -382,22 +434,32 @@ function fallbackWsadExtraTitle(seed, excludeTitles, language) {
         "A Short " + s + " Playbook for Busy People",
         s + ": Questions Worth Asking Before You Start",
         "Unlock Better Results with " + s + " (Without Overcomplicating It)",
-        "The No-Nonsense " + s + " Framework for 2026"
+        "The No-Nonsense " + s + " Framework for 2026",
+        s + " Trends, Costs & Real-World Examples",
+        "How to Choose a " + s + " Approach Without Chaos",
+        s + " Strategy That Actually Scales",
+        "Advanced " + s + " Tips Most Guides Skip"
       ];
   const excluded = new Set((excludeTitles || []).map(normalizeTitleKey));
+  let titleObj = null;
   for (let i = 0; i < pool.length; i++) {
     if (!excluded.has(normalizeTitleKey(pool[i]))) {
-      return {
+      titleObj = {
         title: pool[i],
         rationale: lang === "pl" ? "Unikalny wariant CTR / intencji" : "Unique CTR / intent angle"
       };
+      break;
     }
   }
-  const stamp = Date.now().toString().slice(-4);
-  return {
-    title: (lang === "pl" ? (s + " — świeży kąt #" + stamp) : (s + " — Fresh Angle #" + stamp)),
-    rationale: "Guaranteed unique fallback title"
-  };
+  if (!titleObj) {
+    const stamp = Date.now().toString().slice(-4);
+    titleObj = {
+      title: (lang === "pl" ? (s + " — świeży kąt #" + stamp) : (s + " — Fresh Angle #" + stamp)),
+      rationale: "Guaranteed unique fallback title"
+    };
+  }
+  titleObj.keywords = fallbackWsadExtraKeywords(seed, excludeKeywords, language);
+  return titleObj;
 }
 
 function fallbackWsadPost({ seed, title, metaDescription, analysis, language }) {
@@ -488,8 +550,9 @@ function fallbackWsadPost({ seed, title, metaDescription, analysis, language }) 
   };
 }
 
-async function wsadAnalyzeWithAi(seed, language) {
+async function wsadAnalyzeWithAi(seed, language, excludeTitles) {
   const lang = (language || "en").toLowerCase();
+  const excluded = (excludeTitles || []).filter(Boolean);
   const system =
     "You are an SEO strategist for 2026 (Google + AI Overviews). " +
     "Estimate keyword difficulty (KD) as low / medium / high. " +
@@ -500,6 +563,9 @@ async function wsadAnalyzeWithAi(seed, language) {
   const prompt =
     "Language: " + lang + "\n" +
     "Seed keyword: \"" + seed + "\"\n\n" +
+    (excluded.length
+      ? ("Do NOT reuse these existing titles (exact or close paraphrase):\n- " + excluded.join("\n- ") + "\n\n")
+      : "") +
     "Create a blog SEO analysis. JSON schema:\n" +
     "{\n" +
     "  \"seed\": string,\n" +
@@ -512,7 +578,7 @@ async function wsadAnalyzeWithAi(seed, language) {
     "  \"outline\": [string],\n" +
     "  \"seoNotes\": string\n" +
     "}\n" +
-    "Requirements: 8-12 keywords (KD mix), AT LEAST 10 unique SEO-optimized titles for CTR in 2026, outline 5-7 H2s, meta ~150-160 chars. Every title must be distinct.";
+    "Requirements: 8-12 keywords (KD mix), AT LEAST 10 unique SEO-optimized titles for CTR in 2026, outline 5-7 H2s, meta ~150-160 chars. Every title must be distinct from each other and from excluded titles. Prefer fresh keyword angles.";
   const text = await invokeBedrock({ system, prompt, maxTokens: 4500 });
   const parsed = extractJsonObject(text);
   if (!parsed.keywords || !parsed.keywords.length) {
@@ -525,11 +591,16 @@ async function wsadAnalyzeWithAi(seed, language) {
       reason: kw.reason || kw.intent || ""
     };
   });
+  const excludedSet = new Set(excluded.map(normalizeTitleKey));
+  parsed.titles = (parsed.titles || []).filter(function (t) {
+    return !excludedSet.has(normalizeTitleKey(typeof t === "string" ? t : t.title));
+  });
   if (!parsed.titles || parsed.titles.length < 10) {
     const fb = fallbackWsadAnalysis(seed, lang).titles;
     const existing = new Set((parsed.titles || []).map(function (t) {
       return normalizeTitleKey(typeof t === "string" ? t : t.title);
     }));
+    excluded.forEach(function (t) { existing.add(normalizeTitleKey(t)); });
     parsed.titles = parsed.titles || [];
     fb.forEach(function (t) {
       const key = normalizeTitleKey(t.title);
@@ -542,30 +613,54 @@ async function wsadAnalyzeWithAi(seed, language) {
   return parsed;
 }
 
-async function wsadMoreTitleWithAi(seed, excludeTitles, language, analysis) {
+async function wsadMoreTitleWithAi(seed, excludeTitles, language, analysis, excludeKeywords) {
   const lang = (language || "en").toLowerCase();
   const excluded = (excludeTitles || []).filter(Boolean);
+  const excludedKw = (excludeKeywords || []).filter(Boolean);
   const system =
-    "You invent one unique SEO blog title for 2026. " +
-    "It must NOT repeat or closely paraphrase any excluded title. " +
+    "You invent one unique SEO blog title for 2026 AND 2-3 fresh related keywords. " +
+    "The title must NOT repeat or closely paraphrase any excluded title. " +
+    "Keywords must be NEW (not in the excluded keyword list) and mix KD (low/medium/high). " +
     "Write in " + (lang === "pl" ? "Polish" : "English") + ". Return ONLY JSON.";
   const prompt =
     "Seed: \"" + seed + "\"\n" +
     "Intent: " + ((analysis && analysis.intent) || "") + "\n" +
     "Excluded titles (do not repeat):\n- " + excluded.join("\n- ") + "\n\n" +
-    "Return JSON: {\"title\": string, \"rationale\": string, \"metaDescription\": string}\n" +
-    "Title must be unique, CTR-oriented, and SEO-optimized.";
-  const text = await invokeBedrock({ system, prompt, maxTokens: 800 });
+    "Already used keywords (do not repeat):\n- " + excludedKw.join("\n- ") + "\n\n" +
+    "Return JSON:\n" +
+    "{\n" +
+    "  \"title\": string,\n" +
+    "  \"rationale\": string,\n" +
+    "  \"metaDescription\": string,\n" +
+    "  \"keywords\": [{\"term\": string, \"kd\": \"low\"|\"medium\"|\"high\", \"reason\": string}]\n" +
+    "}\n" +
+    "Title must be unique, CTR-oriented, SEO-optimized, and ideally lean on a NEW keyword angle.";
+  const text = await invokeBedrock({ system, prompt, maxTokens: 1200 });
   const parsed = extractJsonObject(text);
   const title = String(parsed.title || "").trim();
   if (!title) throw new Error("Empty title from model");
   if (excluded.some(function (t) { return normalizeTitleKey(t) === normalizeTitleKey(title); })) {
     throw new Error("Model repeated an existing title");
   }
+  const usedKw = new Set(excludedKw.map(normalizeKeywordKey));
+  let keywords = Array.isArray(parsed.keywords) ? parsed.keywords : [];
+  keywords = keywords.map(function (kw) {
+    return {
+      term: kw.term || kw.keyword || "",
+      kd: String(kw.kd || estimateKd(kw.term || seed)).toLowerCase(),
+      reason: kw.reason || "Fresh keyword angle"
+    };
+  }).filter(function (kw) {
+    return kw.term && !usedKw.has(normalizeKeywordKey(kw.term));
+  });
+  if (!keywords.length) {
+    keywords = fallbackWsadExtraKeywords(seed, excludedKw, language);
+  }
   return {
     title: title,
     rationale: parsed.rationale || "",
-    metaDescription: parsed.metaDescription || ""
+    metaDescription: parsed.metaDescription || "",
+    keywords: keywords.slice(0, 3)
   };
 }
 
@@ -858,13 +953,23 @@ export function createApp() {
     const seed = String((req.body && req.body.seed) || "").trim();
     if (!seed) return sendJson(req, res, 400, { error: "Podaj hasło (seed)" });
     const language = String((req.body && req.body.language) || "en").toLowerCase();
+    const excludeTitles = Array.isArray(req.body && req.body.excludeTitles)
+      ? req.body.excludeTitles.map(function (t) { return String(t || "").trim(); }).filter(Boolean)
+      : [];
     try {
-      const analysis = await wsadAnalyzeWithAi(seed, language);
+      const analysis = await wsadAnalyzeWithAi(seed, language, excludeTitles);
       sendJson(req, res, 200, { analysis, provider: "bedrock" });
     } catch (err) {
       console.warn("WSAD analyze fallback:", err.message);
+      const analysis = fallbackWsadAnalysis(seed, language);
+      if (excludeTitles.length) {
+        const excluded = new Set(excludeTitles.map(normalizeTitleKey));
+        analysis.titles = (analysis.titles || []).filter(function (t) {
+          return !excluded.has(normalizeTitleKey(t.title || t));
+        });
+      }
       sendJson(req, res, 200, {
-        analysis: fallbackWsadAnalysis(seed, language),
+        analysis,
         provider: "fallback",
         warning: err.message || "Bedrock niedostępny — użyto analizy lokalnej"
       });
@@ -880,14 +985,17 @@ export function createApp() {
     const excludeTitles = Array.isArray(req.body && req.body.excludeTitles)
       ? req.body.excludeTitles.map(function (t) { return String(t || "").trim(); }).filter(Boolean)
       : [];
+    const excludeKeywords = Array.isArray(req.body && req.body.excludeKeywords)
+      ? req.body.excludeKeywords.map(function (t) { return String(t || "").trim(); }).filter(Boolean)
+      : [];
     const analysis = (req.body && req.body.analysis) || null;
     try {
-      const titleObj = await wsadMoreTitleWithAi(seed, excludeTitles, language, analysis);
+      const titleObj = await wsadMoreTitleWithAi(seed, excludeTitles, language, analysis, excludeKeywords);
       sendJson(req, res, 200, { title: titleObj, provider: "bedrock" });
     } catch (err) {
       console.warn("WSAD title-more fallback:", err.message);
       sendJson(req, res, 200, {
-        title: fallbackWsadExtraTitle(seed, excludeTitles, language),
+        title: fallbackWsadExtraTitle(seed, excludeTitles, language, excludeKeywords),
         provider: "fallback",
         warning: err.message || "Bedrock niedostępny — użyto lokalnego tytułu"
       });

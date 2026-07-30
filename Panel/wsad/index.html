@@ -530,6 +530,60 @@
         return ((state.analysis && state.analysis.titles) || []).map(titleText).filter(Boolean);
       }
 
+      function getSavedTitleTexts() {
+        return loadSavedTitles().map(function (item) { return item.title || ""; }).filter(Boolean);
+      }
+
+      function getExcludeTitles() {
+        var map = {};
+        getCurrentTitles().concat(getSavedTitleTexts()).forEach(function (t) {
+          var key = normalizeTitleKey(t);
+          if (key) map[key] = t;
+        });
+        return Object.keys(map).map(function (k) { return map[k]; });
+      }
+
+      function getCurrentKeywords() {
+        return ((state.analysis && state.analysis.keywords) || [])
+          .map(function (kw) { return kw.term || ""; })
+          .filter(Boolean);
+      }
+
+      function mergeKeywords(newKeywords) {
+        if (!state.analysis) return 0;
+        state.analysis.keywords = state.analysis.keywords || [];
+        var existing = new Set(state.analysis.keywords.map(function (kw) {
+          return normalizeTitleKey(kw.term || "");
+        }));
+        var added = 0;
+        (newKeywords || []).forEach(function (kw) {
+          var term = (kw && kw.term) || "";
+          var key = normalizeTitleKey(term);
+          if (!term || !key || existing.has(key)) return;
+          state.analysis.keywords.push({
+            term: term,
+            kd: kw.kd || "medium",
+            reason: kw.reason || "Fresh keyword angle"
+          });
+          existing.add(key);
+          added += 1;
+        });
+        return added;
+      }
+
+      function renderKeywords() {
+        if (!el.kwGrid || !state.analysis) return;
+        el.kwGrid.innerHTML = (state.analysis.keywords || []).map(function (kw) {
+          return (
+            '<div class="kw-chip">' +
+              "<strong>" + escapeHtml(kw.term) + "</strong>" +
+              '<div><span class="kd ' + kdClass(kw.kd) + '">' + kdLabel(kw.kd) + "</span></div>" +
+              '<div class="kw-meta">' + escapeHtml(kw.reason || kw.intent || "") + "</div>" +
+            "</div>"
+          );
+        }).join("");
+      }
+
       function loadSavedTitles() {
         try {
           var raw = localStorage.getItem(SAVED_KEY);
@@ -642,15 +696,7 @@
         el.intent.textContent = data.intent || "—";
         el.seoNotes.textContent = data.seoNotes || "";
 
-        el.kwGrid.innerHTML = (data.keywords || []).map(function (kw) {
-          return (
-            '<div class="kw-chip">' +
-              "<strong>" + escapeHtml(kw.term) + "</strong>" +
-              '<div><span class="kd ' + kdClass(kw.kd) + '">' + kdLabel(kw.kd) + "</span></div>" +
-              '<div class="kw-meta">' + escapeHtml(kw.reason || kw.intent || "") + "</div>" +
-            "</div>"
-          );
-        }).join("");
+        renderKeywords();
 
         el.metaDesc.value = data.metaDescription || (data.metaDescriptions && data.metaDescriptions[0]) || "";
         el.outline.innerHTML = (data.outline || []).map(function (item) {
@@ -726,11 +772,19 @@
         }
         setBusy(el.analyzeProgress, true, el.btnAnalyze);
         showStatus(el.analyzeStatus, "Analyzing SEO + KD (English)…");
-        api("/api/wsad/analyze", { seed: seed, language: LANG })
+        api("/api/wsad/analyze", {
+          seed: seed,
+          language: LANG,
+          excludeTitles: getSavedTitleTexts()
+        })
           .then(function (data) {
             renderAnalysis(data.analysis || data);
             var n = ((state.analysis && state.analysis.titles) || []).length;
-            showStatus(el.analyzeStatus, "Done — " + n + " titles ready. Pick one or click Give me one more.");
+            var skipped = getSavedTitleTexts().length;
+            showStatus(
+              el.analyzeStatus,
+              "Done — " + n + " new titles" + (skipped ? " (skipped " + skipped + " saved)" : "") + ". Pick one or click Give me one more."
+            );
             el.analysisPanel.scrollIntoView({ behavior: "smooth", block: "start" });
           })
           .catch(function (err) {
@@ -747,13 +801,15 @@
           showStatus(el.generateStatus, "Run analysis first.", true);
           return;
         }
-        var existing = getCurrentTitles();
+        var existing = getExcludeTitles();
+        var existingKw = getCurrentKeywords();
         setBusy(null, true, el.btnMoreTitle);
-        showStatus(el.generateStatus, "Generating one more unique title…");
+        showStatus(el.generateStatus, "Generating one more unique title + fresh keywords…");
         api("/api/wsad/title-more", {
           seed: seed,
           language: LANG,
           excludeTitles: existing,
+          excludeKeywords: existingKw,
           analysis: state.analysis
         })
           .then(function (data) {
@@ -770,9 +826,16 @@
               rationale: t.rationale || "Extra unique title",
               metaDescription: t.metaDescription || ""
             });
+            var kwAdded = mergeKeywords(t.keywords || []);
             if (t.metaDescription) el.metaDesc.value = t.metaDescription;
+            renderKeywords();
             renderTitleList(true);
-            showStatus(el.generateStatus, "Added a new unique title (" + state.analysis.titles.length + " total).");
+            showStatus(
+              el.generateStatus,
+              "Added unique title (" + state.analysis.titles.length + " total)" +
+                (kwAdded ? " + " + kwAdded + " new keyword" + (kwAdded === 1 ? "" : "s") : "") +
+                ". Checked against saved titles too."
+            );
           })
           .catch(function (err) {
             showStatus(el.generateStatus, err.message || "Could not add title", true);
