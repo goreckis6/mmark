@@ -67,6 +67,9 @@ function loadEnvFile() {
 
 loadEnvFile();
 
+/** Public URL of this deployment (proxy User-Agent, docs). Example: https://rekinybiznesu.shop */
+const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
+
 const AWS_REGION = process.env.AWS_REGION || "eu-central-1";
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || "eu.anthropic.claude-opus-4-8";
 /**
@@ -1534,7 +1537,8 @@ export function createApp() {
       auth: true,
       store: "json",
       region: AWS_REGION,
-      model: BEDROCK_MODEL_ID
+      model: BEDROCK_MODEL_ID,
+      site: PUBLIC_SITE_URL || null
     });
   });
 
@@ -1650,7 +1654,9 @@ export function createApp() {
         headers: {
           Accept: "application/json, application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
           "User-Agent":
-            "Mozilla/5.0 (compatible; ContentSystem/1.0; +https://morphyimg.com) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (compatible; ContentSystem/1.0; +" +
+            (PUBLIC_SITE_URL || "https://rekinybiznesu.shop") +
+            ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         },
         redirect: "follow"
       });
