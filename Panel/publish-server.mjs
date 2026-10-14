@@ -3,6 +3,7 @@
  * Content System — serwer Express: statyczne pliki, auth, upload, Bedrock
  */
 import express from "express";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,9 +31,18 @@ import {
   upsertWsadPost,
   upsertWsadTitle
 } from "./db.mjs";
+import {
+  getUsemeJobs,
+  getUsemeScraperStatus,
+  runUsemeScraper,
+  startUsemeScraperScheduler
+} from "./useme-scraper.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MEDIA_DIR = path.join(__dirname, "media", "posty");
+const scraperSessions = new Map();
+const scraperLoginAttempts = new Map();
+const SCRAPER_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -66,6 +76,51 @@ function loadEnvFile() {
 }
 
 loadEnvFile();
+
+function secureTextEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""), "utf8");
+  const rightBuffer = Buffer.from(String(right || ""), "utf8");
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function scraperClientKey(req) {
+  return String(req.headers["x-forwarded-for"] || req.ip || "unknown").split(",")[0].trim();
+}
+
+function isScraperLoginLimited(req) {
+  const key = scraperClientKey(req);
+  const now = Date.now();
+  const recent = (scraperLoginAttempts.get(key) || []).filter(time => now - time < 15 * 60 * 1000);
+  scraperLoginAttempts.set(key, recent);
+  return recent.length >= 8;
+}
+
+function noteScraperLoginFailure(req) {
+  const key = scraperClientKey(req);
+  const recent = scraperLoginAttempts.get(key) || [];
+  recent.push(Date.now());
+  scraperLoginAttempts.set(key, recent);
+}
+
+function createScraperSession() {
+  const token = crypto.randomBytes(32).toString("base64url");
+  const expiresAt = Date.now() + SCRAPER_SESSION_TTL_MS;
+  scraperSessions.set(token, expiresAt);
+  return { token, expiresAt: new Date(expiresAt).toISOString() };
+}
+
+function requireScraperAuth(req, res) {
+  const auth = String(req.headers.authorization || "");
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const expiresAt = scraperSessions.get(token);
+  if (!token || !expiresAt || expiresAt <= Date.now()) {
+    if (token) scraperSessions.delete(token);
+    sendJson(req, res, 401, { error: "Sesja wygasła. Zaloguj się ponownie." });
+    return false;
+  }
+  return true;
+}
 
 /** Public URL of this deployment (proxy User-Agent, docs). Example: https://rekinybiznesu.shop */
 const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
@@ -1517,6 +1572,7 @@ export function createApp() {
   const app = express();
   app.disable("x-powered-by");
   app.use(express.json({ limit: "12mb" }));
+  startUsemeScraperScheduler();
 
   app.use(function (req, res, next) {
     cors(req, res);
@@ -1536,6 +1592,7 @@ export function createApp() {
       bedrock: !bedrockInitFailed,
       auth: true,
       store: "json",
+      scraper: getUsemeScraperStatus().enabled,
       region: AWS_REGION,
       model: BEDROCK_MODEL_ID,
       site: PUBLIC_SITE_URL || null
@@ -1561,6 +1618,57 @@ export function createApp() {
     const user = getSessionUser(parseBearerToken(req));
     if (!user) return sendJson(req, res, 401, { error: "Niezalogowany" });
     sendJson(req, res, 200, { user });
+  });
+
+  app.post("/api/scraper/unlock", function (req, res) {
+    const configuredPassword = String(process.env.SCRAPER_PASSWORD || "");
+    if (!configuredPassword) {
+      return sendJson(req, res, 503, { error: "Panel scrapera nie ma ustawionego hasła." });
+    }
+    if (isScraperLoginLimited(req)) {
+      return sendJson(req, res, 429, { error: "Za dużo prób logowania. Spróbuj ponownie za 15 minut." });
+    }
+    if (!secureTextEqual(req.body?.password, configuredPassword)) {
+      noteScraperLoginFailure(req);
+      return sendJson(req, res, 401, { error: "Nieprawidłowe hasło." });
+    }
+    scraperLoginAttempts.delete(scraperClientKey(req));
+    sendJson(req, res, 200, createScraperSession());
+  });
+
+  app.post("/api/scraper/logout", function (req, res) {
+    const auth = String(req.headers.authorization || "");
+    if (auth.startsWith("Bearer ")) scraperSessions.delete(auth.slice(7).trim());
+    sendJson(req, res, 200, { ok: true });
+  });
+
+  app.get("/api/scraper/status", function (req, res) {
+    if (!requireScraperAuth(req, res)) return;
+    sendJson(req, res, 200, getUsemeScraperStatus());
+  });
+
+  app.get("/api/scraper/jobs", function (req, res) {
+    if (!requireScraperAuth(req, res)) return;
+    sendJson(req, res, 200, getUsemeJobs({ page: req.query.page, pageSize: req.query.pageSize }));
+  });
+
+  app.get("/api/scraper/export", function (req, res) {
+    if (!requireScraperAuth(req, res)) return;
+    const data = getUsemeJobs({ page: 1, pageSize: 200 });
+    const status = getUsemeScraperStatus();
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=\"useme-oferty-${new Date().toISOString().slice(0, 10)}.json\"`);
+    res.end(JSON.stringify({ exportedAt: new Date().toISOString(), status, ...data }, null, 2));
+  });
+
+  app.post("/api/scraper/run", async function (req, res) {
+    if (!requireScraperAuth(req, res)) return;
+    try {
+      const result = await runUsemeScraper();
+      sendJson(req, res, 200, result);
+    } catch (error) {
+      sendJson(req, res, 502, { error: error.message || "Nie udało się uruchomić scrapera" });
+    }
   });
 
   app.get("/api/posts", function (req, res) {
@@ -1979,6 +2087,10 @@ export function createApp() {
     // katalog /wsad/ → index (gdy ktoś wejdzie głębiej bez pliku)
     if (req.path === "/wsad" || req.path === "/wsad/") {
       filePath = path.join(__dirname, "wsad", "index.html");
+      if (serveStatic(req, res, filePath)) return;
+    }
+    if (req.path === "/scraper" || req.path === "/scraper/") {
+      filePath = path.join(__dirname, "scraper", "index.html");
       if (serveStatic(req, res, filePath)) return;
     }
     if (req.path === "/" || !path.extname(req.path)) {
