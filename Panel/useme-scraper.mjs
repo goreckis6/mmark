@@ -337,11 +337,10 @@ async function notifyNewJobs(jobs) {
   const text = [
     `Nowe zlecenia Useme (${count}):`,
     "",
-    ...jobs.flatMap(job => [job.title, job.url, ""]),
-    `Panel: ${(process.env.PUBLIC_SITE_URL || "https://rekinybiznesu.shop").replace(/\/$/, "")}/scraper`
+    ...jobs.flatMap(job => [job.title, job.url, ""])
   ].join("\n");
   const items = jobs.map(job => `<li style=\"margin:0 0 14px\"><a href=\"${escapeHtml(job.url)}\" style=\"color:#0b6bcb;font-weight:700\">${escapeHtml(job.title)}</a><br><span style=\"color:#64748b;font-size:13px\">${escapeHtml(job.url)}</span></li>`).join("");
-  const html = `<div style=\"font-family:Arial,sans-serif;max-width:720px;margin:auto;color:#172033\"><h2>Nowe zlecenia Useme (${count})</h2><ul style=\"padding-left:22px\">${items}</ul><p><a href=\"${escapeHtml((process.env.PUBLIC_SITE_URL || "https://rekinybiznesu.shop").replace(/\/$/, "") + "/scraper")}\">Otwórz panel scrapera</a></p></div>`;
+  const html = `<div style=\"font-family:Arial,sans-serif;max-width:720px;margin:auto;color:#172033\"><h2>Nowe zlecenia Useme (${count})</h2><ul style=\"padding-left:22px\">${items}</ul></div>`;
   await sendSmtpMail({ subject, text, html });
 }
 
