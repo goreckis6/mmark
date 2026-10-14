@@ -151,7 +151,7 @@
         <div>
           <p class="eyebrow">Automatyczny monitoring</p>
           <h1>Oferty Useme</h1>
-          <p>Serwisy internetowe · do 10 stron wstecz · bez duplikatów · raport e-mail po wykryciu nowych ofert.</p>
+          <p>Serwisy internetowe · do 10 stron wstecz · bez duplikatów. Skanowanie pobiera zlecenia, a szkice tworzysz ręcznie po kliknięciu przy wybranej ofercie.</p>
         </div>
         <div class="live"><span class="dot"></span><span id="schedule-label">Sprawdzanie co 5 minut</span></div>
       </section>
@@ -185,6 +185,11 @@
               <label for="profile-experience">Twoje doświadczenie i umiejętności</label>
               <textarea id="profile-experience" maxlength="4000" rows="3" placeholder="Podaj prawdziwe umiejętności, podobne realizacje lub portfolio"></textarea>
               <small>Te informacje posłużą do personalizacji wszystkich szkiców. Możesz zostawić pole puste.</small>
+            </div>
+            <div class="field">
+              <label for="profile-writing-style">Przykład Twojego stylu pisania (opcjonalnie)</label>
+              <textarea id="profile-writing-style" maxlength="1500" rows="2" placeholder="Wklej 2–3 zdania napisane przez siebie. Użyję ich tylko jako wzoru tonu."></textarea>
+              <small>Nie wklejaj danych klienta ani poufnych informacji.</small>
             </div>
             <div class="form-grid">
               <div class="field">
@@ -223,7 +228,7 @@
   <script>
     const TOKEN_KEY = "rekiny_scraper_token";
     const PROFILE_KEY = "rekiny_useme_draft_profile";
-    const state = { token: sessionStorage.getItem(TOKEN_KEY) || "", page: 1, pageSize: 20, status: null, jobs: [], autoRunKey: "", editedDrafts: new Map(), busyJobs: new Set() };
+    const state = { token: sessionStorage.getItem(TOKEN_KEY) || "", page: 1, pageSize: 20, status: null, jobs: [], editedDrafts: new Map(), busyJobs: new Set() };
     const el = id => document.getElementById(id);
 
     function formatDate(value) {
@@ -356,6 +361,7 @@
     function readProfile() {
       return {
         experience: el("profile-experience").value,
+        writingStyle: el("profile-writing-style").value,
         amountPln: el("profile-amount").value,
         days: el("profile-days").value,
         copyright: el("profile-copyright").value
@@ -372,24 +378,20 @@
       try {
         const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
         el("profile-experience").value = profile.experience || "";
+        el("profile-writing-style").value = profile.writingStyle || "";
         el("profile-amount").value = profile.amountPln || "";
         el("profile-days").value = profile.days || "";
         el("profile-copyright").value = profile.copyright || "unspecified";
       } catch { localStorage.removeItem(PROFILE_KEY); }
     }
 
-    async function load({ disableAutoDrafts = false } = {}) {
+    async function load() {
       const [status, jobs] = await Promise.all([
         api("/api/scraper/status"),
         api(`/api/scraper/jobs?page=${state.page}&pageSize=${state.pageSize}`)
       ]);
       renderStatus(status);
       renderJobs(jobs);
-      if (!disableAutoDrafts && status.lastRunAt && state.autoRunKey !== status.lastRunAt) {
-        state.autoRunKey = status.lastRunAt;
-        const ids = Array.isArray(status.lastNewJobIds) ? status.lastNewJobIds : [];
-        if (ids.length) generateDrafts(ids, { onlyMissing:true, automatic:true }).catch(error => showNotice(`Nowe szkice: ${error.message}`, true));
-      }
     }
 
     async function generateDraft(jobId, force = false) {
@@ -410,21 +412,21 @@
       }
     }
 
-    async function generateDrafts(ids, { onlyMissing = true, automatic = false } = {}) {
+    async function generateDrafts(ids, { onlyMissing = true } = {}) {
       const uniqueIds = [...new Set(ids.map(String))];
       const targets = uniqueIds.filter(id => {
         const job = state.jobs.find(item => String(item.id) === id);
         return !onlyMissing || !job?.responseDraft;
       });
       if (!targets.length) {
-        if (!automatic) showNotice("Na tej liście wszystkie szkice są już przygotowane.");
+        showNotice("Na tej liście wszystkie szkice są już przygotowane.");
         return;
       }
       let done = 0;
       const errors = [];
       for (const id of targets) {
         done += 1;
-        showNotice(`${automatic ? "Nowe zlecenia" : "Przygotowywanie szkiców"}: ${done}/${targets.length}…`);
+        showNotice(`Przygotowywanie szkiców: ${done}/${targets.length}…`);
         try { await generateDraft(id, false); }
         catch (error) { errors.push(`#${id}: ${error.message}`); }
       }
@@ -479,12 +481,8 @@
       try {
         const result = await api("/api/scraper/run", { method:"POST" });
         state.page = 1;
-        await load({ disableAutoDrafts:true });
-        if (result.newJobIds?.length) {
-          state.autoRunKey = state.status?.lastRunAt || state.autoRunKey;
-          await generateDrafts(result.newJobIds, { onlyMissing:true, automatic:true });
-        }
-        else showNotice(`Gotowe: ${result.jobsFound} ofert, nowych: ${result.newJobs}, wysłanych e-mailem: ${result.emailSent}.`);
+        await load();
+        showNotice(`Gotowe: ${result.jobsFound} ofert, nowych: ${result.newJobs}. Szkice przygotujesz przyciskiem na karcie oferty.`);
       } catch (error) { showNotice(error.message, true); }
       finally { button.disabled = false; button.textContent = "Sprawdź teraz"; }
     });
