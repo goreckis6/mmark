@@ -70,7 +70,7 @@
     .assistant-body { padding:18px }
     .assistant-intro { color:var(--muted); margin:0 0 16px }
     .assistant-form { display:grid; gap:14px }
-    .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px }
+    .form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px }
     .field { min-width:0 }
     .field input, .field textarea, .field select, .draft-output textarea { width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:11px; outline:none; background:#071424; color:var(--text) }
     .field textarea, .draft-output textarea { resize:vertical; min-height:110px }
@@ -93,8 +93,23 @@
     .draft-output textarea { min-height:170px }
     .draft-output .btn { margin-top:9px }
     .terms-note { color:var(--muted); font-size:12px; margin:12px 0 0 }
+    .job-actions { display:flex; flex-direction:column; align-items:flex-end; gap:8px }
+    .job-card { grid-template-columns:72px 1fr auto }
+    .job-description { grid-column:2 / -1; padding:12px 0; border-top:1px solid var(--line); white-space:pre-wrap; color:#c2d1e4; font-size:13px }
+    .job-draft { grid-column:2 / -1; width:100%; padding:14px; border:1px solid var(--line); border-radius:13px; background:#091729 }
+    .job-draft summary { cursor:pointer; color:var(--brand); font-weight:750 }
+    .job-draft .analysis { margin-top:12px }
+    .job-draft-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+    .job-draft-grid > div { min-width:0; padding:10px; border-radius:10px; background:rgba(17,33,56,.75) }
+    .job-draft-grid strong { display:block; margin-bottom:7px; font-size:13px }
+    .job-draft-grid textarea { width:100%; min-height:120px; padding:10px; border:1px solid var(--line); border-radius:9px; outline:none; resize:vertical; background:#071424; color:var(--text) }
+    .job-draft-grid .btn { margin-top:7px; padding:8px 10px }
+    .job-full-description { white-space:pre-wrap; color:#c2d1e4; font-size:13px }
+    .job-draft-status { min-height:18px; color:var(--muted); font-size:12px }
+    .job-draft-errors { color:#ffb0bd }
     [hidden] { display:none !important }
     @media (max-width:800px) { .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{align-items:flex-start;flex-direction:column}.job{grid-template-columns:52px 1fr}.job-id{display:none} }
+    @media (max-width:800px) { .job-draft-grid { grid-template-columns:1fr } }
     @media (max-width:700px) { .form-grid,.draft-grid,.analysis-grid { grid-template-columns:1fr } }
     @media (max-width:540px) { .shell{width:min(100% - 20px,1180px);padding-top:14px}header{align-items:flex-start}.brand span{display:none}.actions{gap:6px}.btn{padding:9px 10px}.stats{gap:9px}.stat{padding:14px}.stat strong{font-size:21px}.job{padding:15px 13px;gap:12px}.toolbar{align-items:flex-start;flex-direction:column}.assistant-body{padding:14px} }
   </style>
@@ -145,36 +160,28 @@
 
       <section class="card assistant" aria-labelledby="assistant-title">
         <div class="toolbar">
-          <div><h2 id="assistant-title">Asystent odpowiedzi na zlecenie</h2><small>Wklej wybraną ofertę z Useme, aby przygotować własne szkice.</small></div>
+          <div><h2 id="assistant-title">Indywidualne szkice do ofert</h2><small>Nowe zlecenia z listy otrzymają własne szkice po pobraniu pełnego opisu.</small></div>
         </div>
         <div class="assistant-body">
-          <p class="assistant-intro">Asystent analizuje wymagania i przygotowuje osobno zakres oferty, opis Twojego doświadczenia oraz prywatną wiadomość do klienta. Przejrzyj i popraw teksty, a potem skopiuj je do Useme samodzielnie.</p>
-          <form class="assistant-form" id="draft-form">
+          <p class="assistant-intro">Dla każdego nowego zlecenia panel pobiera szczegóły z Useme, analizuje je i zapisuje osobny zakres oferty, opis doświadczenia oraz wiadomość prywatną. Ty sprawdzasz, poprawiasz i kopiujesz teksty. Panel niczego nie wysyła do Useme.</p>
+          <form class="assistant-form" id="profile-form">
             <div class="field">
-              <label for="draft-title">Tytuł zlecenia</label>
-              <input id="draft-title" maxlength="300" required placeholder="Np. Strona internetowa dla małej firmy">
-            </div>
-            <div class="field">
-              <label for="draft-description">Opis zlecenia</label>
-              <textarea id="draft-description" maxlength="10000" minlength="30" rows="7" required placeholder="Wklej opis zlecenia z Useme"></textarea>
-            </div>
-            <div class="field">
-              <label for="draft-experience">Twoje doświadczenie pasujące do zlecenia</label>
-              <textarea id="draft-experience" maxlength="4000" rows="3" placeholder="Podaj tylko informacje, które mogą znaleźć się w Twojej ofercie: umiejętności, podobne realizacje, portfolio"></textarea>
-              <small>Asystent nie powinien dopisywać niepodanych realizacji ani umiejętności.</small>
+              <label for="profile-experience">Twoje doświadczenie i umiejętności</label>
+              <textarea id="profile-experience" maxlength="4000" rows="3" placeholder="Podaj prawdziwe umiejętności, podobne realizacje lub portfolio"></textarea>
+              <small>Te informacje posłużą do personalizacji wszystkich szkiców. Możesz zostawić pole puste.</small>
             </div>
             <div class="form-grid">
               <div class="field">
-                <label for="draft-amount">Twoja proponowana stawka netto (PLN), opcjonalnie</label>
-                <input id="draft-amount" inputmode="decimal" maxlength="20" placeholder="Np. 1800">
+                <label for="profile-amount">Proponowana stawka netto (PLN), opcjonalnie</label>
+                <input id="profile-amount" inputmode="decimal" maxlength="20" placeholder="Np. 1800">
               </div>
               <div class="field">
-                <label for="draft-days">Twój proponowany termin (dni), opcjonalnie</label>
-                <input id="draft-days" inputmode="numeric" maxlength="3" placeholder="Np. 7">
+                <label for="profile-days">Proponowany termin (dni), opcjonalnie</label>
+                <input id="profile-days" inputmode="numeric" maxlength="3" placeholder="Np. 7">
               </div>
               <div class="field">
-                <label for="draft-copyright">Preferencja dotycząca praw</label>
-                <select id="draft-copyright">
+                <label for="profile-copyright">Preferencja dotycząca praw</label>
+                <select id="profile-copyright">
                   <option value="unspecified">Jeszcze nie wybrano</option>
                   <option value="transfer">Przekazanie pełni praw</option>
                   <option value="license">Udzielenie licencji</option>
@@ -182,33 +189,12 @@
                 </select>
               </div>
             </div>
-            <p class="assistant-notice">Wklejona treść i podane informacje zostaną przesłane do skonfigurowanego AWS Bedrock w celu wygenerowania szkiców. Asystent niczego nie wysyła do Useme.</p>
+            <p class="assistant-notice">Opisy pobranych zleceń i powyższe dane profilu są przesyłane do skonfigurowanego AWS Bedrock. Profil jest zapisany lokalnie w tej przeglądarce.</p>
             <div class="assistant-actions">
-              <button class="btn btn-primary" id="draft-generate" type="submit">Analizuj i przygotuj szkice</button>
-              <span class="assistant-status" id="draft-status" role="status" aria-live="polite"></span>
+              <button class="btn btn-primary" type="submit">Zapisz dane do odpowiedzi</button>
+              <span class="assistant-status" id="profile-status" role="status" aria-live="polite"></span>
             </div>
           </form>
-          <div class="draft-results" id="draft-results" hidden>
-            <div class="analysis" id="draft-analysis"></div>
-            <div class="draft-grid">
-              <div class="draft-output">
-                <h3>Zakres oferty</h3>
-                <textarea id="draft-scope" aria-label="Szkic zakresu oferty"></textarea>
-                <button class="btn" type="button" data-copy="draft-scope">Kopiuj zakres</button>
-              </div>
-              <div class="draft-output">
-                <h3>Doświadczenie</h3>
-                <textarea id="draft-experience-result" aria-label="Szkic opisu doświadczenia"></textarea>
-                <button class="btn" type="button" data-copy="draft-experience-result">Kopiuj doświadczenie</button>
-              </div>
-              <div class="draft-output">
-                <h3>Wiadomość prywatna do klienta</h3>
-                <textarea id="draft-private-message" aria-label="Szkic wiadomości prywatnej"></textarea>
-                <button class="btn" type="button" data-copy="draft-private-message">Kopiuj wiadomość</button>
-              </div>
-            </div>
-            <p class="terms-note" id="draft-terms"></p>
-          </div>
         </div>
       </section>
 
@@ -218,28 +204,31 @@
           <div class="actions">
             <a class="btn" id="source-link" href="https://useme.com/pl/jobs/category/serwisy-internetowe,34/" target="_blank" rel="noopener">Otwórz Useme ↗</a>
             <a class="btn" id="export-link" href="#">Pobierz JSON</a>
+            <button class="btn" id="draft-page" type="button">Przygotuj szkice dla tej strony</button>
             <button class="btn btn-primary" id="scan" type="button">Sprawdź teraz</button>
           </div>
         </div>
         <div id="job-list"><div class="empty">Ładowanie ofert…</div></div>
       </section>
       <nav class="pagination" id="pagination" aria-label="Strony ofert"></nav>
-      <p class="footer-note">Baza jest przechowywana na serwerze w pliku JSON. Identyfikator oferty Useme zapobiega ponownemu wysyłaniu tej samej pozycji.</p>
+      <p class="footer-note">Baza oraz szkice są przechowywane na serwerze w pliku JSON. Szkice możesz poprawić i skopiować; panel nie wysyła ofert ani wiadomości.</p>
     </main>
   </div>
 
   <script>
     const TOKEN_KEY = "rekiny_scraper_token";
-    const state = { token: sessionStorage.getItem(TOKEN_KEY) || "", page: 1, pageSize: 20, status: null };
+    const PROFILE_KEY = "rekiny_useme_draft_profile";
+    const state = { token: sessionStorage.getItem(TOKEN_KEY) || "", page: 1, pageSize: 20, status: null, jobs: [], autoRunKey: "", editedDrafts: new Map(), busyJobs: new Set() };
     const el = id => document.getElementById(id);
 
     function formatDate(value) {
       if (!value) return "—";
-      return new Intl.DateTimeFormat("pl-PL", { dateStyle:"short", timeStyle:"medium" }).format(new Date(value));
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("pl-PL", { dateStyle:"short", timeStyle:"medium" }).format(date);
     }
 
     function escapeHtml(value) {
-      return String(value || "").replace(/[&<>\"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
+      return String(value || "").replace(/[&<>"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
     }
 
     async function api(path, options = {}) {
@@ -260,6 +249,7 @@
       el("login-view").hidden = true;
       el("dashboard").hidden = false;
       el("logout").hidden = false;
+      loadProfile();
     }
 
     function lock() {
@@ -297,21 +287,57 @@
       }
     }
 
+    function analysisHtml(draft) {
+      if (!draft) return "";
+      const labels = { high:"Dobre dopasowanie", medium:"Częściowe dopasowanie", low:"Słabe dopasowanie" };
+      const cols = [["Pasujące wymagania", draft.matches], ["Braki i ryzyka", draft.gaps], ["Pytania do klienta", draft.questions]];
+      return `<div class="analysis"><h3>${escapeHtml(labels[draft.fit] || labels.medium)}</h3><p>${escapeHtml(draft.summary || "Brak podsumowania.")}</p><div class="analysis-grid">${cols.map(([label, values]) => `<div><strong>${escapeHtml(label)}</strong><ul>${(Array.isArray(values) && values.length ? values : ["Brak uwag."]).map(value => `<li>${escapeHtml(value)}</li>`).join("")}</ul></div>`).join("")}</div></div>`;
+    }
+
     function renderJobs(data) {
+      state.jobs = data.jobs;
       if (!data.jobs.length) {
         el("job-list").innerHTML = '<div class="empty">Baza jest jeszcze pusta. Pierwsze sprawdzenie uruchomi się automatycznie.</div>';
       } else {
-        el("job-list").innerHTML = data.jobs.map(job => `
-          <article class="job">
+        el("job-list").innerHTML = data.jobs.map(job => {
+          const draft = job.responseDraft || null;
+          const edited = state.editedDrafts.get(String(job.id)) || {};
+          const details = job.details || null;
+          const values = {
+            offerTitle: edited.offerTitle ?? draft?.offerTitle ?? job.title,
+            offerScope: edited.offerScope ?? draft?.offerScope ?? "",
+            experienceText: edited.experienceText ?? draft?.experienceText ?? "",
+            privateMessage: edited.privateMessage ?? draft?.privateMessage ?? ""
+          };
+          const status = state.busyJobs.has(String(job.id)) ? "Przygotowuję…" : (draft ? "Odśwież szkic" : "Przygotuj szkic");
+          return `<article class="job job-card">
             <div class="job-page">str. ${escapeHtml(job.page)}</div>
-            <div class="job-main">
-              <a href="${escapeHtml(job.url)}" target="_blank" rel="noopener">${escapeHtml(job.title)}</a>
-              <div class="job-meta">Wykryto: ${formatDate(job.foundAt)} · ostatnio widziana: ${formatDate(job.lastSeenAt)}</div>
-            </div>
-            <div class="job-id">#${escapeHtml(job.id)}</div>
-          </article>`).join("");
+            <div class="job-main"><a href="${escapeHtml(job.url)}" target="_blank" rel="noopener">${escapeHtml(job.title)}</a><div class="job-meta">Wykryto: ${formatDate(job.foundAt)} · ostatnio widziana: ${formatDate(job.lastSeenAt)}${details?.fetchedAt ? ` · opis pobrano: ${formatDate(details.fetchedAt)}` : ""}</div></div>
+            <div class="job-actions"><div class="job-id">#${escapeHtml(job.id)}</div><button class="btn btn-primary" type="button" data-generate-job="${escapeHtml(job.id)}" ${state.busyJobs.has(String(job.id)) ? "disabled" : ""}>${status}</button></div>
+            ${details ? `<div class="job-description"><strong>Opis zlecenia</strong><br>${escapeHtml(details.description)}</div>` : ""}
+            ${draft ? draftCard(job, draft, details, values) : `<div class="job-draft job-draft-status">${details ? "Pełny opis pobrany. Przygotuj indywidualny szkic odpowiedzi." : "Pełny opis zostanie pobrany podczas przygotowywania szkicu."}</div>`}
+          </article>`;
+        }).join("");
       }
       renderPagination(data.totalPages, data.page);
+    }
+
+    function draftCard(job, draft, details, values) {
+      return `<details class="job-draft" open><summary>Szkice gotowe · ${formatDate(draft.generatedAt)} — analiza i teksty do skopiowania</summary>${analysisHtml(draft)}<div class="job-draft-grid">
+        <div><strong>Proponowany tytuł oferty</strong><textarea data-job-field="offerTitle" data-job-id="${escapeHtml(job.id)}" aria-label="Proponowany tytuł oferty">${escapeHtml(values.offerTitle ?? draft.offerTitle ?? job.title)}</textarea><button class="btn" type="button" data-copy-job="offerTitle" data-job-id="${escapeHtml(job.id)}">Kopiuj tytuł</button></div>
+        <div><strong>Zakres oferty</strong><textarea data-job-field="offerScope" data-job-id="${escapeHtml(job.id)}" aria-label="Zakres oferty">${escapeHtml(values.offerScope)}</textarea><button class="btn" type="button" data-copy-job="offerScope" data-job-id="${escapeHtml(job.id)}">Kopiuj zakres</button></div>
+        <div><strong>Doświadczenie</strong><textarea data-job-field="experienceText" data-job-id="${escapeHtml(job.id)}" aria-label="Doświadczenie">${escapeHtml(values.experienceText)}</textarea><button class="btn" type="button" data-copy-job="experienceText" data-job-id="${escapeHtml(job.id)}">Kopiuj doświadczenie</button></div>
+        <div><strong>Wiadomość prywatna</strong><textarea data-job-field="privateMessage" data-job-id="${escapeHtml(job.id)}" aria-label="Wiadomość prywatna">${escapeHtml(values.privateMessage)}</textarea><button class="btn" type="button" data-copy-job="privateMessage" data-job-id="${escapeHtml(job.id)}">Kopiuj wiadomość</button></div>
+      </div><p class="terms-note">${escapeHtml(termsText(draft))} · Sprawdź treść i warunki przed użyciem.</p></details>`;
+    }
+
+    function termsText(draft) {
+      const rights = { transfer:"przekazanie pełni praw", license:"licencja", none:"bez przekazywania praw", unspecified:"prawa do samodzielnego ustalenia" };
+      const terms = [];
+      if (draft.amountPln) terms.push(`Stawka: ${draft.amountPln} PLN netto`);
+      if (draft.days) terms.push(`Termin: ${draft.days} dni`);
+      terms.push(`Prawa: ${rights[draft.copyright] || rights.unspecified}`);
+      return terms.join(" · ");
     }
 
     function renderPagination(totalPages, currentPage) {
@@ -322,13 +348,85 @@
       }).join("");
     }
 
-    async function load() {
+    function readProfile() {
+      return {
+        experience: el("profile-experience").value,
+        amountPln: el("profile-amount").value,
+        days: el("profile-days").value,
+        copyright: el("profile-copyright").value
+      };
+    }
+
+    function saveProfile() {
+      const profile = readProfile();
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      return profile;
+    }
+
+    function loadProfile() {
+      try {
+        const profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+        el("profile-experience").value = profile.experience || "";
+        el("profile-amount").value = profile.amountPln || "";
+        el("profile-days").value = profile.days || "";
+        el("profile-copyright").value = profile.copyright || "unspecified";
+      } catch { localStorage.removeItem(PROFILE_KEY); }
+    }
+
+    async function load({ disableAutoDrafts = false } = {}) {
       const [status, jobs] = await Promise.all([
         api("/api/scraper/status"),
         api(`/api/scraper/jobs?page=${state.page}&pageSize=${state.pageSize}`)
       ]);
       renderStatus(status);
       renderJobs(jobs);
+      if (!disableAutoDrafts && status.lastRunAt && state.autoRunKey !== status.lastRunAt) {
+        state.autoRunKey = status.lastRunAt;
+        const ids = Array.isArray(status.lastNewJobIds) ? status.lastNewJobIds : [];
+        if (ids.length) generateDrafts(ids, { onlyMissing:true, automatic:true }).catch(error => showNotice(`Nowe szkice: ${error.message}`, true));
+      }
+    }
+
+    async function generateDraft(jobId, force = false) {
+      const id = String(jobId);
+      if (state.busyJobs.has(id)) return;
+      state.busyJobs.add(id);
+      renderJobs({ jobs:state.jobs, page:state.page, totalPages:Math.max(1, Math.ceil(state.status?.totalJobs / state.pageSize) || 1) });
+      try {
+        const profile = saveProfile();
+        const result = await api(`/api/scraper/jobs/${encodeURIComponent(id)}/draft`, { method:"POST", body:JSON.stringify({ ...profile, force }) });
+        const index = state.jobs.findIndex(job => String(job.id) === id);
+        if (index !== -1) state.jobs[index] = result.job;
+        state.editedDrafts.delete(id);
+        return result;
+      } finally {
+        state.busyJobs.delete(id);
+        renderJobs({ jobs:state.jobs, page:state.page, totalPages:Math.max(1, Math.ceil(state.status?.totalJobs / state.pageSize) || 1) });
+      }
+    }
+
+    async function generateDrafts(ids, { onlyMissing = true, automatic = false } = {}) {
+      const uniqueIds = [...new Set(ids.map(String))];
+      const targets = uniqueIds.filter(id => {
+        const job = state.jobs.find(item => String(item.id) === id);
+        return !onlyMissing || !job?.responseDraft;
+      });
+      if (!targets.length) {
+        if (!automatic) showNotice("Na tej liście wszystkie szkice są już przygotowane.");
+        return;
+      }
+      let done = 0;
+      const errors = [];
+      for (const id of targets) {
+        done += 1;
+        showNotice(`${automatic ? "Nowe zlecenia" : "Przygotowywanie szkiców"}: ${done}/${targets.length}…`);
+        try { await generateDraft(id, false); }
+        catch (error) { errors.push(`#${id}: ${error.message}`); }
+      }
+      const refreshed = await api(`/api/scraper/jobs?page=${state.page}&pageSize=${state.pageSize}`);
+      renderJobs(refreshed);
+      if (errors.length) showNotice(`Gotowe ${done - errors.length}/${targets.length}. Błędy: ${errors.join("; ").slice(0, 900)}`, true);
+      else showNotice(`Gotowe: przygotowano ${targets.length} indywidualnych szkiców. Sprawdź je i skopiuj do Useme.`);
     }
 
     el("login-form").addEventListener("submit", async event => {
@@ -346,14 +444,18 @@
         await load();
       } catch (error) {
         message.textContent = error.message;
-      } finally {
-        submit.disabled = false;
-      }
+      } finally { submit.disabled = false; }
     });
 
     el("logout").addEventListener("click", async () => {
       await api("/api/scraper/logout", { method:"POST" }).catch(() => {});
       lock();
+    });
+
+    el("profile-form").addEventListener("submit", event => {
+      event.preventDefault();
+      saveProfile();
+      el("profile-status").textContent = "Zapisano w tej przeglądarce. Będę używać tych danych w kolejnych szkicach.";
     });
 
     el("pagination").addEventListener("click", async event => {
@@ -371,107 +473,53 @@
       showNotice("Trwa sprawdzanie Useme. Może potrwać kilkadziesiąt sekund.");
       try {
         const result = await api("/api/scraper/run", { method:"POST" });
-        showNotice(`Gotowe: ${result.jobsFound} ofert, nowych: ${result.newJobs}, wysłanych e-mailem: ${result.emailSent}.`);
         state.page = 1;
-        await load();
-      } catch (error) {
-        showNotice(error.message, true);
-      } finally {
-        button.disabled = false;
-        button.textContent = "Sprawdź teraz";
-      }
-    });
-
-    function renderDraftAnalysis(data) {
-      const panel = el("draft-analysis");
-      panel.replaceChildren();
-      const fitLabels = { high:"Dobre dopasowanie", medium:"Częściowe dopasowanie", low:"Słabe dopasowanie" };
-      const heading = document.createElement("h3");
-      heading.textContent = fitLabels[data.fit] || fitLabels.medium;
-      panel.append(heading);
-      const summary = document.createElement("p");
-      summary.textContent = data.summary || "Brak podsumowania.";
-      panel.append(summary);
-
-      const columns = [
-        ["Pasujące wymagania", data.matches],
-        ["Braki i ryzyka", data.gaps],
-        ["Pytania do klienta", data.questions]
-      ];
-      const grid = document.createElement("div");
-      grid.className = "analysis-grid";
-      for (const [label, items] of columns) {
-        const column = document.createElement("div");
-        const title = document.createElement("strong");
-        title.textContent = label;
-        column.append(title);
-        const list = document.createElement("ul");
-        const values = Array.isArray(items) && items.length ? items : ["Brak uwag."];
-        for (const value of values) {
-          const item = document.createElement("li");
-          item.textContent = value;
-          list.append(item);
+        await load({ disableAutoDrafts:true });
+        if (result.newJobIds?.length) {
+          state.autoRunKey = state.status?.lastRunAt || state.autoRunKey;
+          await generateDrafts(result.newJobIds, { onlyMissing:true, automatic:true });
         }
-        column.append(list);
-        grid.append(column);
-      }
-      panel.append(grid);
-    }
+        else showNotice(`Gotowe: ${result.jobsFound} ofert, nowych: ${result.newJobs}, wysłanych e-mailem: ${result.emailSent}.`);
+      } catch (error) { showNotice(error.message, true); }
+      finally { button.disabled = false; button.textContent = "Sprawdź teraz"; }
+    });
 
-    el("draft-form").addEventListener("submit", async event => {
-      event.preventDefault();
-      const button = el("draft-generate");
-      button.disabled = true;
-      el("draft-results").hidden = true;
-      el("draft-status").textContent = "Analizuję zlecenie i przygotowuję szkice…";
-      try {
-        const result = await api("/api/scraper/draft", {
-          method:"POST",
-          body:JSON.stringify({
-            title:el("draft-title").value,
-            description:el("draft-description").value,
-            experience:el("draft-experience").value,
-            amountPln:el("draft-amount").value,
-            days:el("draft-days").value,
-            copyright:el("draft-copyright").value
-          })
-        });
-        renderDraftAnalysis(result);
-        el("draft-scope").value = result.offerScope;
-        el("draft-experience-result").value = result.experienceText;
-        el("draft-private-message").value = result.privateMessage;
-        const rightsLabels = {
-          transfer:"przekazanie pełni praw",
-          license:"licencja",
-          none:"bez przekazania praw",
-          unspecified:"do samodzielnego ustalenia"
-        };
-        const terms = [];
-        if (result.amountPln) terms.push(`Twoja stawka: ${result.amountPln} PLN netto`);
-        if (result.days) terms.push(`Twój termin: ${result.days} dni`);
-        terms.push(`Prawa autorskie: ${rightsLabels[result.copyright] || rightsLabels.unspecified}`);
-        el("draft-terms").textContent = `Pola do uzupełnienia w formularzu Useme — ${terms.join(" · ")}. Sprawdź warunki przed złożeniem oferty.`;
-        el("draft-results").hidden = false;
-        el("draft-status").textContent = "Gotowe. Sprawdź treść i skopiuj wybrane pola do Useme.";
-      } catch (error) {
-        el("draft-status").textContent = error.message;
-      } finally {
-        button.disabled = false;
+    el("draft-page").addEventListener("click", () => {
+      const ids = state.jobs.map(job => String(job.id));
+      generateDrafts(ids, { onlyMissing:true }).catch(error => showNotice(error.message, true));
+    });
+
+    el("job-list").addEventListener("click", async event => {
+      const generate = event.target.closest("[data-generate-job]");
+      if (generate) {
+        const id = generate.dataset.generateJob;
+        const job = state.jobs.find(item => String(item.id) === id);
+        try { await generateDraft(id, Boolean(job?.responseDraft)); }
+        catch (error) { showNotice(`#${id}: ${error.message}`, true); }
+        return;
+      }
+      const copy = event.target.closest("[data-copy-job]");
+      if (copy) {
+        const id = copy.dataset.jobId;
+        const field = el("job-list").querySelector(`[data-job-field="${copy.dataset.copyJob}"][data-job-id="${CSS.escape(id)}"]`);
+        if (!field) return;
+        try {
+          await navigator.clipboard.writeText(field.value);
+          el("profile-status").textContent = "Skopiowano. Wklej tekst w odpowiednie pole Useme i sprawdź go przed wysłaniem.";
+        } catch {
+          field.focus(); field.select();
+          el("profile-status").textContent = "Tekst zaznaczono — skopiuj go ręcznie.";
+        }
       }
     });
 
-    el("draft-results").addEventListener("click", async event => {
-      const button = event.target.closest("[data-copy]");
-      if (!button) return;
-      const field = el(button.dataset.copy);
-      try {
-        await navigator.clipboard.writeText(field.value);
-        el("draft-status").textContent = "Skopiowano tekst. Wklej go i sprawdź w Useme.";
-      } catch (_error) {
-        field.focus();
-        field.select();
-        el("draft-status").textContent = "Nie udało się skopiować automatycznie — tekst jest zaznaczony, skopiuj go ręcznie.";
-      }
+    el("job-list").addEventListener("input", event => {
+      const field = event.target.closest("[data-job-field]");
+      if (!field) return;
+      const id = String(field.dataset.jobId);
+      const values = state.editedDrafts.get(id) || {};
+      values[field.dataset.jobField] = field.value;
+      state.editedDrafts.set(id, values);
     });
 
     el("export-link").addEventListener("click", async event => {

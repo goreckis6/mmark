@@ -106,11 +106,11 @@ Opcjonalnie możesz też dodawać wpisy do `content-data.js` (tablica `window.CO
 - **Widoki:** siatka kart lub kalendarz miesiąca
 - **Generator newsów:** jeden szkic z wersjami LI/IG (temat: News tygodnia)
 
-## Asystent odpowiedzi na zlecenie Useme
+## Indywidualne szkice odpowiedzi na zlecenia Useme
 
-W prywatnym panelu scrapera wklej tytuł i opis wybranego zlecenia, a opcjonalnie także własne doświadczenie, proponowaną stawkę, termin i preferencję praw autorskich. Asystent przygotuje analizę dopasowania, szkic zakresu oferty, opis doświadczenia oraz krótką wiadomość prywatną z pytaniami do klienta. Treści można poprawić i skopiować ręcznie do Useme; panel nie składa ofert ani nie wysyła wiadomości.
+Panel scrapera pobiera pełny opis zlecenia dla każdej nowej pozycji na liście i przygotowuje oddzielną analizę, proponowany tytuł oferty, zakres prac, opis doświadczenia oraz prywatną wiadomość do klienta. Szkice zapisują się przy konkretnych zleceniach, można je poprawić i skopiować pojedynczo. Przycisk „Przygotuj szkice dla tej strony” generuje szkice dla pozycji na bieżącej stronie. Panel nie składa ofert ani nie wysyła wiadomości.
 
-Wygenerowanie szkiców przesyła wklejony opis i podane informacje do skonfigurowanego AWS Bedrock. Wymaga działającej konfiguracji Bedrock.
+Do personalizacji służy profil freelancera (doświadczenie, stawka, termin i preferencja praw), przechowywany lokalnie w przeglądarce. Pełny opis zlecenia i dane profilu są przesyłane do skonfigurowanego AWS Bedrock. Szczegóły zlecenia są pobierane z publicznej strony Useme przez Jina Reader, gdy bezpośredni dostęp serwera jest blokowany. Wymaga działającej konfiguracji Bedrock i dostępu sieciowego do Useme oraz Jina Reader.
 
 ## News tygodnia (IT / AWS / programowanie)
 

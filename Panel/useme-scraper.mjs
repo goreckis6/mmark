@@ -43,6 +43,7 @@ function emptyState() {
     lastPagesScanned: 0,
     lastJobsFound: 0,
     lastNewJobs: 0,
+    lastNewJobIds: [],
     lastEmailAt: null,
     lastEmailCount: 0
   };
@@ -56,7 +57,8 @@ function readState(dataPath = DEFAULT_DATA_PATH) {
       ...emptyState(),
       ...parsed,
       jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
-      sentIds: Array.isArray(parsed.sentIds) ? parsed.sentIds.map(String) : []
+      sentIds: Array.isArray(parsed.sentIds) ? parsed.sentIds.map(String) : [],
+      lastNewJobIds: Array.isArray(parsed.lastNewJobIds) ? parsed.lastNewJobIds.map(String) : []
     };
   } catch (error) {
     console.warn("Useme scraper: nie można odczytać bazy:", error.message);
@@ -124,6 +126,64 @@ export function parseUsemeJobs(source, page = 1) {
     if (job) found.set(job.id, job);
   }
   return [...found.values()];
+}
+
+function parseUsemeJobDetails(source, expectedTitle) {
+  const markdown = String(source || "");
+  const titleMatch = markdown.match(/^#\s+(.+)\s*$/m);
+  const title = decodeHtml(titleMatch?.[1] || expectedTitle || "");
+  if (!titleMatch) throw new Error("Nie udało się odczytać tytułu zlecenia Useme");
+
+  const bodyStart = titleMatch.index + titleMatch[0].length;
+  const sectionEnd = markdown.slice(bodyStart).search(/^##\s+(?:Wysłane oferty|Najnowsze zlecenia)/mi);
+  let body = sectionEnd >= 0
+    ? markdown.slice(bodyStart, bodyStart + sectionEnd)
+    : markdown.slice(bodyStart);
+  body = body
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^\s*(?:Skip to Content|Zaloguj się|Zaloguj|Wybierz swój język)\s*$/gim, "")
+    .replace(/^\s*#{1,6}\s*/gm, "")
+    .replace(/[*_`]/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (body.length < 80) throw new Error("Opis zlecenia Useme jest pusty lub niepełny");
+  return { title, description: body.slice(0, 12000) };
+}
+
+export async function fetchUsemeJobDetails(job, options = {}) {
+  let target;
+  try {
+    target = new URL(String(job?.url || ""));
+  } catch {
+    throw new Error("Nieprawidłowy adres zlecenia");
+  }
+  if ((target.hostname !== "useme.com" && target.hostname !== "www.useme.com") ||
+      !/^\/pl\/jobs\/[^/]+,\d+\/$/.test(target.pathname) ||
+      (job?.id && !target.pathname.endsWith(`,${String(job.id)}/`))) {
+    throw new Error("Dozwolone są wyłącznie adresy zleceń z useme.com");
+  }
+  target.protocol = "https:";
+  target.hostname = "useme.com";
+  target.search = "";
+  target.hash = "";
+
+  const readerUrl = `https://r.jina.ai/http://${target.toString().replace(/^https?:\/\//, "")}`;
+  const reader = await fetchText(readerUrl, {
+    timeoutMs: options.timeoutMs || 40000,
+    headers: {
+      Accept: "text/markdown",
+      "X-No-Cache": "true",
+      "X-Return-Format": "markdown",
+      "User-Agent": `Mozilla/5.0 (compatible; RekinyBiznesuBot/1.0; +${process.env.PUBLIC_SITE_URL || "https://rekinybiznesu.shop"})`
+    }
+  });
+  if (!reader.response.ok || isChallengePage(reader.text, reader.response)) {
+    throw new Error(`Nie udało się pobrać szczegółów Useme (HTTP ${reader.response.status})`);
+  }
+  const details = parseUsemeJobDetails(reader.text, job.title);
+  return { ...details, url: target.toString() };
 }
 
 function isChallengePage(text, response) {
@@ -377,6 +437,7 @@ export async function runUsemeScraper(options = {}) {
 
     if (!allFound.size) {
       state.lastError = pageErrors.join(" | ") || "Nie znaleziono żadnych ofert";
+      state.lastNewJobIds = [];
       state.updatedAt = new Date().toISOString();
       writeState(state, dataPath);
       throw new Error(state.lastError);
@@ -396,6 +457,7 @@ export async function runUsemeScraper(options = {}) {
       });
     }
     state.jobs = sortJobs([...existing.values()]).slice(0, MAX_STORED_JOBS);
+    state.lastNewJobIds = newlyDiscovered.map(job => String(job.id));
 
     const sentIds = new Set(state.sentIds.map(String));
     let emailSent = 0;
@@ -436,6 +498,7 @@ export async function runUsemeScraper(options = {}) {
       pagesScanned: state.lastPagesScanned,
       jobsFound: allFound.size,
       newJobs: newlyDiscovered.length,
+      newJobIds: state.lastNewJobIds,
       emailSent,
       pendingEmail: state.jobs.filter(job => !sentIds.has(String(job.id))).length,
       providers: [...providers],
@@ -471,6 +534,7 @@ export function getUsemeScraperStatus(options = {}) {
     lastPagesScanned: state.lastPagesScanned,
     lastJobsFound: state.lastJobsFound,
     lastNewJobs: state.lastNewJobs,
+    lastNewJobIds: state.lastNewJobIds,
     lastEmailAt: state.lastEmailAt,
     lastEmailCount: state.lastEmailCount
   };
@@ -488,6 +552,31 @@ export function getUsemeJobs({ page = 1, pageSize = JOBS_PER_PAGE, dataPath } = 
     total: state.jobs.length,
     totalPages: Math.min(10, Math.max(1, Math.ceil(state.jobs.length / safePageSize)))
   };
+}
+
+export function getUsemeJobById(id, options = {}) {
+  const dataPath = options.dataPath || process.env.SCRAPER_DATA_FILE || DEFAULT_DATA_PATH;
+  const state = readState(dataPath);
+  return state.jobs.find(job => String(job.id) === String(id)) || null;
+}
+
+export function saveUsemeJobDraft(id, details, draft, options = {}) {
+  const dataPath = options.dataPath || process.env.SCRAPER_DATA_FILE || DEFAULT_DATA_PATH;
+  const state = readState(dataPath);
+  const job = state.jobs.find(item => String(item.id) === String(id));
+  if (!job) return null;
+  job.details = {
+    title: String(details?.title || job.title).slice(0, 300),
+    description: String(details?.description || "").slice(0, 12000),
+    fetchedAt: new Date().toISOString()
+  };
+  job.responseDraft = {
+    ...draft,
+    generatedAt: new Date().toISOString()
+  };
+  state.updatedAt = new Date().toISOString();
+  writeState(state, dataPath);
+  return job;
 }
 
 export function startUsemeScraperScheduler() {
