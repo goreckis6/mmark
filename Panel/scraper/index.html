@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Scraper Useme — Rekiny Biznesu</title>
+  <title>Oferty i szkice Useme — Rekiny Biznesu</title>
   <style>
     :root {
       color-scheme: dark;
@@ -107,6 +107,13 @@
     .job-full-description { white-space:pre-wrap; color:#c2d1e4; font-size:13px }
     .job-draft-status { min-height:18px; color:var(--muted); font-size:12px }
     .job-draft-errors { color:#ffb0bd }
+    .profile-settings { padding:0 18px; border-bottom:1px solid var(--line); background:rgba(9,23,41,.55) }
+    .profile-settings summary { padding:13px 0; color:var(--muted); cursor:pointer; font-size:13px; font-weight:700 }
+    .profile-settings[open] summary { color:var(--brand) }
+    .profile-settings-body { padding:0 0 16px }
+    .profile-settings-body > p:first-child { margin:0 0 12px; color:var(--muted); font-size:12px }
+    .profile-settings-body .assistant-form { gap:10px }
+    .profile-settings-body .assistant-notice { margin-top:10px }
     [hidden] { display:none !important }
     @media (max-width:800px) { .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{align-items:flex-start;flex-direction:column}.job{grid-template-columns:52px 1fr}.job-id{display:none} }
     @media (max-width:800px) { .job-draft-grid { grid-template-columns:1fr } }
@@ -143,7 +150,7 @@
       <section class="hero">
         <div>
           <p class="eyebrow">Automatyczny monitoring</p>
-          <h1>Nowe zlecenia Useme</h1>
+          <h1>Oferty Useme</h1>
           <p>Serwisy internetowe · do 10 stron wstecz · bez duplikatów · raport e-mail po wykryciu nowych ofert.</p>
         </div>
         <div class="live"><span class="dot"></span><span id="schedule-label">Sprawdzanie co 5 minut</span></div>
@@ -158,12 +165,21 @@
 
       <div class="notice" id="notice" hidden></div>
 
-      <section class="card assistant" aria-labelledby="assistant-title">
+
+      <section class="card jobs">
         <div class="toolbar">
-          <div><h2 id="assistant-title">Indywidualne szkice do ofert</h2><small>Nowe zlecenia z listy otrzymają własne szkice po pobraniu pełnego opisu.</small></div>
+          <div><h2>Baza ofert</h2><small id="last-run">Ostatnie sprawdzenie: —</small></div>
+          <div class="actions">
+            <a class="btn" id="source-link" href="https://useme.com/pl/jobs/category/serwisy-internetowe,34/" target="_blank" rel="noopener">Otwórz Useme ↗</a>
+            <a class="btn" id="export-link" href="#">Pobierz JSON</a>
+            <button class="btn" id="draft-page" type="button">Przygotuj szkice dla tej strony</button>
+            <button class="btn btn-primary" id="scan" type="button">Sprawdź teraz</button>
+          </div>
         </div>
-        <div class="assistant-body">
-          <p class="assistant-intro">Dla każdego nowego zlecenia panel pobiera szczegóły z Useme, analizuje je i zapisuje osobny zakres oferty, opis doświadczenia oraz wiadomość prywatną. Ty sprawdzasz, poprawiasz i kopiujesz teksty. Panel niczego nie wysyła do Useme.</p>
+        <details class="profile-settings">
+          <summary>Ustawienia personalizacji szkiców</summary>
+          <div class="profile-settings-body">
+            <p>Wpisz prawdziwe doświadczenie, stawkę i preferencje. Zostaną użyte przy szkicach do poszczególnych ofert. Profil zapisuje się lokalnie w tej przeglądarce.</p>
           <form class="assistant-form" id="profile-form">
             <div class="field">
               <label for="profile-experience">Twoje doświadczenie i umiejętności</label>
@@ -189,25 +205,14 @@
                 </select>
               </div>
             </div>
-            <p class="assistant-notice">Opisy pobranych zleceń i powyższe dane profilu są przesyłane do skonfigurowanego AWS Bedrock. Profil jest zapisany lokalnie w tej przeglądarce.</p>
             <div class="assistant-actions">
               <button class="btn btn-primary" type="submit">Zapisz dane do odpowiedzi</button>
               <span class="assistant-status" id="profile-status" role="status" aria-live="polite"></span>
             </div>
           </form>
-        </div>
-      </section>
-
-      <section class="card jobs">
-        <div class="toolbar">
-          <div><h2>Baza ofert</h2><small id="last-run">Ostatnie sprawdzenie: —</small></div>
-          <div class="actions">
-            <a class="btn" id="source-link" href="https://useme.com/pl/jobs/category/serwisy-internetowe,34/" target="_blank" rel="noopener">Otwórz Useme ↗</a>
-            <a class="btn" id="export-link" href="#">Pobierz JSON</a>
-            <button class="btn" id="draft-page" type="button">Przygotuj szkice dla tej strony</button>
-            <button class="btn btn-primary" id="scan" type="button">Sprawdź teraz</button>
+            <p class="assistant-notice">Opisy ofert i dane profilu są przesyłane do skonfigurowanego AWS Bedrock. Panel nie wysyła ich ani szkiców do Useme.</p>
           </div>
-        </div>
+        </details>
         <div id="job-list"><div class="empty">Ładowanie ofert…</div></div>
       </section>
       <nav class="pagination" id="pagination" aria-label="Strony ofert"></nav>
@@ -505,10 +510,10 @@
         if (!field) return;
         try {
           await navigator.clipboard.writeText(field.value);
-          el("profile-status").textContent = "Skopiowano. Wklej tekst w odpowiednie pole Useme i sprawdź go przed wysłaniem.";
+          showNotice("Skopiowano. Wklej tekst w odpowiednie pole Useme i sprawdź go przed wysłaniem.");
         } catch {
           field.focus(); field.select();
-          el("profile-status").textContent = "Tekst zaznaczono — skopiuj go ręcznie.";
+          showNotice("Tekst zaznaczono — skopiuj go ręcznie.");
         }
       }
     });
