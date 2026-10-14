@@ -66,9 +66,37 @@
     .page { min-width:38px; height:38px; border:1px solid var(--line); border-radius:10px; color:var(--text); background:var(--panel); cursor:pointer }
     .page.active { color:#04111b; border-color:transparent; background:var(--brand); font-weight:900 }
     .footer-note { margin-top:18px; color:var(--muted); text-align:center; font-size:12px }
+    .assistant { margin-bottom:18px; overflow:hidden }
+    .assistant-body { padding:18px }
+    .assistant-intro { color:var(--muted); margin:0 0 16px }
+    .assistant-form { display:grid; gap:14px }
+    .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px }
+    .field { min-width:0 }
+    .field input, .field textarea, .field select, .draft-output textarea { width:100%; padding:12px 13px; border:1px solid var(--line); border-radius:11px; outline:none; background:#071424; color:var(--text) }
+    .field textarea, .draft-output textarea { resize:vertical; min-height:110px }
+    .field textarea:focus, .field input:focus, .field select:focus, .draft-output textarea:focus { border-color:var(--brand2); box-shadow:0 0 0 3px rgba(45,169,255,.14) }
+    .field small { display:block; margin-top:5px; color:var(--muted); font-size:12px }
+    .assistant-notice { margin:0; color:#ffe4ab; font-size:13px }
+    .assistant-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap }
+    .assistant-status { min-height:22px; color:var(--muted); font-size:13px }
+    .draft-results { margin-top:20px; padding-top:18px; border-top:1px solid var(--line) }
+    .analysis { padding:15px; border:1px solid var(--line); border-radius:13px; background:#091729; margin-bottom:15px }
+    .analysis h3 { margin:0 0 6px; font-size:17px }
+    .analysis p { margin:6px 0; color:#d2dfef }
+    .analysis ul { margin:6px 0 0; padding-left:21px; color:#c2d1e4 }
+    .analysis-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px }
+    .analysis-grid > div { padding:10px; border-radius:10px; background:rgba(17,33,56,.75) }
+    .analysis-grid strong { display:block; margin-bottom:4px; color:var(--brand); font-size:12px; text-transform:uppercase; letter-spacing:.06em }
+    .draft-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px }
+    .draft-output { min-width:0; padding:14px; border:1px solid var(--line); border-radius:13px; background:rgba(17,33,56,.55) }
+    .draft-output h3 { margin:0 0 9px; font-size:15px }
+    .draft-output textarea { min-height:170px }
+    .draft-output .btn { margin-top:9px }
+    .terms-note { color:var(--muted); font-size:12px; margin:12px 0 0 }
     [hidden] { display:none !important }
     @media (max-width:800px) { .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{align-items:flex-start;flex-direction:column}.job{grid-template-columns:52px 1fr}.job-id{display:none} }
-    @media (max-width:540px) { .shell{width:min(100% - 20px,1180px);padding-top:14px}header{align-items:flex-start}.brand span{display:none}.actions{gap:6px}.btn{padding:9px 10px}.stats{gap:9px}.stat{padding:14px}.stat strong{font-size:21px}.job{padding:15px 13px;gap:12px}.toolbar{align-items:flex-start;flex-direction:column} }
+    @media (max-width:700px) { .form-grid,.draft-grid,.analysis-grid { grid-template-columns:1fr } }
+    @media (max-width:540px) { .shell{width:min(100% - 20px,1180px);padding-top:14px}header{align-items:flex-start}.brand span{display:none}.actions{gap:6px}.btn{padding:9px 10px}.stats{gap:9px}.stat{padding:14px}.stat strong{font-size:21px}.job{padding:15px 13px;gap:12px}.toolbar{align-items:flex-start;flex-direction:column}.assistant-body{padding:14px} }
   </style>
 </head>
 <body>
@@ -114,6 +142,75 @@
       </section>
 
       <div class="notice" id="notice" hidden></div>
+
+      <section class="card assistant" aria-labelledby="assistant-title">
+        <div class="toolbar">
+          <div><h2 id="assistant-title">Asystent odpowiedzi na zlecenie</h2><small>Wklej wybraną ofertę z Useme, aby przygotować własne szkice.</small></div>
+        </div>
+        <div class="assistant-body">
+          <p class="assistant-intro">Asystent analizuje wymagania i przygotowuje osobno zakres oferty, opis Twojego doświadczenia oraz prywatną wiadomość do klienta. Przejrzyj i popraw teksty, a potem skopiuj je do Useme samodzielnie.</p>
+          <form class="assistant-form" id="draft-form">
+            <div class="field">
+              <label for="draft-title">Tytuł zlecenia</label>
+              <input id="draft-title" maxlength="300" required placeholder="Np. Strona internetowa dla małej firmy">
+            </div>
+            <div class="field">
+              <label for="draft-description">Opis zlecenia</label>
+              <textarea id="draft-description" maxlength="10000" minlength="30" rows="7" required placeholder="Wklej opis zlecenia z Useme"></textarea>
+            </div>
+            <div class="field">
+              <label for="draft-experience">Twoje doświadczenie pasujące do zlecenia</label>
+              <textarea id="draft-experience" maxlength="4000" rows="3" placeholder="Podaj tylko informacje, które mogą znaleźć się w Twojej ofercie: umiejętności, podobne realizacje, portfolio"></textarea>
+              <small>Asystent nie powinien dopisywać niepodanych realizacji ani umiejętności.</small>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="draft-amount">Twoja proponowana stawka netto (PLN), opcjonalnie</label>
+                <input id="draft-amount" inputmode="decimal" maxlength="20" placeholder="Np. 1800">
+              </div>
+              <div class="field">
+                <label for="draft-days">Twój proponowany termin (dni), opcjonalnie</label>
+                <input id="draft-days" inputmode="numeric" maxlength="3" placeholder="Np. 7">
+              </div>
+              <div class="field">
+                <label for="draft-copyright">Preferencja dotycząca praw</label>
+                <select id="draft-copyright">
+                  <option value="unspecified">Jeszcze nie wybrano</option>
+                  <option value="transfer">Przekazanie pełni praw</option>
+                  <option value="license">Udzielenie licencji</option>
+                  <option value="none">Bez przekazywania praw</option>
+                </select>
+              </div>
+            </div>
+            <p class="assistant-notice">Wklejona treść i podane informacje zostaną przesłane do skonfigurowanego AWS Bedrock w celu wygenerowania szkiców. Asystent niczego nie wysyła do Useme.</p>
+            <div class="assistant-actions">
+              <button class="btn btn-primary" id="draft-generate" type="submit">Analizuj i przygotuj szkice</button>
+              <span class="assistant-status" id="draft-status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+          <div class="draft-results" id="draft-results" hidden>
+            <div class="analysis" id="draft-analysis"></div>
+            <div class="draft-grid">
+              <div class="draft-output">
+                <h3>Zakres oferty</h3>
+                <textarea id="draft-scope" aria-label="Szkic zakresu oferty"></textarea>
+                <button class="btn" type="button" data-copy="draft-scope">Kopiuj zakres</button>
+              </div>
+              <div class="draft-output">
+                <h3>Doświadczenie</h3>
+                <textarea id="draft-experience-result" aria-label="Szkic opisu doświadczenia"></textarea>
+                <button class="btn" type="button" data-copy="draft-experience-result">Kopiuj doświadczenie</button>
+              </div>
+              <div class="draft-output">
+                <h3>Wiadomość prywatna do klienta</h3>
+                <textarea id="draft-private-message" aria-label="Szkic wiadomości prywatnej"></textarea>
+                <button class="btn" type="button" data-copy="draft-private-message">Kopiuj wiadomość</button>
+              </div>
+            </div>
+            <p class="terms-note" id="draft-terms"></p>
+          </div>
+        </div>
+      </section>
 
       <section class="card jobs">
         <div class="toolbar">
@@ -282,6 +379,98 @@
       } finally {
         button.disabled = false;
         button.textContent = "Sprawdź teraz";
+      }
+    });
+
+    function renderDraftAnalysis(data) {
+      const panel = el("draft-analysis");
+      panel.replaceChildren();
+      const fitLabels = { high:"Dobre dopasowanie", medium:"Częściowe dopasowanie", low:"Słabe dopasowanie" };
+      const heading = document.createElement("h3");
+      heading.textContent = fitLabels[data.fit] || fitLabels.medium;
+      panel.append(heading);
+      const summary = document.createElement("p");
+      summary.textContent = data.summary || "Brak podsumowania.";
+      panel.append(summary);
+
+      const columns = [
+        ["Pasujące wymagania", data.matches],
+        ["Braki i ryzyka", data.gaps],
+        ["Pytania do klienta", data.questions]
+      ];
+      const grid = document.createElement("div");
+      grid.className = "analysis-grid";
+      for (const [label, items] of columns) {
+        const column = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = label;
+        column.append(title);
+        const list = document.createElement("ul");
+        const values = Array.isArray(items) && items.length ? items : ["Brak uwag."];
+        for (const value of values) {
+          const item = document.createElement("li");
+          item.textContent = value;
+          list.append(item);
+        }
+        column.append(list);
+        grid.append(column);
+      }
+      panel.append(grid);
+    }
+
+    el("draft-form").addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = el("draft-generate");
+      button.disabled = true;
+      el("draft-results").hidden = true;
+      el("draft-status").textContent = "Analizuję zlecenie i przygotowuję szkice…";
+      try {
+        const result = await api("/api/scraper/draft", {
+          method:"POST",
+          body:JSON.stringify({
+            title:el("draft-title").value,
+            description:el("draft-description").value,
+            experience:el("draft-experience").value,
+            amountPln:el("draft-amount").value,
+            days:el("draft-days").value,
+            copyright:el("draft-copyright").value
+          })
+        });
+        renderDraftAnalysis(result);
+        el("draft-scope").value = result.offerScope;
+        el("draft-experience-result").value = result.experienceText;
+        el("draft-private-message").value = result.privateMessage;
+        const rightsLabels = {
+          transfer:"przekazanie pełni praw",
+          license:"licencja",
+          none:"bez przekazania praw",
+          unspecified:"do samodzielnego ustalenia"
+        };
+        const terms = [];
+        if (result.amountPln) terms.push(`Twoja stawka: ${result.amountPln} PLN netto`);
+        if (result.days) terms.push(`Twój termin: ${result.days} dni`);
+        terms.push(`Prawa autorskie: ${rightsLabels[result.copyright] || rightsLabels.unspecified}`);
+        el("draft-terms").textContent = `Pola do uzupełnienia w formularzu Useme — ${terms.join(" · ")}. Sprawdź warunki przed złożeniem oferty.`;
+        el("draft-results").hidden = false;
+        el("draft-status").textContent = "Gotowe. Sprawdź treść i skopiuj wybrane pola do Useme.";
+      } catch (error) {
+        el("draft-status").textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    el("draft-results").addEventListener("click", async event => {
+      const button = event.target.closest("[data-copy]");
+      if (!button) return;
+      const field = el(button.dataset.copy);
+      try {
+        await navigator.clipboard.writeText(field.value);
+        el("draft-status").textContent = "Skopiowano tekst. Wklej go i sprawdź w Useme.";
+      } catch (_error) {
+        field.focus();
+        field.select();
+        el("draft-status").textContent = "Nie udało się skopiować automatycznie — tekst jest zaznaczony, skopiuj go ręcznie.";
       }
     });
 

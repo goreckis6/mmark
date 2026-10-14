@@ -106,6 +106,12 @@ Opcjonalnie możesz też dodawać wpisy do `content-data.js` (tablica `window.CO
 - **Widoki:** siatka kart lub kalendarz miesiąca
 - **Generator newsów:** jeden szkic z wersjami LI/IG (temat: News tygodnia)
 
+## Asystent odpowiedzi na zlecenie Useme
+
+W prywatnym panelu scrapera wklej tytuł i opis wybranego zlecenia, a opcjonalnie także własne doświadczenie, proponowaną stawkę, termin i preferencję praw autorskich. Asystent przygotuje analizę dopasowania, szkic zakresu oferty, opis doświadczenia oraz krótką wiadomość prywatną z pytaniami do klienta. Treści można poprawić i skopiować ręcznie do Useme; panel nie składa ofert ani nie wysyła wiadomości.
+
+Wygenerowanie szkiców przesyła wklejony opis i podane informacje do skonfigurowanego AWS Bedrock. Wymaga działającej konfiguracji Bedrock.
+
 ## News tygodnia (IT / AWS / programowanie)
 
 ### W panelu (Generator)
