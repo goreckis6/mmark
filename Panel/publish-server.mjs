@@ -43,10 +43,9 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MEDIA_DIR = path.join(__dirname, "media", "posty");
-const scraperSessions = new Map();
 const scraperLoginAttempts = new Map();
 const activeJobDrafts = new Map();
-const SCRAPER_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const SCRAPER_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -107,21 +106,61 @@ function noteScraperLoginFailure(req) {
   scraperLoginAttempts.set(key, recent);
 }
 
+function scraperSessionStorePath() {
+  return process.env.SCRAPER_SESSION_FILE || path.join(__dirname, "data", "useme-scraper-sessions.json");
+}
+
+function readScraperSessions() {
+  try {
+    const value = JSON.parse(fs.readFileSync(scraperSessionStorePath(), "utf8"));
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch (error) {
+    if (error.code !== "ENOENT") console.warn("Scraper sessions: nie można odczytać sesji:", error.message);
+    return {};
+  }
+}
+
+function writeScraperSessions(sessions) {
+  const filePath = scraperSessionStorePath();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const temporaryPath = `${filePath}.${process.pid}.${crypto.randomBytes(6).toString("hex")}.tmp`;
+  fs.writeFileSync(temporaryPath, JSON.stringify(sessions, null, 2) + "\n", { mode: 0o600 });
+  fs.renameSync(temporaryPath, filePath);
+}
+
+function scraperSessionKey(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 function createScraperSession() {
   const token = crypto.randomBytes(32).toString("base64url");
   const expiresAt = Date.now() + SCRAPER_SESSION_TTL_MS;
-  scraperSessions.set(token, expiresAt);
+  const sessions = readScraperSessions();
+  for (const [key, expiry] of Object.entries(sessions)) {
+    if (!Number.isFinite(expiry) || expiry <= Date.now()) delete sessions[key];
+  }
+  sessions[scraperSessionKey(token)] = expiresAt;
+  writeScraperSessions(sessions);
   return { token, expiresAt: new Date(expiresAt).toISOString() };
 }
 
 function requireScraperAuth(req, res) {
   const auth = String(req.headers.authorization || "");
   const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const expiresAt = scraperSessions.get(token);
+  const sessions = readScraperSessions();
+  const key = token ? scraperSessionKey(token) : "";
+  const expiresAt = sessions[key];
   if (!token || !expiresAt || expiresAt <= Date.now()) {
-    if (token) scraperSessions.delete(token);
+    if (token && Object.hasOwn(sessions, key)) {
+      delete sessions[key];
+      writeScraperSessions(sessions);
+    }
     sendJson(req, res, 401, { error: "Sesja wygasła. Zaloguj się ponownie." });
     return false;
+  }
+  if (expiresAt - Date.now() < SCRAPER_SESSION_TTL_MS / 2) {
+    sessions[key] = Date.now() + SCRAPER_SESSION_TTL_MS;
+    writeScraperSessions(sessions);
   }
   return true;
 }
@@ -1722,7 +1761,11 @@ export function createApp() {
 
   app.post("/api/scraper/logout", function (req, res) {
     const auth = String(req.headers.authorization || "");
-    if (auth.startsWith("Bearer ")) scraperSessions.delete(auth.slice(7).trim());
+    if (auth.startsWith("Bearer ")) {
+      const sessions = readScraperSessions();
+      delete sessions[scraperSessionKey(auth.slice(7).trim())];
+      writeScraperSessions(sessions);
+    }
     sendJson(req, res, 200, { ok: true });
   });
 

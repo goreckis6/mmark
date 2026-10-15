@@ -228,7 +228,7 @@
   <script>
     const TOKEN_KEY = "rekiny_scraper_token";
     const PROFILE_KEY = "rekiny_useme_draft_profile";
-    const state = { token: sessionStorage.getItem(TOKEN_KEY) || "", page: 1, pageSize: 20, status: null, jobs: [], editedDrafts: new Map(), busyJobs: new Set() };
+    const state = { token: localStorage.getItem(TOKEN_KEY) || "", page: 1, pageSize: 20, status: null, jobs: [], editedDrafts: new Map(), busyJobs: new Set() };
     const el = id => document.getElementById(id);
 
     function formatDate(value) {
@@ -264,7 +264,7 @@
 
     function lock() {
       state.token = "";
-      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_KEY);
       el("login-view").hidden = false;
       el("dashboard").hidden = true;
       el("logout").hidden = true;
@@ -445,7 +445,7 @@
       try {
         const result = await api("/api/scraper/unlock", { method:"POST", body:JSON.stringify({ password:el("password").value }) });
         state.token = result.token;
-        sessionStorage.setItem(TOKEN_KEY, state.token);
+        localStorage.setItem(TOKEN_KEY, state.token);
         el("password").value = "";
         showDashboard();
         await load();

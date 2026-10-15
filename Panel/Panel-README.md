@@ -110,6 +110,8 @@ Opcjonalnie możesz też dodawać wpisy do `content-data.js` (tablica `window.CO
 
 Panel scrapera pobiera listę zleceń z Useme. Samo pobranie ani skanowanie nie generuje odpowiedzi. Szkic powstaje dopiero po kliknięciu „Przygotuj szkic” przy danym zleceniu; przycisk „Przygotuj szkice dla tej strony” jest ręcznym skrótem dla widocznej strony. Dla wybranego zlecenia panel pobiera pełny opis i przygotowuje osobną analizę, proponowany tytuł oferty, zakres prac, opis doświadczenia oraz prywatną wiadomość do klienta. Szkice zapisują się przy konkretnych zleceniach, można je poprawić i skopiować pojedynczo. Panel nie składa ofert ani nie wysyła wiadomości.
 
+Sesja panelu scrapera jest odnawiana przy aktywnym korzystaniu i wygasa po 30 dniach bezczynności. Token przeglądarki jest przechowywany lokalnie, a jego skrót i data wygaśnięcia na serwerze, dzięki czemu sesja przetrwa restart aplikacji. Wylogowanie unieważnia token.
+
 Do personalizacji służy profil freelancera (doświadczenie, próbka własnego stylu, stawka, termin i preferencja praw), przechowywany lokalnie w przeglądarce. Pełny opis zlecenia i dane profilu są przesyłane do skonfigurowanego AWS Bedrock. Model ma pisać naturalnie, konkretnie i bez szablonowych formułek, bez wymyślania informacji o freelancerze. Szczegóły zlecenia są pobierane z publicznej strony Useme przez Jina Reader, gdy bezpośredni dostęp serwera jest blokowany. Wymaga działającej konfiguracji Bedrock i dostępu sieciowego do Useme oraz Jina Reader.
 
 ## News tygodnia (IT / AWS / programowanie)
