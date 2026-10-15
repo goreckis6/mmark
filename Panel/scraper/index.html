@@ -480,6 +480,10 @@
       showNotice("Trwa sprawdzanie Useme. Może potrwać kilkadziesiąt sekund.");
       try {
         const result = await api("/api/scraper/run", { method:"POST" });
+        if (result.skipped) {
+          showNotice("Skanowanie już trwa na serwerze. Ta próba została pominięta, aby nie wysłać ponownie tych samych powiadomień.");
+          return;
+        }
         state.page = 1;
         await load();
         showNotice(`Gotowe: ${result.jobsFound} ofert, nowych: ${result.newJobs}. Szkice przygotujesz przyciskiem na karcie oferty.`);

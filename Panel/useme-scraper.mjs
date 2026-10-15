@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import tls from "node:tls";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,6 +72,61 @@ function writeState(state, dataPath = DEFAULT_DATA_PATH) {
   const tmpPath = `${dataPath}.${process.pid}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(state, null, 2) + "\n", "utf8");
   fs.renameSync(tmpPath, dataPath);
+}
+
+const SCRAPER_LOCK_STALE_MS = 5 * 60 * 1000;
+
+function createScraperLock(lockPath, token) {
+  try {
+    const fd = fs.openSync(lockPath, "wx", 0o600);
+    try {
+      fs.writeFileSync(fd, JSON.stringify({ token, pid: process.pid, startedAt: new Date().toISOString() }));
+    } finally {
+      fs.closeSync(fd);
+    }
+    return { path: lockPath, token };
+  } catch (error) {
+    if (error.code === "EEXIST") return null;
+    throw error;
+  }
+}
+
+function acquireScraperLock(dataPath) {
+  const lockPath = `${dataPath}.run.lock`;
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  const token = randomUUID();
+  const lock = createScraperLock(lockPath, token);
+  if (lock) return lock;
+
+  try {
+    const stat = fs.statSync(lockPath);
+    if (Date.now() - stat.mtimeMs < SCRAPER_LOCK_STALE_MS) return null;
+    const previous = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    const currentStat = fs.statSync(lockPath);
+    if (previous.token && Date.now() - currentStat.mtimeMs >= SCRAPER_LOCK_STALE_MS && currentStat.mtimeMs === stat.mtimeMs) {
+      fs.unlinkSync(lockPath);
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") return null;
+  }
+  return createScraperLock(lockPath, token);
+}
+
+function refreshScraperLock(lock) {
+  try {
+    const current = JSON.parse(fs.readFileSync(lock.path, "utf8"));
+    if (current.token === lock.token) {
+      const now = new Date();
+      fs.utimesSync(lock.path, now, now);
+    }
+  } catch {}
+}
+
+function releaseScraperLock(lock) {
+  try {
+    const current = JSON.parse(fs.readFileSync(lock.path, "utf8"));
+    if (current.token === lock.token) fs.unlinkSync(lock.path);
+  } catch {}
 }
 
 function decodeHtml(value) {
@@ -410,8 +466,10 @@ function sortJobs(jobs) {
 
 export async function runUsemeScraper(options = {}) {
   if (activeRun) return activeRun;
+  const dataPath = options.dataPath || process.env.SCRAPER_DATA_FILE || DEFAULT_DATA_PATH;
+  const runLock = acquireScraperLock(dataPath);
+  if (!runLock) return { ok: true, skipped: true, reason: "run_in_progress" };
   activeRun = (async () => {
-    const dataPath = options.dataPath || process.env.SCRAPER_DATA_FILE || DEFAULT_DATA_PATH;
     const maxPages = options.maxPages || envInt("SCRAPER_MAX_PAGES", 10, 1, 10);
     const pageDelayMs = options.pageDelayMs ?? envInt("SCRAPER_PAGE_DELAY_SECONDS", 10, 1, 30) * 1000;
     const sourceUrl = String(process.env.USEME_SOURCE_URL || DEFAULT_SOURCE_URL).trim();
@@ -432,6 +490,7 @@ export async function runUsemeScraper(options = {}) {
       } catch (error) {
         pageErrors.push(error.message);
       }
+      refreshScraperLock(runLock);
       if (page < maxPages) await wait(pageDelayMs);
     }
 
@@ -510,6 +569,7 @@ export async function runUsemeScraper(options = {}) {
     return await activeRun;
   } finally {
     activeRun = null;
+    releaseScraperLock(runLock);
   }
 }
 
